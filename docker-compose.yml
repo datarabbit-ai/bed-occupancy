@@ -1,0 +1,43 @@
+services:
+  database:
+    build: ./db
+
+  faker:
+    build: ./faker
+    env_file: .env
+    networks:
+
+    volumes:
+
+    depends_on:
+
+  backend:
+    build: ./backend
+    env_file: .env
+
+    ports:
+
+    networks:
+
+    volumes:
+
+    depends_on:
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+
+    ports:
+
+    networks:
+
+    volumes:
+
+    depends_on:
+
+
+volumes:
+  
+
+networks:
+  
