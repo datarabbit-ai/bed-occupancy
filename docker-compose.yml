@@ -1,10 +1,16 @@
 services:
   database:
-    build: 
-      context: ./db
+    build: ./db
     volumes:
       - ./db:/data
       - shared-data:/data
+    healthcheck:
+      test: ["CMD", "/data/sqlite3.exe", "/data/hospital.db", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 
   faker:
     build: ./faker
@@ -13,8 +19,12 @@ services:
       - hospital-net
 
     volumes:
+      - shared-data:/app/data
 
     depends_on:
+      database:
+        condition: service_healthy
+
 
   backend:
     build: ./backend
@@ -29,6 +39,9 @@ services:
       - shared-data:/app/data
 
     depends_on:
+      faker:
+        condition: service_completed_successfully
+
 
   frontend:
     build: ./frontend
@@ -36,11 +49,14 @@ services:
 
     ports:
       - "127.0.0.1:8501:8501"
+
     networks:
       - hospital-net
-    volumes:
 
     depends_on:
+      backend:
+        condition: service_started
+
 
 volumes:
   shared-data:
