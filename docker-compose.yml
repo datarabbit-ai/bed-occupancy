@@ -4,11 +4,13 @@ services:
       context: ./db
     volumes:
       - ./db:/data
+      - shared-data:/data
 
   faker:
     build: ./faker
     env_file: .env
     networks:
+      - hospital-net
 
     volumes:
 
@@ -21,8 +23,10 @@ services:
     ports:
 
     networks:
+      - hospital-net
 
     volumes:
+      - shared-data:/app/data
 
     depends_on:
 
@@ -31,16 +35,15 @@ services:
     env_file: .env
 
     ports:
-
+      - "127.0.0.1:8501:8501"
     networks:
-
+      - hospital-net
     volumes:
 
     depends_on:
 
-
 volumes:
-  
+  shared-data:
 
 networks:
   hospital-net:
