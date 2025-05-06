@@ -53,7 +53,7 @@ def add_patients_to_queue(database_connection: sqlite3.Connection):
             maximum_queue_position = 0
 
         for _ in range(new_patients_in_queue_number):
-            # The chance that the patient will not come is about 4.5%
+            # The chance that the patient will not come is about 4.5%, it's based on data from NFZ
             if random.randint(1, 22) == 1:
                 will_come = 0
             else:
