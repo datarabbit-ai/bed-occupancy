@@ -87,6 +87,7 @@ def add_patient_assignment_to_bed(database_connection: sqlite3.Connection):
             bed_id = row["bed_id"]
             random_patient = random.choice(all_patient_ids)
 
+            # The average length of stay is adjusted so that total hospital occupancy is about 20 days
             random_days_amount = random.randint(1, 7)
 
             cur.execute(
