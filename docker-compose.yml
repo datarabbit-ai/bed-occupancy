@@ -2,10 +2,10 @@ services:
   database:
     build: ./db
     volumes:
-      - ./db:/data
-      - shared-data:/data
+      - ./db:/db
+      - shared-data:/db
     healthcheck:
-      test: ["CMD", "/data/sqlite3.exe", "/data/hospital.db", "SELECT 1"]
+      test: ["CMD", "/db/sqlite3.exe", "/db/hospital.db", "SELECT 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -19,7 +19,7 @@ services:
       - hospital-net
 
     volumes:
-      - shared-data:/app/data
+      - shared-data:/db
 
     depends_on:
       database:
@@ -30,13 +30,11 @@ services:
     build: ./backend
     env_file: .env
 
-    ports:
-
     networks:
       - hospital-net
 
     volumes:
-      - shared-data:/app/data
+      - shared-data:/db
 
     depends_on:
       faker:
