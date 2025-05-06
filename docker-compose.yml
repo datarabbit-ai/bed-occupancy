@@ -1,0 +1,49 @@
+services:
+  database:
+    build: 
+      context: ./db
+    volumes:
+      - ./db:/data
+      - shared-data:/data
+
+  faker:
+    build: ./faker
+    env_file: .env
+    networks:
+      - hospital-net
+
+    volumes:
+
+    depends_on:
+
+  backend:
+    build: ./backend
+    env_file: .env
+
+    ports:
+
+    networks:
+      - hospital-net
+
+    volumes:
+      - shared-data:/app/data
+
+    depends_on:
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+
+    ports:
+      - "127.0.0.1:8501:8501"
+    networks:
+      - hospital-net
+    volumes:
+
+    depends_on:
+
+volumes:
+  shared-data:
+
+networks:
+  hospital-net:
