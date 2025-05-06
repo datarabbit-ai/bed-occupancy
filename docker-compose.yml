@@ -1,6 +1,9 @@
 services:
   database:
-    build: ./db
+    build: 
+      context: ./db
+    volumes:
+      - ./db:/data
 
   faker:
     build: ./faker
@@ -40,4 +43,4 @@ volumes:
   
 
 networks:
-  
+  hospital-net:
