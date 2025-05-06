@@ -78,7 +78,7 @@ def generate_fake_patient_data() -> Patient:
     name = fake.first_name()
     surname = fake.last_name()
     random_urgency = fake.enum(Urgency)
-    phone_number = fake.phone_number().replace(" ", "")
+    phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
     random_sickness = fake.random_element(sicknesses)
     return Patient(
         first_name=name,
