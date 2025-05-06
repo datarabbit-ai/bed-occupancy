@@ -5,7 +5,6 @@ from data_generator import generate_fake_patient_data
 from database_structure_manager import (
     check_data_existence,
     clear_database,
-    create_database_tables_structure,
 )
 
 
