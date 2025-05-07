@@ -30,7 +30,9 @@ else:
 
 if st.button("➡️ Simulate Next Day"):
     try:
-        response = requests.post("http://localhost:8000/update-day", params={"delta": 1})
-        days_for_simulation = response.json()["day"]
+        response = requests.get("http://localhost:8000/update-day", params={"delta": 1})
+        st.session_state.day_for_simulation = response.json()["day"]
+        if st.session_state.day_for_simulation < 20:
+            st.session_state.day_for_simulation += 1
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")

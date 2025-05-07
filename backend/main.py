@@ -25,10 +25,12 @@ day_for_simulation = 1
 @app.get("/update-day")
 def update_day(delta: int = fastapi.Query(...)):
     global day_for_simulation
+    print(day_for_simulation)
     if delta not in (-1, 1):
         return {"error": "Invalid delta value. Use -1 or 1."}
-    if day_for_simulation not in (1, 20):
-        day_for_simulation += delta
+    if delta == 1 and day_for_simulation < 20 or delta == -1 and day_for_simulation > 1:
+        day_for_simulation += 1
+    print(day_for_simulation)
     return {"day": day_for_simulation}
 
 
