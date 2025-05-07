@@ -2,13 +2,10 @@ import random
 import sqlite3
 
 from data_generator import generate_fake_patient_data
-from database_structure_manager import (
-    check_data_existence,
-    clear_database,
-)
+from database_structure_manager import check_data_existence
 
 
-def add_patients(database_connection: sqlite3.Connection):
+def add_patients(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
     new_patients_number = random.randint(50, 100)
 
@@ -26,9 +23,10 @@ def add_patients(database_connection: sqlite3.Connection):
         )
 
     database_connection.commit()
+    print("Data generation info: Added generated patients to db")
 
 
-def add_beds(database_connection: sqlite3.Connection):
+def add_beds(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
     new_beds_number = random.randint(15, 20)
 
@@ -36,9 +34,10 @@ def add_beds(database_connection: sqlite3.Connection):
         cur.execute("INSERT INTO beds(bed_id) VALUES (null)")
 
     database_connection.commit()
+    print("Data generation info: Added generated beds to db")
 
 
-def add_patients_to_queue(database_connection: sqlite3.Connection):
+def add_patients_to_queue(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
 
     cur.execute("SELECT patient_id FROM patients")
@@ -53,26 +52,20 @@ def add_patients_to_queue(database_connection: sqlite3.Connection):
             maximum_queue_position = 0
 
         for _ in range(new_patients_in_queue_number):
-            # The chance that the patient will not come is about 4.5%, it's based on data from NFZ
-            if random.randint(1, 22) == 1:
-                will_come = 0
-            else:
-                will_come = 1
-
             cur.execute(
-                "INSERT INTO patient_queue(patient_id, queue_id, will_come) VALUES (?, ?, ?)",
+                "INSERT INTO patient_queue(patient_id, queue_id) VALUES (?, ?)",
                 (
                     random.choice(all_patient_ids)["patient_id"],
                     maximum_queue_position + 1,
-                    will_come,
                 ),
             )
             maximum_queue_position += 1
 
     database_connection.commit()
+    print("Data generation info: Added some patients to queue in db")
 
 
-def add_patient_assignment_to_bed(database_connection: sqlite3.Connection):
+def add_patient_assignment_to_bed(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
 
     cur.execute("SELECT bed_id FROM beds")
@@ -101,16 +94,20 @@ def add_patient_assignment_to_bed(database_connection: sqlite3.Connection):
             all_patient_ids.remove(random_patient)
 
     database_connection.commit()
+    print("Data generation info: Assigned some patients to beds in db")
 
 
-if not check_data_existence("../db/hospital.db"):
-    clear_database("../db/hospital.db")
-    conn = sqlite3.connect("../db/hospital.db")
-    conn.row_factory = sqlite3.Row
+if __name__ == "__main__":
+    random.seed(43)
+    if not check_data_existence("../db/hospital.db"):
+        conn = sqlite3.connect("../db/hospital.db")
+        conn.row_factory = sqlite3.Row
 
-    add_patients(conn)
-    add_beds(conn)
-    add_patients_to_queue(conn)
-    add_patient_assignment_to_bed(conn)
+        add_patients(conn)
+        add_beds(conn)
+        add_patients_to_queue(conn)
+        add_patient_assignment_to_bed(conn)
 
-    conn.close()
+        conn.close()
+    else:
+        print("Skipping data generation")
