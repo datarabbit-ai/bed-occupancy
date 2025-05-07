@@ -1,3 +1,4 @@
+import random
 import traceback
 from typing import List
 
@@ -59,7 +60,7 @@ def simulate_next_day():
         # );
         # """
         # df = pd.read_sql_query(query, conn)
-        # print(f'pacjenci do wypisania: \n{df}')
+        # print(f'pacjenci do zwolnienia: \n{df}')
 
         cursor.execute("""
         DELETE FROM bed_assignments WHERE days_of_stay = 0;
@@ -69,6 +70,27 @@ def simulate_next_day():
         SELECT bed_id FROM beds WHERE bed_id NOT IN (SELECT bed_id FROM bed_assignments);
         """
         bed_ids: List[int] = pd.read_sql_query(query, conn)["bed_id"].tolist()
+
+        query = """
+        SELECT patient_id, queue_id FROM patient_queue
+        """
+        queue = pd.read_sql_query(query, conn)
+
+        bed_iterator = 0
+        for patient in queue["patient_id"]:
+            will_come: bool = random.choice([True, True, True, True, False])
+            if will_come:
+                days: int = random.randint(1, 10)
+                cursor.execute(
+                    """
+                    INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay) VALUES (?, ?, ?)
+                    """,
+                    (patient, bed_ids[bed_iterator], days),
+                )
+                print(f"pacjent o id {patient} dostał łóżko o id {bed_ids[bed_iterator]} na {days} dni")
+                bed_iterator += 1
+            else:
+                print(f"pacjent o id {patient} nie przyszedł")
 
         db.close_connection(conn)
         # return df.to_dict(orient="records") commenting this only to pass ruff
