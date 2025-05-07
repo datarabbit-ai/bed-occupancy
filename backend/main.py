@@ -109,7 +109,8 @@ def get_bed_assignments() -> List[BedAssignment]:
                    patients.sickness,
                    bed_assignments.days_of_stay
             FROM bed_assignments
-            JOIN patients ON bed_assignments.patient_id = patients.patient_id;
+            JOIN patients ON bed_assignments.patient_id = patients.patient_id
+            ORDER BY bed_assignments.bed_id;
         """
         df = pd.read_sql_query(query, conn)
 
