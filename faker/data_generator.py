@@ -18,7 +18,7 @@ class Patient(BaseModel):
     sickness: str
 
 
-fake = Faker("pl_PL")
+Faker.seed(42)
 
 sicknesses = [
     "Niewydolność serca",
@@ -75,6 +75,7 @@ sicknesses = [
 
 
 def generate_fake_patient_data() -> Patient:
+    fake = Faker("pl_PL")
     name = fake.first_name()
     surname = fake.last_name()
     random_urgency = fake.enum(Urgency)

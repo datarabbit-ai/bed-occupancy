@@ -1,36 +1,39 @@
 import sqlite3
 
 
-def clear_database(path_to_database: str):
-    conn = sqlite3.connect(path_to_database)
-
-    cur = conn.cursor()
+def create_database_tables_structure(database_connection: sqlite3.Connection) -> None:
+    cur = database_connection.cursor()
 
     cur.executescript(
         """
-    DELETE FROM beds;
-    DELETE FROM bed_assignments;
-    DELETE FROM patients;
-    DELETE FROM patient_queue;
-    DELETE FROM sqlite_sequence WHERE name='beds';
-    DELETE FROM sqlite_sequence WHERE name='bed_assignments';
-    DELETE FROM sqlite_sequence WHERE name='patients';
-    DELETE FROM sqlite_sequence WHERE name='patient_queue';
-    """
+        CREATE TABLE IF NOT EXISTS patients (
+            patient_id INTEGER PRIMARY KEY,
+            first_name VARCHAR(30) NOT NULL,
+            last_name VARCHAR(30) NOT NULL,
+            urgency TEXT CHECK (urgency IN ('pilny', 'stabilny')) NOT NULL,
+            contact_phone CHAR(9) NOT NULL,
+            sickness TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS patient_queue (
+            patient_id INTEGER NOT NULL,
+            queue_id INTEGER NOT NULL UNIQUE,
+            FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS beds (
+            bed_id INTEGER PRIMARY KEY
+        );
+
+        CREATE TABLE IF NOT EXISTS bed_assignments (
+            bed_id INTEGER UNIQUE NOT NULL,
+            patient_id INTEGER UNIQUE NOT NULL,
+            days_of_stay INTEGER UNSIGNED NOT NULL,
+            FOREIGN KEY (bed_id) REFERENCES beds(bed_id),
+            FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+        );
+        """
     )
-
-    conn.commit()
-
-    conn.close()
-
-
-def create_database_tables_structure(database_connection: sqlite3.Connection):
-    with open("init_database.sql", "r", encoding="utf-8") as file:
-        sql_script = file.read()
-
-    cur = database_connection.cursor()
-
-    cur.executescript(sql_script)
 
     database_connection.commit()
 
@@ -42,13 +45,22 @@ def check_data_existence(path_to_database: str) -> bool:
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT Count(patients.patient_id), Count(beds.bed_id), Count(patient_queue.queue_id), Count(bed_assignments.bed_id) FROM patients, beds, patient_queue, bed_assignments"
+        """
+        SELECT
+            (SELECT COUNT(*) FROM patients),
+            (SELECT COUNT(*) FROM beds),
+            (SELECT COUNT(*) FROM patient_queue),
+            (SELECT COUNT(*) FROM bed_assignments)
+        """
     )
     result = cur.fetchone()
+    print(
+        f"Found: {result[0]} patients, {result[1]} beds, {result[2]} patients in queue and {result[3]} assignments of patients to beds in db"
+    )
     conn.commit()
 
     conn.close()
 
-    if result[0] == 0 or result[1] == 0 or result[2] == 0 or result[3] == 0:
+    if any(count == 0 for count in result):
         return False
     return True
