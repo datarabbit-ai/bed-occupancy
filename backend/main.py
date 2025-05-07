@@ -54,13 +54,13 @@ def simulate_next_day() -> List[BedAssignment]:
         UPDATE bed_assignments SET days_of_stay = days_of_stay - 1;
         """)
 
-        # query = """
-        # SELECT * FROM patients WHERE patient_id IN (
-        #     SELECT patient_id FROM bed_assignments WHERE days_of_stay = 0
-        # );
-        # """
-        # df = pd.read_sql_query(query, conn)
-        # print(f'pacjenci do zwolnienia: \n{df}')
+        query = """
+        SELECT * FROM patients WHERE patient_id IN (
+            SELECT patient_id FROM bed_assignments WHERE days_of_stay = 0
+        );
+        """
+        df = pd.read_sql_query(query, conn)
+        print(f"pacjenci do zwolnienia: \n{df}")
 
         cursor.execute("""
         DELETE FROM bed_assignments WHERE days_of_stay = 0;
