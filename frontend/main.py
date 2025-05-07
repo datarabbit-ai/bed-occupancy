@@ -6,7 +6,7 @@ st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 
 st.title("Bed Assignments")
 
-response = requests.get("http://localhost:8000/get-bed-assignments")
+response = requests.get("backend:8000/get-bed-assignments")
 if response.status_code == 200:
     df = pd.DataFrame(response.json())
 
