@@ -1,4 +1,5 @@
 import random
+import sqlite3
 import traceback
 from typing import List
 
@@ -42,7 +43,7 @@ def get_bed_assignments() -> List[BedAssignment]:
         return {"error": "Server Error", "message": error_message}
 
 
-@app.get("/simulate_next_day")
+@app.post("/simulate-next-day")
 def simulate_next_day() -> List[BedAssignment]:
     try:
         conn = db.get_connection()
@@ -80,22 +81,31 @@ def simulate_next_day() -> List[BedAssignment]:
         for patient in queue["patient_id"]:
             if bed_iterator >= len(bed_ids):
                 break
+
             will_come: bool = random.choice([True, True, True, True, False])
+
             if will_come:
-                days: int = random.randint(1, 10)
-                cursor.execute(
-                    """
-                    INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay) VALUES (?, ?, ?)
-                    """,
-                    (patient, bed_ids[bed_iterator], days),
-                )
-                print(f"pacjent o id {patient} dostał łóżko o id {bed_ids[bed_iterator]} na {days} dni")
-                bed_iterator += 1
+                try:
+                    days: int = random.randint(1, 10)
+
+                    cursor.execute(
+                        """
+                        INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay) VALUES (?, ?, ?)
+                        """,
+                        (bed_ids[bed_iterator], patient, days),
+                    )
+
+                    print(f"pacjent o id {patient} dostał łóżko o id {bed_ids[bed_iterator]} na {days} dni")
+                    bed_iterator += 1
+
+                except sqlite3.IntegrityError as e:
+                    print(f"pomijanie pacjenta od id {patient}, gdyż już jest na łóżku")
             else:
                 print(f"pacjent o id {patient} nie przyszedł")
 
         db.close_connection(conn)
         return get_bed_assignments()
+
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
         print(error_message)
