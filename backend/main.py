@@ -46,7 +46,7 @@ def simulate_next_day() -> List[BedAssignment]:
     try:
         conn = db.get_connection()
         query = """
-        UPDATE bed_assignments SET days_of_stay = 0;
+        UPDATE bed_assignments SET days_of_stay = days_of_stay - 1;
         """
         df = pd.read_sql_query(query, conn)
         db.close_connection(conn)
