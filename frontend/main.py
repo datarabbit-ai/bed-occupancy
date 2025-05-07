@@ -2,8 +2,11 @@ import pandas as pd
 import requests
 import streamlit as st
 
+if "day_for_simulation" not in st.session_state:
+    st.session_state.day_for_simulation = 1
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 st.title("Bed Assignments")
+st.header(f"Day {st.session_state.day_for_simulation}")
 
 
 def get_bed_assignments() -> pd.DataFrame:
@@ -27,10 +30,7 @@ else:
 
 if st.button("➡️ Simulate Next Day"):
     try:
-        response = requests.post("http://localhost:8000/simulate-next-day")
-        if response.status_code != 200:
-            st.error("Failed to simulate next day.")
-        else:
-            st.dataframe(pd.DataFrame(response.json()), use_container_width=True)
+        response = requests.post("http://localhost:8000/update-day", params={"delta": 1})
+        days_for_simulation = response.json()["day"]
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")

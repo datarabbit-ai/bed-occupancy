@@ -4,6 +4,7 @@ import traceback
 from typing import List
 
 import db_operations as db
+import fastapi
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -18,6 +19,17 @@ class BedAssignment(BaseModel):
 
 
 app = FastAPI()
+day_for_simulation = 1
+
+
+@app.get("/update-day")
+def update_day(delta: int = fastapi.Query(...)):
+    global day_for_simulation
+    if delta not in (-1, 1):
+        return {"error": "Invalid delta value. Use -1 or 1."}
+    if day_for_simulation not in (1, 20):
+        day_for_simulation += delta
+    return {"day": day_for_simulation}
 
 
 @app.get("/get-bed-assignments", response_model=List[BedAssignment])
@@ -43,8 +55,7 @@ def get_bed_assignments() -> List[BedAssignment]:
         return {"error": "Server Error", "message": error_message}
 
 
-@app.post("/simulate-next-day")
-def simulate_next_day() -> List[BedAssignment]:
+def simulate_for_day(day: int) -> List[BedAssignment]:
     try:
         conn = db.get_connection()
         cursor = conn.cursor()
@@ -98,7 +109,7 @@ def simulate_next_day() -> List[BedAssignment]:
                     print(f"pacjent o id {patient} dostał łóżko o id {bed_ids[bed_iterator]} na {days} dni")
                     bed_iterator += 1
 
-                except sqlite3.IntegrityError as e:
+                except sqlite3.IntegrityError:
                     print(f"pomijanie pacjenta od id {patient}, gdyż już jest na łóżku")
             else:
                 print(f"pacjent o id {patient} nie przyszedł")
