@@ -78,6 +78,8 @@ def simulate_next_day():
 
         bed_iterator = 0
         for patient in queue["patient_id"]:
+            if bed_iterator >= len(bed_ids):
+                break
             will_come: bool = random.choice([True, True, True, True, False])
             if will_come:
                 days: int = random.randint(1, 10)
