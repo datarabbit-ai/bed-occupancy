@@ -30,5 +30,7 @@ if st.button("➡️ Simulate Next Day"):
         response = requests.post("http://localhost:8000/simulate-next-day")
         if response.status_code != 200:
             st.error("Failed to simulate next day.")
+        else:
+            st.dataframe(pd.DataFrame(response.json()), use_container_width=True)
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")
