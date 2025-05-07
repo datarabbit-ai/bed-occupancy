@@ -8,7 +8,7 @@ st.title("Bed Assignments")
 
 def get_bed_assignments() -> pd.DataFrame:
     try:
-        response = requests.get("http://backend:8000/get-bed-assignments")
+        response = requests.get("http://localhost:8000/get-bed-assignments")
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")
         return pd.DataFrame()
@@ -27,7 +27,7 @@ else:
 
 if st.button("➡️ Simulate Next Day"):
     try:
-        response = requests.post("http://backend:8000/simulate-next-day")
+        response = requests.post("http://localhost:8000/simulate-next-day")
         if response.status_code != 200:
             st.error("Failed to simulate next day.")
     except Exception as e:
