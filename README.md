@@ -34,7 +34,7 @@ Once you have docker installed, follow these guidelines:
 
     It should contain variables like this:
     ```
-    
+  
     ```
 
 3. Make sure you are in the project's root folder and run the command:
