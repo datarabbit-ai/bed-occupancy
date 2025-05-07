@@ -39,3 +39,19 @@ def get_bed_assignments() -> List[BedAssignment]:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
         print(error_message)
         return {"error": "Server Error", "message": error_message}
+
+
+@app.get("/simulate_next_day}")
+def simulate_next_day() -> List[BedAssignment]:
+    try:
+        conn = db.get_connection()
+        query = """
+        UPDATE bed_assignments SET days_of_stay = 0;
+        """
+        df = pd.read_sql_query(query, conn)
+        db.close_connection(conn)
+        return df.to_dict(orient="records")
+    except Exception as e:
+        error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
+        print(error_message)
+        return {"error": "Server Error", "message": error_message}
