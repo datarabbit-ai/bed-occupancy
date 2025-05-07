@@ -43,7 +43,7 @@ def get_bed_assignments() -> List[BedAssignment]:
 
 
 @app.get("/simulate_next_day")
-def simulate_next_day():
+def simulate_next_day() -> List[BedAssignment]:
     try:
         conn = db.get_connection()
         cursor = conn.cursor()
@@ -95,7 +95,7 @@ def simulate_next_day():
                 print(f"pacjent o id {patient} nie przyszedł")
 
         db.close_connection(conn)
-        # return df.to_dict(orient="records") commenting this only to pass ruff
+        return get_bed_assignments()
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
         print(error_message)
