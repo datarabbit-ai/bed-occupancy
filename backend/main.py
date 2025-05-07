@@ -1,0 +1,30 @@
+import traceback
+
+import db_operations as db
+import pandas as pd
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.get("/get-bed-assignments")
+def get_bed_assignments():
+    try:
+        conn = db.get_connection()
+        query = """
+        SELECT
+            bed_assignments.bed_id,
+            bed_assignments.patient_id,
+            patients.first_name || ' ' || patients.last_name AS patient_name,
+            patients.sickness,
+            bed_assignments.days_of_stay
+        FROM bed_assignments
+        JOIN patients ON bed_assignments.patient_id = patients.patient_id;
+        """
+        df = pd.read_sql_query(query, conn)
+        db.close_connection(conn)
+        return df.to_dict(orient="records")
+    except Exception as e:
+        error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
+        print(error_message)
+        return {"error": "Server Error", "message": error_message}
