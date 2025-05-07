@@ -2,7 +2,7 @@ import random
 import sqlite3
 
 from data_generator import generate_fake_patient_data
-from database_structure_manager import check_data_existence
+from database_structure_manager import check_data_existence, clear_database
 
 
 def add_patients(database_connection: sqlite3.Connection) -> None:
@@ -100,6 +100,7 @@ def add_patient_assignment_to_bed(database_connection: sqlite3.Connection) -> No
 if __name__ == "__main__":
     random.seed(43)
     if not check_data_existence("../db/hospital.db"):
+        clear_database("../db/hospital.db")
         conn = sqlite3.connect("../db/hospital.db")
         conn.row_factory = sqlite3.Row
 

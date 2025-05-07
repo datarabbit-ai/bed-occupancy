@@ -1,6 +1,25 @@
 import sqlite3
 
 
+def clear_database(path_to_database: str) -> None:
+    conn = sqlite3.connect(path_to_database)
+
+    cur = conn.cursor()
+
+    cur.executescript(
+        """
+    DELETE FROM beds;
+    DELETE FROM bed_assignments;
+    DELETE FROM patients;
+    DELETE FROM patient_queue;
+    """
+    )
+
+    conn.commit()
+
+    conn.close()
+
+
 def create_database_tables_structure(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
 
