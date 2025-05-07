@@ -102,9 +102,6 @@ def get_bed_assignments() -> List[BedAssignment]:
                 else:
                     print(f"pacjent o id {patient} nie przyszedł")
 
-        # db.close_connection(conn)
-        # return get_bed_assignments()
-
         query = """
             SELECT bed_assignments.bed_id,
                    bed_assignments.patient_id,
