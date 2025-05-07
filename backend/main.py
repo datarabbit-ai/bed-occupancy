@@ -1,14 +1,25 @@
 import traceback
+from typing import List
 
 import db_operations as db
 import pandas as pd
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class BedAssignment(BaseModel):
+    bed_id: int
+    patient_id: int
+    patient_name: str
+    sickness: str
+    days_of_stay: int
+
 
 app = FastAPI()
 
 
-@app.get("/get-bed-assignments")
-def get_bed_assignments():
+@app.get("/get-bed-assignments", response_model=List[BedAssignment])
+def get_bed_assignments() -> List[BedAssignment]:
     try:
         conn = db.get_connection()
         query = """
