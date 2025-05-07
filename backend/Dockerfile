@@ -18,7 +18,10 @@ COPY requirements.txt .
 # Install python dependencies
 RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install -r requirements.txt
+RUN pip3 install "fastapi[standard]"
 
 COPY . ./
+
+EXPOSE 8000
 
 CMD ["fastapi", "run", "main.py"]
