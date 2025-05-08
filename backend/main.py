@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 
+# TODO: move it to the dedicated module in the future
 class BedAssignment(BaseModel):
     bed_id: int
     patient_id: int
