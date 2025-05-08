@@ -1,3 +1,5 @@
 pandas==2.2.3
 fastapi==0.115.12
 pydantic==2.11.4
+setuptools
+wheel

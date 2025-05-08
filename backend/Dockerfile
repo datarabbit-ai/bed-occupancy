@@ -16,7 +16,7 @@ RUN pip3 install setuptools
 COPY requirements.txt .
 
 # Install python dependencies
-RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 RUN pip3 install "fastapi[standard]"
 
