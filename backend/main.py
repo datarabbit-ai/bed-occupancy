@@ -103,17 +103,13 @@ def get_bed_assignments() -> List[BedAssignment]:
 
         cursor.execute("BEGIN TRANSACTION;")
 
-        if day_for_simulation == 1 and last_change == 1:
+        if last_change == 1:
             logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
-        elif last_change == -1:
+        else:
             logging.info(f"Cofnięcie symulacji do dnia {day_for_simulation}")
 
         for iteration in range(day_for_simulation - 1):
             should_log = iteration == day_for_simulation - 2 and last_change == 1
-            if should_log:
-                logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
-            elif last_change == -1:
-                logging.info(f"Cofnięcie symulacji do dnia {day_for_simulation}")
 
             decrement_days_of_stay()
             print_patients_to_be_released(log=should_log)

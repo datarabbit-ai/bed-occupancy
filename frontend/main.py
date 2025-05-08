@@ -11,7 +11,7 @@ st.header(f"Day {st.session_state.day_for_simulation}")
 
 def get_bed_assignments() -> pd.DataFrame:
     try:
-        response = requests.get("http://backend:8000/get-bed-assignments")
+        response = requests.get("http://localhost:8000/get-bed-assignments")
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")
         return pd.DataFrame()
@@ -24,7 +24,7 @@ def get_bed_assignments() -> pd.DataFrame:
 
 def simulate_next_day():
     try:
-        response = requests.get("http://backend:8000/update-day", params={"delta": 1})
+        response = requests.get("http://localhost:8000/update-day", params={"delta": 1})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.error_message = None
 
@@ -34,7 +34,7 @@ def simulate_next_day():
 
 def simulate_previous_day():
     try:
-        response = requests.get("http://backend:8000/update-day", params={"delta": -1})
+        response = requests.get("http://localhost:8000/update-day", params={"delta": -1})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.error_message = None
     except Exception as e:
