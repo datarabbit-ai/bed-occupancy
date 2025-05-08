@@ -6,17 +6,11 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get upgrade -y
-    # build-essential \
-    # curl \
-    # software-properties-common \
-    # git \
-#    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install setuptools
 
 COPY requirements.txt .
 
 # Install python dependencies
-RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
 COPY main.py ./
