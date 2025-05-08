@@ -67,6 +67,17 @@ def get_bed_assignments() -> List[BedAssignment]:
                 WHERE days_of_stay = 0;
             """)
 
+        def assign_bed_to_patient(bed_id: int, patient_id: int, days_of_stay: int) -> None:
+            cursor.execute(
+                """
+                INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
+                VALUES (?, ?, ?)
+                """,
+                (bed_id, patient_id, days_of_stay),
+            )
+
+            print(f"pacjent o id {patient_id} dostał łóżko o id {bed_id} na {days_of_stay} dni")
+
         cursor.execute("BEGIN TRANSACTION;")
 
         for _ in range(day_for_simulation - 1):
@@ -96,17 +107,9 @@ def get_bed_assignments() -> List[BedAssignment]:
                     try:
                         days: int = random.randint(1, 7)
 
-                        cursor.execute(
-                            """
-                            INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
-                            VALUES (?, ?, ?)
-                            """,
-                            (bed_ids[bed_iterator], patient, days),
-                        )
+                        assign_bed_to_patient(bed_ids[bed_iterator], patient, days)
 
-                        print(f"pacjent o id {patient} dostał łóżko o id {bed_ids[bed_iterator]} na {days} dni")
                         bed_iterator += 1
-
                     except sqlite3.IntegrityError:
                         print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
                 else:
