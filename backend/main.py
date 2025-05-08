@@ -44,39 +44,46 @@ def get_bed_assignments() -> List[BedAssignment]:
         def read_query(query: str) -> pd.DataFrame:
             return pd.read_sql_query(query, conn)
 
+        def decrement_days_of_stay() -> None:
+            cursor.execute("""
+                UPDATE bed_assignments
+                SET days_of_stay = days_of_stay - 1;
+            """)
+
+        def print_patients_to_be_released() -> None:
+            df = read_query("""
+                SELECT * \
+                FROM patients \
+                WHERE patient_id IN (SELECT patient_id \
+                                     FROM bed_assignments \
+                                     WHERE days_of_stay = 0); \
+            """)
+            print(f"pacjenci do zwolnienia: \n{df}")
+
+        def delete_patients_to_be_released() -> None:
+            cursor.execute("""
+                DELETE
+                FROM bed_assignments
+                WHERE days_of_stay = 0;
+            """)
+
         cursor.execute("BEGIN TRANSACTION;")
 
         for _ in range(day_for_simulation - 1):
-            cursor.execute("""
-                           UPDATE bed_assignments
-                           SET days_of_stay = days_of_stay - 1;
-                           """)
-
-            df = read_query("""
-                    SELECT * \
-                    FROM patients \
-                    WHERE patient_id IN (SELECT patient_id \
-                                         FROM bed_assignments \
-                                         WHERE days_of_stay = 0); \
-                    """)
-            print(f"pacjenci do zwolnienia: \n{df}")
-
-            cursor.execute("""
-                           DELETE
-                           FROM bed_assignments
-                           WHERE days_of_stay = 0;
-                           """)
+            decrement_days_of_stay()
+            print_patients_to_be_released()
+            delete_patients_to_be_released()
 
             bed_ids: List[int] = read_query("""
-                    SELECT bed_id \
-                    FROM beds \
-                    WHERE bed_id NOT IN (SELECT bed_id FROM bed_assignments); \
-                    """)["bed_id"].tolist()
+                SELECT bed_id \
+                FROM beds \
+                WHERE bed_id NOT IN (SELECT bed_id FROM bed_assignments); \
+                """)["bed_id"].tolist()
 
             queue = read_query("""
-                    SELECT patient_id, queue_id \
-                    FROM patient_queue \
-                    """)
+                SELECT patient_id, queue_id \
+                FROM patient_queue \
+                """)
 
             bed_iterator = 0
             for patient in queue["patient_id"]:
