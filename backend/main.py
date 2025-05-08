@@ -35,6 +35,8 @@ def update_day(delta: int = fastapi.Query(...)):
 @app.get("/get-bed-assignments", response_model=List[BedAssignment])
 def get_bed_assignments() -> List[BedAssignment]:
     try:
+        random.seed(43)
+
         conn = db.get_connection()
         cursor = conn.cursor()
 
@@ -98,7 +100,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                         bed_iterator += 1
 
                     except sqlite3.IntegrityError:
-                        print(f"pomijanie pacjenta od id {patient}, gdyż już jest na łóżku")
+                        print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
                 else:
                     print(f"pacjent o id {patient} nie przyszedł")
 
