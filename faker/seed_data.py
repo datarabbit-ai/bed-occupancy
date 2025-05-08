@@ -7,7 +7,7 @@ from database_structure_manager import check_data_existence, clear_database
 
 def add_patients(database_connection: sqlite3.Connection) -> None:
     cur = database_connection.cursor()
-    new_patients_number = random.randint(50, 100)
+    new_patients_number = random.randint(100, 150)
 
     for _ in range(new_patients_number):
         new_patient = generate_fake_patient_data()

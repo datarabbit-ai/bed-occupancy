@@ -86,7 +86,7 @@ def get_bed_assignments() -> List[BedAssignment]:
 
                 if will_come:
                     try:
-                        days: int = random.randint(1, 10)
+                        days: int = random.randint(1, 7)
 
                         cursor.execute(
                             """
