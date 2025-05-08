@@ -147,15 +147,18 @@ def get_bed_assignments() -> List[BedAssignment]:
                     bed_iterator += 1
 
         df = read_query("""
-            SELECT bed_assignments.bed_id,
+            SELECT beds.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
                    patients.sickness,
                    bed_assignments.days_of_stay
             FROM bed_assignments
             JOIN patients ON bed_assignments.patient_id = patients.patient_id
-            ORDER BY bed_assignments.bed_id;
+            RIGHT JOIN beds ON bed_assignments.bed_id = beds.bed_id
+            ORDER BY beds.bed_id;
         """)
+
+        df = df.fillna({"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0})
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
