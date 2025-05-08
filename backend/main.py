@@ -8,7 +8,7 @@ import db_operations as db
 import fastapi
 import pandas as pd
 from fastapi import FastAPI
-from pydantic import BaseModel
+from modules import BedAssignment
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -16,15 +16,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     force=True,
 )
-
-
-# TODO: move it to the dedicated module in the future
-class BedAssignment(BaseModel):
-    bed_id: int
-    patient_id: int
-    patient_name: str
-    sickness: str
-    days_of_stay: int
 
 
 app = FastAPI()
