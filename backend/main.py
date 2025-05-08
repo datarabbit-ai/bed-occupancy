@@ -1,4 +1,6 @@
+import logging
 import random
+import sys
 import traceback
 from typing import List
 
@@ -7,6 +9,13 @@ import fastapi
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    force=True,
+)
 
 
 # TODO: move it to the dedicated module in the future
@@ -20,6 +29,7 @@ class BedAssignment(BaseModel):
 
 app = FastAPI()
 day_for_simulation = 1
+last_change = 1  # 1 - next day, -1 - previous day
 
 
 @app.get("/update-day")
@@ -36,7 +46,6 @@ def update_day(delta: int = fastapi.Query(...)):
 def get_bed_assignments() -> List[BedAssignment]:
     try:
         random.seed(43)
-
         conn = db.get_connection()
         cursor = conn.cursor()
 
@@ -49,7 +58,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 SET days_of_stay = days_of_stay - 1;
             """)
 
-        def print_patients_to_be_released() -> None:
+        def print_patients_to_be_released(log: bool) -> None:
             df = read_query("""
                 SELECT * \
                 FROM patients \
@@ -57,7 +66,8 @@ def get_bed_assignments() -> List[BedAssignment]:
                                      FROM bed_assignments \
                                      WHERE days_of_stay = 0); \
             """)
-            print(f"pacjenci do zwolnienia: \n{df}")
+            if log:
+                logging.info(f"pacjenci do zwolnienia: \n{df}")
 
         def delete_patients_to_be_released() -> None:
             cursor.execute("""
@@ -66,7 +76,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 WHERE days_of_stay = 0;
             """)
 
-        def assign_bed_to_patient(bed_id: int, patient_id: int, days_of_stay: int) -> None:
+        def assign_bed_to_patient(bed_id: int, patient_id: int, days_of_stay: int, log: bool) -> None:
             cursor.execute(
                 """
                 INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
@@ -74,8 +84,8 @@ def get_bed_assignments() -> List[BedAssignment]:
                 """,
                 (bed_id, patient_id, days_of_stay),
             )
-
-            print(f"pacjent o id {patient_id} dostał łóżko o id {bed_id} na {days_of_stay} dni")
+            if log:
+                logging.info(f"pacjent o id {patient_id} dostał łóżko o id {bed_id} na {days_of_stay} dni")
 
         def check_if_patient_has_bed(patient_id: int) -> bool:
             patients_with_beds_assigned = read_query("""
@@ -100,9 +110,13 @@ def get_bed_assignments() -> List[BedAssignment]:
 
         cursor.execute("BEGIN TRANSACTION;")
 
-        for _ in range(day_for_simulation - 1):
+        for iteration in range(day_for_simulation - 1):
+            is_last_iteration = iteration == day_for_simulation - 2
+            if is_last_iteration:
+                logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
+
             decrement_days_of_stay()
-            print_patients_to_be_released()
+            print_patients_to_be_released(log=is_last_iteration)
             delete_patients_to_be_released()
 
             bed_ids: List[int] = read_query("""
@@ -125,12 +139,14 @@ def get_bed_assignments() -> List[BedAssignment]:
 
                 if not will_come:
                     delete_patient_by_id_from_queue(patient)
-                    print(f"pacjent o id {patient} nie przyszedł")
+                    if is_last_iteration:
+                        logging.info(f"pacjent o id {patient} nie przyszedł")
                 elif check_if_patient_has_bed(patient):
-                    print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
+                    if is_last_iteration:
+                        logging.info(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
                 else:
                     days: int = random.randint(1, 7)
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=is_last_iteration)
                     delete_patient_by_id_from_queue(patient)
                     bed_iterator += 1
 
@@ -151,5 +167,5 @@ def get_bed_assignments() -> List[BedAssignment]:
 
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
-        print(error_message)
+        logging.error(error_message)
         return {"error": "Server Error", "message": error_message}

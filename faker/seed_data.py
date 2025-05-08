@@ -121,12 +121,11 @@ if __name__ == "__main__":
     if not check_data_existence("../db/hospital.db"):
         clear_database("../db/hospital.db")
 
-        # Configure logging to output to stdout immediately
         logging.basicConfig(
             stream=sys.stdout,
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,  # Override any existing configurations
+            force=True,
         )
 
         conn = sqlite3.connect("../db/hospital.db")
