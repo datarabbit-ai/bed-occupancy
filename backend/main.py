@@ -41,6 +41,9 @@ def get_bed_assignments() -> List[BedAssignment]:
         conn = db.get_connection()
         cursor = conn.cursor()
 
+        def read_query(query: str) -> pd.DataFrame:
+            return pd.read_sql_query(query, conn)
+
         cursor.execute("BEGIN TRANSACTION;")
 
         for _ in range(day_for_simulation - 1):
@@ -49,14 +52,13 @@ def get_bed_assignments() -> List[BedAssignment]:
                            SET days_of_stay = days_of_stay - 1;
                            """)
 
-            query = """
+            df = read_query("""
                     SELECT * \
                     FROM patients \
                     WHERE patient_id IN (SELECT patient_id \
                                          FROM bed_assignments \
                                          WHERE days_of_stay = 0); \
-                    """
-            df = pd.read_sql_query(query, conn)
+                    """)
             print(f"pacjenci do zwolnienia: \n{df}")
 
             cursor.execute("""
@@ -65,18 +67,16 @@ def get_bed_assignments() -> List[BedAssignment]:
                            WHERE days_of_stay = 0;
                            """)
 
-            query = """
+            bed_ids: List[int] = read_query("""
                     SELECT bed_id \
                     FROM beds \
                     WHERE bed_id NOT IN (SELECT bed_id FROM bed_assignments); \
-                    """
-            bed_ids: List[int] = pd.read_sql_query(query, conn)["bed_id"].tolist()
+                    """)["bed_id"].tolist()
 
-            query = """
+            queue = read_query("""
                     SELECT patient_id, queue_id \
                     FROM patient_queue \
-                    """
-            queue = pd.read_sql_query(query, conn)
+                    """)
 
             bed_iterator = 0
             for patient in queue["patient_id"]:
@@ -105,7 +105,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 else:
                     print(f"pacjent o id {patient} nie przyszedł")
 
-        query = """
+        df = read_query("""
             SELECT bed_assignments.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
@@ -114,8 +114,7 @@ def get_bed_assignments() -> List[BedAssignment]:
             FROM bed_assignments
             JOIN patients ON bed_assignments.patient_id = patients.patient_id
             ORDER BY bed_assignments.bed_id;
-        """
-        df = pd.read_sql_query(query, conn)
+        """)
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
