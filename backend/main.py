@@ -78,6 +78,13 @@ def get_bed_assignments() -> List[BedAssignment]:
 
             print(f"pacjent o id {patient_id} dostał łóżko o id {bed_id} na {days_of_stay} dni")
 
+        def check_if_patient_has_bed(patient_id: int) -> bool:
+            patients_with_beds_assigned = read_query("""
+            SELECT patient_id FROM bed_assignments
+            """)["patient_id"].tolist()
+
+            return patient_id in patients_with_beds_assigned
+
         cursor.execute("BEGIN TRANSACTION;")
 
         for _ in range(day_for_simulation - 1):
@@ -103,17 +110,14 @@ def get_bed_assignments() -> List[BedAssignment]:
 
                 will_come: bool = random.choice([True, True, True, True, False])
 
-                if will_come:
-                    try:
-                        days: int = random.randint(1, 7)
-
-                        assign_bed_to_patient(bed_ids[bed_iterator], patient, days)
-
-                        bed_iterator += 1
-                    except sqlite3.IntegrityError:
-                        print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
-                else:
+                if not will_come:
                     print(f"pacjent o id {patient} nie przyszedł")
+                elif check_if_patient_has_bed(patient):
+                    print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
+                else:
+                    days: int = random.randint(1, 7)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days)
+                    bed_iterator += 1
 
         df = read_query("""
             SELECT bed_assignments.bed_id,
