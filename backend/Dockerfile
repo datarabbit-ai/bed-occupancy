@@ -1,26 +1,15 @@
 FROM python:3.13-slim
-LABEL authors="wiktor"
 
-# Select container's working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    # build-essential \
-    # curl \
-    # software-properties-common \
-    # git \
-    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install setuptools
+RUN apt-get update && apt-get upgrade -y
 
 COPY requirements.txt .
 
-# Install python dependencies
-RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
-RUN pip3 install "fastapi[standard]"
 
-COPY . ./
+COPY *.py ./
 
 EXPOSE 8000
 

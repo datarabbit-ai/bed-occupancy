@@ -4,3 +4,4 @@ streamlit==1.41.1
 pandas==2.2.3
 fastapi==0.115.12
 requests==2.32.3
+fastapi[standard]
