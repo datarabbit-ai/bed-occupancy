@@ -3,3 +3,4 @@ fastapi==0.115.12
 pydantic==2.11.4
 setuptools
 wheel
+fastapi[standard]
