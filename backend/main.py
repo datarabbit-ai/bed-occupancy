@@ -85,6 +85,20 @@ def get_bed_assignments() -> List[BedAssignment]:
 
             return patient_id in patients_with_beds_assigned
 
+        def delete_patient_by_id_from_queue(patient_id: int) -> None:
+            cursor.execute(
+                """
+                DELETE FROM patient_queue
+                WHERE queue_id = (
+                    SELECT queue_id FROM patient_queue
+                    WHERE patient_id = ?
+                    ORDER BY queue_id
+                    LIMIT 1
+                )
+            """,
+                (patient_id,),
+            )
+
         cursor.execute("BEGIN TRANSACTION;")
 
         for _ in range(day_for_simulation - 1):
@@ -111,12 +125,14 @@ def get_bed_assignments() -> List[BedAssignment]:
                 will_come: bool = random.choice([True, True, True, True, False])
 
                 if not will_come:
+                    delete_patient_by_id_from_queue(patient)
                     print(f"pacjent o id {patient} nie przyszedł")
                 elif check_if_patient_has_bed(patient):
                     print(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
                 else:
                     days: int = random.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient, days)
+                    delete_patient_by_id_from_queue(patient)
                     bed_iterator += 1
 
         df = read_query("""
