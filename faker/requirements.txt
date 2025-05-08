@@ -1,2 +1,4 @@
+setuptools
+wheel
 pydantic==2.11.4
 Faker==37.1.0
