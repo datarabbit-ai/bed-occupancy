@@ -35,10 +35,12 @@ last_change = 1  # 1 - next day, -1 - previous day
 @app.get("/update-day")
 def update_day(delta: int = fastapi.Query(...)):
     global day_for_simulation
+    global last_change
     if delta not in (-1, 1):
         return {"error": "Invalid delta value. Use -1 or 1."}
     if delta == 1 and day_for_simulation < 20 or delta == -1 and day_for_simulation > 1:
         day_for_simulation += delta
+        last_change = delta
     return {"day": day_for_simulation}
 
 
@@ -110,13 +112,20 @@ def get_bed_assignments() -> List[BedAssignment]:
 
         cursor.execute("BEGIN TRANSACTION;")
 
+        if day_for_simulation == 1 and last_change == 1:
+            logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
+        elif last_change == -1:
+            logging.info(f"Cofnięcie symulacji do dnia {day_for_simulation}")
+
         for iteration in range(day_for_simulation - 1):
-            is_last_iteration = iteration == day_for_simulation - 2
-            if is_last_iteration:
+            should_log = iteration == day_for_simulation - 2 and last_change == 1
+            if should_log:
                 logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
+            elif last_change == -1:
+                logging.info(f"Cofnięcie symulacji do dnia {day_for_simulation}")
 
             decrement_days_of_stay()
-            print_patients_to_be_released(log=is_last_iteration)
+            print_patients_to_be_released(log=should_log)
             delete_patients_to_be_released()
 
             bed_ids: List[int] = read_query("""
@@ -139,14 +148,14 @@ def get_bed_assignments() -> List[BedAssignment]:
 
                 if not will_come:
                     delete_patient_by_id_from_queue(patient)
-                    if is_last_iteration:
+                    if should_log:
                         logging.info(f"pacjent o id {patient} nie przyszedł")
                 elif check_if_patient_has_bed(patient):
-                    if is_last_iteration:
+                    if should_log:
                         logging.info(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
                 else:
                     days: int = random.randint(1, 7)
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=is_last_iteration)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=should_log)
                     delete_patient_by_id_from_queue(patient)
                     bed_iterator += 1
 
