@@ -1,4 +1,32 @@
+import json
+import logging.config
+import pathlib
 import sqlite3
+
+logger = logging.getLogger("hospital_logger")
+config_file = pathlib.Path("logger_config.json")
+with open(config_file) as f:
+    config = json.load(f)
+logging.config.dictConfig(config)
+
+
+def clear_database(path_to_database: str) -> None:
+    conn = sqlite3.connect(path_to_database)
+
+    cur = conn.cursor()
+
+    cur.executescript(
+        """
+    DELETE FROM beds;
+    DELETE FROM bed_assignments;
+    DELETE FROM patients;
+    DELETE FROM patient_queue;
+    """
+    )
+
+    conn.commit()
+
+    conn.close()
 
 
 def create_database_tables_structure(database_connection: sqlite3.Connection) -> None:
@@ -54,7 +82,9 @@ def check_data_existence(path_to_database: str) -> bool:
         """
     )
     result = cur.fetchone()
-    print(
+
+    logger.setLevel(logging.DEBUG)
+    logger.debug(
         f"Found: {result[0]} patients, {result[1]} beds, {result[2]} patients in queue and {result[3]} assignments of patients to beds in db"
     )
     conn.commit()
