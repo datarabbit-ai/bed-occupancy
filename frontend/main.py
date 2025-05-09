@@ -9,14 +9,14 @@ st.title("Bed Assignments")
 st.header(f"Day {st.session_state.day_for_simulation}")
 
 
-def get_bed_assignments() -> pd.DataFrame:
+def get_list_of_tables() -> pd.DataFrame:
     try:
-        response = requests.get("http://backend:8000/get-bed-assignments")
+        response = requests.get("http://backend:8000/get-tables")
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")
         return pd.DataFrame()
     if response.status_code == 200:
-        return pd.DataFrame(response.json())
+        return response.json()
     else:
         st.error("Failed to fetch data from the server.")
         return pd.DataFrame()
@@ -41,13 +41,22 @@ def simulate_previous_day():
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
-df = get_bed_assignments()
-if not df.empty:
+tables = get_list_of_tables()
+bed_df = pd.DataFrame(tables["BedAssignment"])
+queue_df = pd.DataFrame(tables["PatientQueue"])
+no_shows_df = pd.DataFrame(tables["NoShows"])
+
+if not bed_df.empty:
     for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
-        df[col] = df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
-    st.dataframe(df, use_container_width=True)
+        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    st.dataframe(bed_df, use_container_width=True)
 else:
     st.info("No bed assignments found.")
+
+if not queue_df.empty:
+    st.sidebar.dataframe(queue_df, use_container_width=True)
+else:
+    st.sidebar.info("No patients found in the queue.")
 
 if st.session_state.day_for_simulation < 20:
     st.button("➡️ Simulate Next Day", on_click=simulate_next_day)

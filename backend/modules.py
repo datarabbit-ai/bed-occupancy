@@ -10,9 +10,9 @@ class BedAssignment(BaseModel):
 
 
 class PatientQueue(BaseModel):
+    place_in_queue: int
     patient_id: int
     patient_name: str
-    queue_id: int
 
 
 class NoShows(BaseModel):

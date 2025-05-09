@@ -8,7 +8,7 @@ import db_operations as db
 import fastapi
 import pandas as pd
 from fastapi import FastAPI
-from modules import BedAssignment
+from modules import BedAssignment, ListOfTables, NoShows, PatientQueue
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -35,8 +35,8 @@ def update_day(delta: int = fastapi.Query(...)):
     return {"day": day_for_simulation}
 
 
-@app.get("/get-bed-assignments", response_model=List[BedAssignment])
-def get_bed_assignments() -> List[BedAssignment]:
+@app.get("/get-tables", response_model=ListOfTables)
+def get_tables() -> ListOfTables:
     try:
         random.seed(43)
         conn = db.get_connection()
@@ -174,11 +174,23 @@ def get_bed_assignments() -> List[BedAssignment]:
             ORDER BY beds.bed_id;
         """)
 
+        queue_df = read_query("""
+            SELECT patient_queue.queue_id AS place_in_queue,
+                   patient_queue.patient_id,
+                   patients.first_name || ' ' || patients.last_name AS patient_name
+            FROM patients
+            INNER JOIN patient_queue ON patients.patient_id = patient_queue.patient_id
+            ORDER BY patient_queue.queue_id;
+        """)
+
         df = df.fillna({"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0})
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
-        return df.to_dict(orient="records")
+        tables = ListOfTables(
+            BedAssignment=df.to_dict(orient="records"), PatientQueue=queue_df.to_dict(orient="records"), NoShows=[]
+        )
+        return tables
 
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
