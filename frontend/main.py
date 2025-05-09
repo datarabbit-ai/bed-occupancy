@@ -43,6 +43,8 @@ def simulate_previous_day():
 
 df = get_bed_assignments()
 if not df.empty:
+    for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
+        df[col] = df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
     st.dataframe(df, use_container_width=True)
 else:
     st.info("No bed assignments found.")

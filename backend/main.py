@@ -60,7 +60,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                                      WHERE days_of_stay = 0); \
             """)
             if log:
-                logging.info(f"pacjenci do zwolnienia: \n{df}")
+                logging.info(f"Patients to be released from hospital: \n{df}")
 
         def delete_patients_to_be_released() -> None:
             cursor.execute("""
@@ -78,7 +78,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 (bed_id, patient_id, days_of_stay),
             )
             if log:
-                logging.info(f"pacjent o id {patient_id} dostał łóżko o id {bed_id} na {days_of_stay} dni")
+                logging.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
 
         def check_if_patient_has_bed(patient_id: int) -> bool:
             patients_with_beds_assigned = read_query("""
@@ -104,9 +104,9 @@ def get_bed_assignments() -> List[BedAssignment]:
         cursor.execute("BEGIN TRANSACTION;")
 
         if last_change == 1:
-            logging.info(f"Aktualny dzień symulacji: {day_for_simulation}")
+            logging.info(f"Current simulation day: {day_for_simulation}")
         else:
-            logging.info(f"Cofnięcie symulacji do dnia {day_for_simulation}")
+            logging.info(f"Rollback of simulation to day {day_for_simulation}")
 
         for iteration in range(day_for_simulation - 1):
             should_log = iteration == day_for_simulation - 2 and last_change == 1
@@ -136,10 +136,10 @@ def get_bed_assignments() -> List[BedAssignment]:
                 if not will_come:
                     delete_patient_by_id_from_queue(patient)
                     if should_log:
-                        logging.info(f"pacjent o id {patient} nie przyszedł")
+                        logging.info(f"Patient with id {patient} did not come. He was removed from the queue")
                 elif check_if_patient_has_bed(patient):
                     if should_log:
-                        logging.info(f"pomijanie pacjenta o id {patient}, gdyż już jest na łóżku")
+                        logging.info(f"Skipping a patient with id {patient}, because he/she is already on the bed ")
                 else:
                     days: int = random.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=should_log)
@@ -147,15 +147,18 @@ def get_bed_assignments() -> List[BedAssignment]:
                     bed_iterator += 1
 
         df = read_query("""
-            SELECT bed_assignments.bed_id,
+            SELECT beds.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
                    patients.sickness,
                    bed_assignments.days_of_stay
-            FROM bed_assignments
-            JOIN patients ON bed_assignments.patient_id = patients.patient_id
-            ORDER BY bed_assignments.bed_id;
+            FROM beds
+            LEFT JOIN bed_assignments ON beds.bed_id = bed_assignments.bed_id
+            LEFT JOIN patients ON bed_assignments.patient_id = patients.patient_id
+            ORDER BY beds.bed_id;
         """)
+
+        df = df.fillna({"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0})
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
