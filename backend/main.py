@@ -8,7 +8,7 @@ import db_operations as db
 import fastapi
 import pandas as pd
 from fastapi import FastAPI
-from modules import BedAssignment
+from modules import ListOfTables, NoShow
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -35,8 +35,8 @@ def update_day(delta: int = fastapi.Query(...)):
     return {"day": day_for_simulation}
 
 
-@app.get("/get-bed-assignments", response_model=List[BedAssignment])
-def get_bed_assignments() -> List[BedAssignment]:
+@app.get("/get-tables", response_model=ListOfTables)
+def get_tables() -> ListOfTables:
     try:
         random.seed(43)
         conn = db.get_connection()
@@ -90,16 +90,44 @@ def get_bed_assignments() -> List[BedAssignment]:
         def delete_patient_by_id_from_queue(patient_id: int) -> None:
             cursor.execute(
                 """
-                DELETE FROM patient_queue
-                WHERE queue_id = (
-                    SELECT queue_id FROM patient_queue
-                    WHERE patient_id = ?
-                    ORDER BY queue_id
-                    LIMIT 1
-                )
-            """,
+                SELECT queue_id FROM patient_queue
+                WHERE patient_id = ?
+                ORDER BY queue_id
+                LIMIT 1
+                """,
                 (patient_id,),
             )
+
+            patient_place_in_queue = cursor.fetchone()
+
+            cursor.execute(
+                """
+                DELETE FROM patient_queue
+                WHERE queue_id = ?
+                """,
+                (patient_place_in_queue["queue_id"],),
+            )
+
+            cursor.execute(
+                """
+                UPDATE patient_queue
+                SET queue_id = queue_id - 1
+                WHERE queue_id > ?
+                """,
+                (patient_place_in_queue["queue_id"],),
+            )
+
+        def get_patient_name_by_id(patient_id: int) -> str:
+            cursor.execute(
+                """
+                SELECT first_name || ' ' || last_name AS patient_name
+                FROM patients
+                WHERE patient_id = ?
+                """,
+                (patient_id,),
+            )
+            patient = cursor.fetchone()
+            return patient["patient_name"] if patient else "Unknown"
 
         cursor.execute("BEGIN TRANSACTION;")
 
@@ -107,6 +135,8 @@ def get_bed_assignments() -> List[BedAssignment]:
             logging.info(f"Current simulation day: {day_for_simulation}")
         else:
             logging.info(f"Rollback of simulation to day {day_for_simulation}")
+
+        no_shows_list: List[NoShow] = []
 
         for iteration in range(day_for_simulation - 1):
             should_log = iteration == day_for_simulation - 2 and last_change == 1
@@ -127,26 +157,29 @@ def get_bed_assignments() -> List[BedAssignment]:
                 """)
 
             bed_iterator = 0
-            for patient in queue["patient_id"]:
+            for patient_id in queue["patient_id"]:
                 if bed_iterator >= len(bed_ids):
                     break
 
                 will_come: bool = random.choice([True, True, True, True, False])
 
                 if not will_come:
-                    delete_patient_by_id_from_queue(patient)
+                    delete_patient_by_id_from_queue(patient_id)
+                    patient_name = get_patient_name_by_id(patient_id)
+                    no_show = NoShow(patient_id=patient_id, patient_name=patient_name)
                     if should_log:
-                        logging.info(f"Patient with id {patient} did not come. He was removed from the queue")
-                elif check_if_patient_has_bed(patient):
+                        no_shows_list.append(no_show)
+                        logging.info(f"Patient with id {patient_id} did not come. He was removed from the queue")
+                elif check_if_patient_has_bed(patient_id):
                     if should_log:
-                        logging.info(f"Skipping a patient with id {patient}, because he/she is already on the bed ")
+                        logging.info(f"Skipping a patient_id with id {patient_id}, because he/she is already on the bed ")
                 else:
                     days: int = random.randint(1, 7)
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=should_log)
-                    delete_patient_by_id_from_queue(patient)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, log=should_log)
+                    delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-        df = read_query("""
+        bed_assignments_df: pd.DataFrame = read_query("""
             SELECT beds.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
@@ -158,11 +191,28 @@ def get_bed_assignments() -> List[BedAssignment]:
             ORDER BY beds.bed_id;
         """)
 
-        df = df.fillna({"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0})
+        queue_df: pd.DataFrame = read_query("""
+            SELECT patient_queue.queue_id AS place_in_queue,
+                   patient_queue.patient_id,
+                   patients.first_name || ' ' || patients.last_name AS patient_name
+            FROM patients
+            INNER JOIN patient_queue ON patients.patient_id = patient_queue.patient_id
+            ORDER BY patient_queue.queue_id;
+        """)
+
+        bed_assignments_df = bed_assignments_df.fillna(
+            {"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0}
+        )
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
-        return df.to_dict(orient="records")
+
+        tables = ListOfTables(
+            BedAssignment=bed_assignments_df.to_dict(orient="records"),
+            PatientQueue=queue_df.to_dict(orient="records"),
+            NoShows=[n.model_dump() for n in no_shows_list],
+        )
+        return tables
 
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
