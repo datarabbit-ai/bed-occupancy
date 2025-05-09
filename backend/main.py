@@ -8,7 +8,7 @@ import db_operations as db
 import fastapi
 import pandas as pd
 from fastapi import FastAPI
-from modules import ListOfTables, NoShow
+from models import ListOfTables, NoShow
 
 logging.basicConfig(
     stream=sys.stdout,
