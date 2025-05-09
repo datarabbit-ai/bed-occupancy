@@ -20,5 +20,7 @@ class NoShows(BaseModel):
     patient_name: str
 
 
-class TupleOfTables(BaseModel):
-    tables_tuple: tuple[PatientQueue, NoShows, BedAssignment]
+class ListOfTables(BaseModel):
+    BedAssignment: list[BedAssignment]
+    PatientQueue: list[PatientQueue]
+    NoShows: list[NoShows]
