@@ -78,7 +78,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 (bed_id, patient_id, days_of_stay),
             )
             if log:
-                logging.info(f"Patient with id {patient_id} got bed with id {bed_id} for {days_of_stay} days")
+                logging.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
 
         def check_if_patient_has_bed(patient_id: int) -> bool:
             patients_with_beds_assigned = read_query("""
@@ -136,7 +136,7 @@ def get_bed_assignments() -> List[BedAssignment]:
                 if not will_come:
                     delete_patient_by_id_from_queue(patient)
                     if should_log:
-                        logging.info(f"Patient with id {patient} did not come. He is removed from the queue")
+                        logging.info(f"Patient with id {patient} did not come. He was removed from the queue")
                 elif check_if_patient_has_bed(patient):
                     if should_log:
                         logging.info(f"Skipping a patient with id {patient}, because he/she is already on the bed ")
