@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+
 import pandas as pd
 import requests
 import streamlit as st
@@ -9,7 +11,7 @@ st.title("Bed Assignments")
 st.header(f"Day {st.session_state.day_for_simulation}")
 
 
-def get_list_of_tables():
+def get_list_of_tables() -> Optional[Dict]:
     try:
         response = requests.get("http://backend:8000/get-tables")
     except Exception as e:
@@ -22,7 +24,7 @@ def get_list_of_tables():
         return None
 
 
-def simulate_next_day():
+def simulate_next_day() -> None:
     try:
         response = requests.get("http://backend:8000/update-day", params={"delta": 1})
         st.session_state.day_for_simulation = response.json()["day"]
@@ -32,7 +34,7 @@ def simulate_next_day():
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
-def simulate_previous_day():
+def simulate_previous_day() -> None:
     try:
         response = requests.get("http://backend:8000/update-day", params={"delta": -1})
         st.session_state.day_for_simulation = response.json()["day"]
@@ -53,11 +55,13 @@ if not bed_df.empty:
 else:
     st.info("No bed assignments found.")
 
+st.sidebar.subheader("Patients in queue")
 if not queue_df.empty:
     st.sidebar.dataframe(queue_df, use_container_width=True)
 else:
     st.sidebar.info("No patients found in the queue.")
 
+st.sidebar.subheader("Patients absent on a given day")
 if not no_shows_df.empty:
     st.sidebar.dataframe(no_shows_df, use_container_width=True)
 else:
