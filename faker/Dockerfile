@@ -11,5 +11,6 @@ RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
 COPY *.py ./
+COPY *.json ./
 
 CMD ["python3", "seed_data.py"]

@@ -4,7 +4,7 @@ import pathlib
 import sqlite3
 
 logger = logging.getLogger("hospital_logger")
-config_file = pathlib.Path("./backend/logger_config.json")
+config_file = pathlib.Path("logger_config.json")
 with open(config_file) as f:
     config = json.load(f)
 logging.config.dictConfig(config)
