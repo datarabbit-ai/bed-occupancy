@@ -82,6 +82,8 @@ def check_data_existence(path_to_database: str) -> bool:
         """
     )
     result = cur.fetchone()
+
+    logger.setLevel(logging.DEBUG)
     logger.debug(
         f"Found: {result[0]} patients, {result[1]} beds, {result[2]} patients in queue and {result[3]} assignments of patients to beds in db"
     )
