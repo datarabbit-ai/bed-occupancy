@@ -90,15 +90,31 @@ def get_bed_assignments() -> List[BedAssignment]:
         def delete_patient_by_id_from_queue(patient_id: int) -> None:
             cursor.execute(
                 """
-                DELETE FROM patient_queue
-                WHERE queue_id = (
-                    SELECT queue_id FROM patient_queue
-                    WHERE patient_id = ?
-                    ORDER BY queue_id
-                    LIMIT 1
-                )
-            """,
+                SELECT queue_id FROM patient_queue
+                WHERE patient_id = ?
+                ORDER BY queue_id
+                LIMIT 1
+                """,
                 (patient_id,),
+            )
+
+            patient_place_in_queue = cursor.fetchone()
+
+            cursor.execute(
+                """
+                DELETE FROM patient_queue
+                WHERE queue_id = ?
+                """,
+                (patient_place_in_queue["queue_id"],),
+            )
+
+            cursor.execute(
+                """
+                UPDATE patient_queue
+                SET queue_id = queue_id - 1
+                WHERE queue_id > ?
+                """,
+                (patient_place_in_queue["queue_id"],),
             )
 
         cursor.execute("BEGIN TRANSACTION;")
