@@ -9,17 +9,17 @@ st.title("Bed Assignments")
 st.header(f"Day {st.session_state.day_for_simulation}")
 
 
-def get_list_of_tables() -> pd.DataFrame:
+def get_list_of_tables():
     try:
         response = requests.get("http://backend:8000/get-tables")
     except Exception as e:
         st.error(f"Failed to connect to the server: {e}")
-        return pd.DataFrame()
+        return None
     if response.status_code == 200:
         return response.json()
     else:
         st.error("Failed to fetch data from the server.")
-        return pd.DataFrame()
+        return None
 
 
 def simulate_next_day():
@@ -57,6 +57,11 @@ if not queue_df.empty:
     st.sidebar.dataframe(queue_df, use_container_width=True)
 else:
     st.sidebar.info("No patients found in the queue.")
+
+if not no_shows_df.empty:
+    st.sidebar.dataframe(no_shows_df, use_container_width=True)
+else:
+    st.sidebar.info("No no-shows found.")
 
 if st.session_state.day_for_simulation < 20:
     st.button("➡️ Simulate Next Day", on_click=simulate_next_day)

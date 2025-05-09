@@ -15,7 +15,7 @@ class PatientQueue(BaseModel):
     patient_name: str
 
 
-class NoShows(BaseModel):
+class NoShow(BaseModel):
     patient_id: int
     patient_name: str
 
@@ -23,4 +23,4 @@ class NoShows(BaseModel):
 class ListOfTables(BaseModel):
     BedAssignment: list[BedAssignment]
     PatientQueue: list[PatientQueue]
-    NoShows: list[NoShows]
+    NoShows: list[NoShow]

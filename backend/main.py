@@ -8,7 +8,7 @@ import db_operations as db
 import fastapi
 import pandas as pd
 from fastapi import FastAPI
-from modules import BedAssignment, ListOfTables, NoShows, PatientQueue
+from modules import ListOfTables, NoShow
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -117,12 +117,26 @@ def get_tables() -> ListOfTables:
                 (patient_place_in_queue["queue_id"],),
             )
 
+        def get_patient_name_by_id(patient_id: int) -> str:
+            cursor.execute(
+                """
+                SELECT first_name || ' ' || last_name AS patient_name
+                FROM patients
+                WHERE patient_id = ?
+                """,
+                (patient_id,),
+            )
+            patient = cursor.fetchone()
+            return patient["patient_name"] if patient else "Unknown"
+
         cursor.execute("BEGIN TRANSACTION;")
 
         if last_change == 1:
             logging.info(f"Current simulation day: {day_for_simulation}")
         else:
             logging.info(f"Rollback of simulation to day {day_for_simulation}")
+
+        no_shows_list: List[NoShow] = []
 
         for iteration in range(day_for_simulation - 1):
             should_log = iteration == day_for_simulation - 2 and last_change == 1
@@ -143,26 +157,29 @@ def get_tables() -> ListOfTables:
                 """)
 
             bed_iterator = 0
-            for patient in queue["patient_id"]:
+            for patient_id in queue["patient_id"]:
                 if bed_iterator >= len(bed_ids):
                     break
 
                 will_come: bool = random.choice([True, True, True, True, False])
 
                 if not will_come:
-                    delete_patient_by_id_from_queue(patient)
+                    delete_patient_by_id_from_queue(patient_id)
+                    patient_name = get_patient_name_by_id(patient_id)
+                    no_show = NoShow(patient_id=patient_id, patient_name=patient_name)
                     if should_log:
-                        logging.info(f"Patient with id {patient} did not come. He was removed from the queue")
-                elif check_if_patient_has_bed(patient):
+                        no_shows_list.append(no_show)
+                        logging.info(f"Patient with id {patient_id} did not come. He was removed from the queue")
+                elif check_if_patient_has_bed(patient_id):
                     if should_log:
-                        logging.info(f"Skipping a patient with id {patient}, because he/she is already on the bed ")
+                        logging.info(f"Skipping a patient_id with id {patient_id}, because he/she is already on the bed ")
                 else:
                     days: int = random.randint(1, 7)
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient, days, log=should_log)
-                    delete_patient_by_id_from_queue(patient)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, log=should_log)
+                    delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-        bed_assignments_df: BedAssignment = read_query("""
+        bed_assignments_df: pd.DataFrame = read_query("""
             SELECT beds.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
@@ -174,7 +191,7 @@ def get_tables() -> ListOfTables:
             ORDER BY beds.bed_id;
         """)
 
-        queue_df: PatientQueue = read_query("""
+        queue_df: pd.DataFrame = read_query("""
             SELECT patient_queue.queue_id AS place_in_queue,
                    patient_queue.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name
@@ -193,7 +210,7 @@ def get_tables() -> ListOfTables:
         tables = ListOfTables(
             BedAssignment=bed_assignments_df.to_dict(orient="records"),
             PatientQueue=queue_df.to_dict(orient="records"),
-            NoShows=[],
+            NoShows=[n.model_dump() for n in no_shows_list],
         )
         return tables
 
