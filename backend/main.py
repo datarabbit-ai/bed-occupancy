@@ -152,9 +152,9 @@ def get_bed_assignments() -> List[BedAssignment]:
                    patients.first_name || ' ' || patients.last_name AS patient_name,
                    patients.sickness,
                    bed_assignments.days_of_stay
-            FROM bed_assignments
-            JOIN patients ON bed_assignments.patient_id = patients.patient_id
-            RIGHT JOIN beds ON bed_assignments.bed_id = beds.bed_id
+            FROM beds
+            LEFT JOIN bed_assignments ON beds.bed_id = bed_assignments.bed_id
+            LEFT JOIN patients ON bed_assignments.patient_id = patients.patient_id
             ORDER BY beds.bed_id;
         """)
 
