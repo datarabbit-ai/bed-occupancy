@@ -162,7 +162,7 @@ def get_tables() -> ListOfTables:
                     delete_patient_by_id_from_queue(patient)
                     bed_iterator += 1
 
-        df = read_query("""
+        bed_assignments_df: BedAssignment = read_query("""
             SELECT beds.bed_id,
                    bed_assignments.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name,
@@ -174,7 +174,7 @@ def get_tables() -> ListOfTables:
             ORDER BY beds.bed_id;
         """)
 
-        queue_df = read_query("""
+        queue_df: PatientQueue = read_query("""
             SELECT patient_queue.queue_id AS place_in_queue,
                    patient_queue.patient_id,
                    patients.first_name || ' ' || patients.last_name AS patient_name
@@ -183,12 +183,17 @@ def get_tables() -> ListOfTables:
             ORDER BY patient_queue.queue_id;
         """)
 
-        df = df.fillna({"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0})
+        bed_assignments_df = bed_assignments_df.fillna(
+            {"patient_id": 0, "patient_name": "Unoccupied", "sickness": "Unoccupied", "days_of_stay": 0}
+        )
 
         cursor.execute("ROLLBACK;")
         db.close_connection(conn)
+
         tables = ListOfTables(
-            BedAssignment=df.to_dict(orient="records"), PatientQueue=queue_df.to_dict(orient="records"), NoShows=[]
+            BedAssignment=bed_assignments_df.to_dict(orient="records"),
+            PatientQueue=queue_df.to_dict(orient="records"),
+            NoShows=[],
         )
         return tables
 
