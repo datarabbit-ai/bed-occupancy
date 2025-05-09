@@ -1,6 +1,7 @@
-import logging
+import json
+import logging.config
+import pathlib
 import random
-import sys
 import traceback
 from typing import List
 
@@ -10,12 +11,11 @@ import pandas as pd
 from fastapi import FastAPI
 from models import ListOfTables, NoShow
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    force=True,
-)
+logger = logging.getLogger("hospital_logger")
+config_file = pathlib.Path("logger_config.json")
+with open(config_file) as f:
+    config = json.load(f)
+logging.config.dictConfig(config)
 
 
 app = FastAPI()
@@ -55,7 +55,7 @@ def get_tables() -> ListOfTables:
                                              WHERE days_of_stay = 0); \
                         """)
         if log:
-            logging.info(f"Patients to be released from hospital: \n{df}")
+            logger.info(f"Patients to be released from hospital: \n{df}")
 
     def delete_patients_to_be_released() -> None:
         cursor.execute("""
@@ -73,7 +73,7 @@ def get_tables() -> ListOfTables:
             (bed_id, patient_id, days_of_stay),
         )
         if log:
-            logging.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
+            logger.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
 
     def check_if_patient_has_bed(patient_id: int) -> bool:
         patients_with_beds_assigned = read_query("""
@@ -135,9 +135,9 @@ def get_tables() -> ListOfTables:
         cursor.execute("BEGIN TRANSACTION;")
 
         if last_change == 1:
-            logging.info(f"Current simulation day: {day_for_simulation}")
+            logger.info(f"Current simulation day: {day_for_simulation}")
         else:
-            logging.info(f"Rollback of simulation to day {day_for_simulation}")
+            logger.info(f"Rollback of simulation to day {day_for_simulation}")
 
         no_shows_list: List[NoShow] = []
 
@@ -172,10 +172,10 @@ def get_tables() -> ListOfTables:
                     no_show = NoShow(patient_id=patient_id, patient_name=patient_name)
                     if should_log:
                         no_shows_list.append(no_show)
-                        logging.info(f"Patient with id {patient_id} did not come. He was removed from the queue")
+                        logger.info(f"Patient with id {patient_id} did not come. He was removed from the queue")
                 elif check_if_patient_has_bed(patient_id):
                     if should_log:
-                        logging.info(f"Skipping a patient_id with id {patient_id}, because he/she is already on the bed ")
+                        logger.info(f"Skipping a patient_id with id {patient_id}, because he/she is already on the bed ")
                 else:
                     days: int = random.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, log=should_log)
@@ -219,5 +219,5 @@ def get_tables() -> ListOfTables:
 
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
-        logging.error(error_message)
+        logger.error(error_message)
         return {"error": "Server Error", "message": error_message}

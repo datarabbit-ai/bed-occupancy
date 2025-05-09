@@ -1,6 +1,13 @@
-import logging
+import json
+import logging.config
+import pathlib
 import sqlite3
-import sys
+
+logger = logging.getLogger("hospital_logger")
+config_file = pathlib.Path("./backend/logger_config.json")
+with open(config_file) as f:
+    config = json.load(f)
+logging.config.dictConfig(config)
 
 
 def clear_database(path_to_database: str) -> None:
@@ -60,14 +67,6 @@ def create_database_tables_structure(database_connection: sqlite3.Connection) ->
 
 
 def check_data_existence(path_to_database: str) -> bool:
-    # Configure logging to output to stdout immediately
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.DEBUG,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        force=True,  # Override any existing configurations
-    )
-
     conn = sqlite3.connect(path_to_database)
     create_database_tables_structure(conn)
 
@@ -83,7 +82,7 @@ def check_data_existence(path_to_database: str) -> bool:
         """
     )
     result = cur.fetchone()
-    logging.debug(
+    logger.debug(
         f"Found: {result[0]} patients, {result[1]} beds, {result[2]} patients in queue and {result[3]} assignments of patients to beds in db"
     )
     conn.commit()

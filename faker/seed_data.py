@@ -1,10 +1,17 @@
-import logging
+import json
+import logging.config
+import pathlib
 import random
 import sqlite3
-import sys
 
 from data_generator import generate_fake_patient_data
 from database_structure_manager import check_data_existence, clear_database
+
+logger = logging.getLogger("hospital_logger")
+config_file = pathlib.Path("logger_config.json")
+with open(config_file) as f:
+    config = json.load(f)
+logging.config.dictConfig(config)
 
 
 def add_patients(database_connection: sqlite3.Connection) -> None:
@@ -25,7 +32,7 @@ def add_patients(database_connection: sqlite3.Connection) -> None:
         )
 
     database_connection.commit()
-    logging.info(f"Added {new_patients_number} generated patients to db")
+    logger.info(f"Added {new_patients_number} generated patients to db")
 
 
 def add_beds(database_connection: sqlite3.Connection) -> None:
@@ -36,7 +43,7 @@ def add_beds(database_connection: sqlite3.Connection) -> None:
         cur.execute("INSERT INTO beds(bed_id) VALUES (null)")
 
     database_connection.commit()
-    logging.info(f"Added {new_beds_number} generated beds to db")
+    logger.info(f"Added {new_beds_number} generated beds to db")
 
 
 def add_patients_to_queue(database_connection: sqlite3.Connection) -> None:
@@ -78,7 +85,7 @@ def add_patients_to_queue(database_connection: sqlite3.Connection) -> None:
                 all_patient_ids.append(patients_with_cooldown_ids[0])
                 patients_with_cooldown_ids.remove(patients_with_cooldown_ids[0])
 
-        logging.info(f"Added {new_patients_in_queue_number} patients to queue in db")
+        logger.info(f"Added {new_patients_in_queue_number} patients to queue in db")
 
     database_connection.commit()
 
@@ -111,7 +118,7 @@ def add_patient_assignment_to_bed(database_connection: sqlite3.Connection) -> No
 
             all_patient_ids.remove(random_patient)
 
-        logging.info(f"Assigned some patients to beds in db")
+        logger.info(f"Assigned some patients to beds in db")
 
     database_connection.commit()
 
@@ -120,13 +127,6 @@ if __name__ == "__main__":
     random.seed(43)
     if not check_data_existence("../db/hospital.db"):
         clear_database("../db/hospital.db")
-
-        logging.basicConfig(
-            stream=sys.stdout,
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
 
         conn = sqlite3.connect("../db/hospital.db")
         conn.row_factory = sqlite3.Row
@@ -138,4 +138,4 @@ if __name__ == "__main__":
 
         conn.close()
     else:
-        logging.info("Skipping data generation")
+        logger.info("Skipping data generation")
