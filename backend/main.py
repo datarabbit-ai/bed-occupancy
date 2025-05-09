@@ -37,97 +37,100 @@ def update_day(delta: int = fastapi.Query(...)):
 
 @app.get("/get-tables", response_model=ListOfTables)
 def get_tables() -> ListOfTables:
+    def read_query(query: str) -> pd.DataFrame:
+        return pd.read_sql_query(query, conn)
+
+    def decrement_days_of_stay() -> None:
+        cursor.execute("""
+                       UPDATE bed_assignments
+                       SET days_of_stay = days_of_stay - 1;
+                       """)
+
+    def print_patients_to_be_released(log: bool) -> None:
+        df = read_query("""
+                        SELECT * \
+                        FROM patients \
+                        WHERE patient_id IN (SELECT patient_id \
+                                             FROM bed_assignments \
+                                             WHERE days_of_stay = 0); \
+                        """)
+        if log:
+            logging.info(f"Patients to be released from hospital: \n{df}")
+
+    def delete_patients_to_be_released() -> None:
+        cursor.execute("""
+                       DELETE
+                       FROM bed_assignments
+                       WHERE days_of_stay = 0;
+                       """)
+
+    def assign_bed_to_patient(bed_id: int, patient_id: int, days_of_stay: int, log: bool) -> None:
+        cursor.execute(
+            """
+            INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
+            VALUES (?, ?, ?)
+            """,
+            (bed_id, patient_id, days_of_stay),
+        )
+        if log:
+            logging.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
+
+    def check_if_patient_has_bed(patient_id: int) -> bool:
+        patients_with_beds_assigned = read_query("""
+                                                 SELECT patient_id
+                                                 FROM bed_assignments
+                                                 """)["patient_id"].tolist()
+
+        return patient_id in patients_with_beds_assigned
+
+    def delete_patient_by_id_from_queue(patient_id: int) -> None:
+        cursor.execute(
+            """
+            SELECT queue_id
+            FROM patient_queue
+            WHERE patient_id = ?
+            ORDER BY queue_id
+            LIMIT 1
+            """,
+            (patient_id,),
+        )
+
+        patient_place_in_queue = cursor.fetchone()
+
+        cursor.execute(
+            """
+            DELETE
+            FROM patient_queue
+            WHERE queue_id = ?
+            """,
+            (patient_place_in_queue["queue_id"],),
+        )
+
+        cursor.execute(
+            """
+            UPDATE patient_queue
+            SET queue_id = queue_id - 1
+            WHERE queue_id > ?
+            """,
+            (patient_place_in_queue["queue_id"],),
+        )
+
+    def get_patient_name_by_id(patient_id: int) -> str:
+        cursor.execute(
+            """
+            SELECT first_name || ' ' || last_name AS patient_name
+            FROM patients
+            WHERE patient_id = ?
+            """,
+            (patient_id,),
+        )
+        patient = cursor.fetchone()
+        return patient["patient_name"] if patient else "Unknown"
+
     try:
         random.seed(43)
         conn = db.get_connection()
         cursor = conn.cursor()
-
-        def read_query(query: str) -> pd.DataFrame:
-            return pd.read_sql_query(query, conn)
-
-        def decrement_days_of_stay() -> None:
-            cursor.execute("""
-                UPDATE bed_assignments
-                SET days_of_stay = days_of_stay - 1;
-            """)
-
-        def print_patients_to_be_released(log: bool) -> None:
-            df = read_query("""
-                SELECT * \
-                FROM patients \
-                WHERE patient_id IN (SELECT patient_id \
-                                     FROM bed_assignments \
-                                     WHERE days_of_stay = 0); \
-            """)
-            if log:
-                logging.info(f"Patients to be released from hospital: \n{df}")
-
-        def delete_patients_to_be_released() -> None:
-            cursor.execute("""
-                DELETE
-                FROM bed_assignments
-                WHERE days_of_stay = 0;
-            """)
-
-        def assign_bed_to_patient(bed_id: int, patient_id: int, days_of_stay: int, log: bool) -> None:
-            cursor.execute(
-                """
-                INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
-                VALUES (?, ?, ?)
-                """,
-                (bed_id, patient_id, days_of_stay),
-            )
-            if log:
-                logging.info(f"Patient with id {patient_id} got a bed with id {bed_id} for {days_of_stay} days")
-
-        def check_if_patient_has_bed(patient_id: int) -> bool:
-            patients_with_beds_assigned = read_query("""
-            SELECT patient_id FROM bed_assignments
-            """)["patient_id"].tolist()
-
-            return patient_id in patients_with_beds_assigned
-
-        def delete_patient_by_id_from_queue(patient_id: int) -> None:
-            cursor.execute(
-                """
-                SELECT queue_id FROM patient_queue
-                WHERE patient_id = ?
-                ORDER BY queue_id
-                LIMIT 1
-                """,
-                (patient_id,),
-            )
-
-            patient_place_in_queue = cursor.fetchone()
-
-            cursor.execute(
-                """
-                DELETE FROM patient_queue
-                WHERE queue_id = ?
-                """,
-                (patient_place_in_queue["queue_id"],),
-            )
-
-            cursor.execute(
-                """
-                UPDATE patient_queue
-                SET queue_id = queue_id - 1
-                WHERE queue_id > ?
-                """,
-                (patient_place_in_queue["queue_id"],),
-            )
-
-        def get_patient_name_by_id(patient_id: int) -> str:
-            cursor.execute(
-                """
-                SELECT first_name || ' ' || last_name AS patient_name
-                FROM patients
-                WHERE patient_id = ?
-                """,
-                (patient_id,),
-            )
-            patient = cursor.fetchone()
-            return patient["patient_name"] if patient else "Unknown"
 
         cursor.execute("BEGIN TRANSACTION;")
 
