@@ -45,7 +45,7 @@ def create_database_tables_structure(conn: pg_connection) -> None:
         CREATE TABLE IF NOT EXISTS bed_assignments (
             bed_id INTEGER UNIQUE NOT NULL,
             patient_id INTEGER UNIQUE NOT NULL,
-            days_of_stay INTEGER CHECK (days_of_stay > 0) NOT NULL,
+            days_of_stay INTEGER NOT NULL,
             FOREIGN KEY (bed_id) REFERENCES beds(bed_id),
             FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
         );

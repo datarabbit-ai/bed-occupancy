@@ -1,38 +1,29 @@
 import os
 
-import psycopg2
 from dotenv import load_dotenv
-from psycopg2.extras import RealDictCursor
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
 load_dotenv()
 
 
-def get_connection() -> psycopg2.extensions.connection:
+def get_engine() -> Engine:
     """
-    Establishes a connection to the PostgreSQL database.
-    :return: psycopg2.extensions.connection object
-    :raises Exception: If the connection fails.
+    Create a SQLAlchemy engine for connecting to the PostgreSQL database.
+    The connection parameters are read from environment variables.
+    If the environment variables are not set, default values are used.
+    :return:
     """
-
-    db_name = os.getenv("POSTGRES_DB")
-    db_user = os.getenv("POSTGRES_USER")
-    db_password = os.getenv("POSTGRES_PASSWORD")
-    db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-
     try:
-        conn = psycopg2.connect(dbname=db_name, user=db_user, password=db_password, host=db_host, port=db_port)
-        conn.cursor_factory = RealDictCursor
-        return conn
+        DB_USER = os.getenv("POSTGRES_USERNAME", "postgres")
+        DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+        DB_NAME = os.getenv("POSTGRES_NAME", "postgres")
+        DB_HOST = os.getenv("POSTGRES_HOST", "db")
+        DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+        DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+        engine = create_engine(DATABASE_URL)
+        return engine
     except Exception as e:
         print(f"Failed to connect: {e}")
         raise
-
-
-def close_connection(conn: psycopg2.extensions.connection) -> None:
-    """
-    Closes the connection to the PostgreSQL database.
-    :param conn: The connection object to close.
-    :return: None
-    """
-    conn.close()

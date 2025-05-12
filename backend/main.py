@@ -1,25 +1,16 @@
 import json
 import logging.config
-import os
 import random
 import traceback
 from pathlib import Path
 from typing import List
 
 import pandas as pd
+from db_operations import get_engine
 from fastapi import FastAPI, Query
 from models import ListOfTables, NoShow
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.engine import Connection
-
-DB_USER = os.getenv("POSTGRES_USER", "postgres")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "pass123")
-DB_NAME = os.getenv("POSTGRES_NAME", "hospital")
-DB_HOST = os.getenv("POSTGRES_HOST", "db")
-DB_PORT = os.getenv("POSTGRES_PORT", "5432")
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-engine = create_engine(DATABASE_URL)
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -112,6 +103,7 @@ def get_tables():
 
     try:
         random.seed(43)
+        engine = get_engine()
         conn: Connection = engine.connect()
         trans = conn.begin()
 
