@@ -126,9 +126,9 @@ if __name__ == "__main__":
     random.seed(43)
 
     conn = psycopg2.connect(
-        dbname=os.getenv("POSTGRES_NAME"),
-        user=os.getenv("POSTGRES_USERNAME"),
-        password=os.getenv("POSTGRES_PASSWORD"),
+        dbname=os.getenv("POSTGRES_NAME", "postgres"),
+        user=os.getenv("POSTGRES_USERNAME", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", "postgres"),
         host="db",
         port="5432",
     )
