@@ -24,6 +24,7 @@ services:
     build: ./backend
     volumes:
       - shared-data:/db
+    env_file: .env
     depends_on:
       faker:
         condition: service_completed_successfully
