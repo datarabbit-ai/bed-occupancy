@@ -2,12 +2,12 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 load_dotenv()
 
 
-def get_engine() -> Engine:
+def get_session() -> Session:
     """
     Create a SQLAlchemy engine for connecting to the PostgreSQL database.
     The connection parameters are read from environment variables.
@@ -23,7 +23,8 @@ def get_engine() -> Engine:
         DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
         engine = create_engine(DATABASE_URL)
-        return engine
+        SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+        return SessionLocal()
     except Exception as e:
         print(f"Failed to connect: {e}")
         raise

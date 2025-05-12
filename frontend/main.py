@@ -49,8 +49,8 @@ queue_df = pd.DataFrame(tables["PatientQueue"])
 no_shows_df = pd.DataFrame(tables["NoShows"])
 
 if not bed_df.empty:
-    for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
-        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    # for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
+    #    bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
     st.dataframe(bed_df, use_container_width=True)
 else:
     st.info("No bed assignments found.")

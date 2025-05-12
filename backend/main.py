@@ -5,12 +5,9 @@ import traceback
 from pathlib import Path
 from typing import List
 
-import pandas as pd
-from db_operations import get_engine
+from db_operations import get_session
 from fastapi import FastAPI, Query
-from models import ListOfTables, NoShow
-from sqlalchemy import text
-from sqlalchemy.engine import Connection
+from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -36,76 +33,48 @@ def update_day(delta: int = Query(...)):
 
 @app.get("/get-tables", response_model=ListOfTables)
 def get_tables():
-    def read_query(query: str) -> pd.DataFrame:
-        return pd.read_sql(text(query), conn)
-
     def decrement_days_of_stay():
-        conn.execute(text("UPDATE bed_assignments SET days_of_stay = days_of_stay - 1"))
+        for ba in session.query(BedAssignment).all():
+            ba.days_of_stay -= 1
 
     def print_patients_to_be_released(log: bool):
-        df = read_query("""
-            SELECT * FROM patients
-            WHERE patient_id IN (
-                SELECT patient_id FROM bed_assignments WHERE days_of_stay = 0
-            );
-        """)
-        if log:
-            logger.info(f"Patients to be released from hospital: \n{df}")
+        patients_to_release = (
+            session.query(Patient)
+            .filter(Patient.patient_id.in_(session.query(BedAssignment.patient_id).filter(BedAssignment.days_of_stay <= 0)))
+            .all()
+        )
+        if log and patients_to_release:
+            logger.info(f"Patients to be released from hospital:\n{patients_to_release}")
 
     def delete_patients_to_be_released():
-        conn.execute(text("DELETE FROM bed_assignments WHERE days_of_stay = 0"))
+        session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
+        print("Patients released from hospital")
 
     def assign_bed_to_patient(bed_id: int, patient_id: int, days: int, log: bool):
-        conn.execute(
-            text("""
-            INSERT INTO bed_assignments (bed_id, patient_id, days_of_stay)
-            VALUES (:bed_id, :patient_id, :days)
-        """),
-            {"bed_id": bed_id, "patient_id": patient_id, "days": days},
-        )
+        assignment = BedAssignment(bed_id=bed_id, patient_id=patient_id, days_of_stay=days)
+        session.add(assignment)
         if log:
             logger.info(f"Assigned bed {bed_id} to patient {patient_id} for {days} days")
 
     def check_if_patient_has_bed(patient_id: int) -> bool:
-        result = read_query("SELECT patient_id FROM bed_assignments")
-        return patient_id in result["patient_id"].tolist()
+        return session.query(BedAssignment).filter_by(patient_id=patient_id).first() is not None
 
     def delete_patient_by_id_from_queue(patient_id: int):
-        result = conn.execute(
-            text("""
-            SELECT queue_id FROM patient_queue
-            WHERE patient_id = :pid ORDER BY queue_id LIMIT 1
-        """),
-            {"pid": patient_id},
-        ).fetchone()
-
-        if result:
-            queue_id = result.queue_id
-            conn.execute(text("DELETE FROM patient_queue WHERE queue_id = :qid"), {"qid": queue_id})
-            conn.execute(
-                text("""
-                UPDATE patient_queue
-                SET queue_id = queue_id - 1
-                WHERE queue_id > :qid
-            """),
-                {"qid": queue_id},
+        entry = session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
+        if entry:
+            qid = entry.queue_id
+            session.delete(entry)
+            session.query(PatientQueue).filter(PatientQueue.queue_id > qid).update(
+                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session=False
             )
 
     def get_patient_name_by_id(patient_id: int) -> str:
-        result = conn.execute(
-            text("""
-            SELECT first_name || ' ' || last_name AS name FROM patients
-            WHERE patient_id = :pid
-        """),
-            {"pid": patient_id},
-        ).fetchone()
-        return result.name if result else "Unknown"
+        patient = session.query(Patient).filter_by(patient_id=patient_id).first()
+        return f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
 
     try:
         random.seed(43)
-        engine = get_engine()
-        conn: Connection = engine.connect()
-        trans = conn.begin()
+        session = get_session()
 
         if last_change == 1:
             logger.info(f"Current simulation day: {day_for_simulation}")
@@ -121,15 +90,14 @@ def get_tables():
             print_patients_to_be_released(log=should_log)
             delete_patients_to_be_released()
 
-            bed_ids = read_query("""
-                SELECT bed_id FROM beds
-                WHERE bed_id NOT IN (SELECT bed_id FROM bed_assignments)
-            """)["bed_id"].tolist()
+            assigned_beds = session.query(BedAssignment.bed_id).subquery()
+            bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
 
-            queue = read_query("SELECT patient_id FROM patient_queue ORDER BY queue_id")
+            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
 
-            for patient_id in queue["patient_id"]:
+            for entry in queue:
+                patient_id = entry.patient_id
                 if bed_iterator >= len(bed_ids):
                     break
                 will_come = random.choice([True] * 4 + [False])
@@ -148,36 +116,50 @@ def get_tables():
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-        bed_df = read_query("""
-            SELECT beds.bed_id,
-                   COALESCE(bed_assignments.patient_id, 0) AS patient_id,
-                   COALESCE(patients.first_name || ' ' || patients.last_name, 'Unoccupied') AS patient_name,
-                   COALESCE(patients.sickness, 'Unoccupied') AS sickness,
-                   COALESCE(bed_assignments.days_of_stay, 0) AS days_of_stay
-            FROM beds
-            LEFT JOIN bed_assignments ON beds.bed_id = bed_assignments.bed_id
-            LEFT JOIN patients ON bed_assignments.patient_id = patients.patient_id
-            ORDER BY beds.bed_id
-        """)
+        session.flush()
 
-        queue_df = read_query("""
-            SELECT patient_queue.queue_id AS place_in_queue,
-                   patient_queue.patient_id,
-                   patients.first_name || ' ' || patients.last_name AS patient_name
-            FROM patient_queue
-            JOIN patients ON patient_queue.patient_id = patients.patient_id
-            ORDER BY patient_queue.queue_id
-        """)
+        bed_assignments = []
+        for bed in (
+            session.query(Bed)
+            .join(BedAssignment, Bed.bed_id == BedAssignment.bed_id, isouter=True)
+            .join(Patient, BedAssignment.patient_id == Patient.patient_id, isouter=True)
+            .order_by(Bed.bed_id)
+            .all()
+        ):
+            ba = session.query(BedAssignment).filter_by(bed_id=bed.bed_id).first()
+            patient = ba.patient if ba else None
 
-        trans.rollback()
-        conn.close()
+            patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unoccupied"
+            sickness = patient.sickness if patient else "Unoccupied"
+            days_of_stay = ba.days_of_stay if ba else 0
 
-        tables = ListOfTables(
-            BedAssignment=bed_df.to_dict(orient="records"),
-            PatientQueue=queue_df.to_dict(orient="records"),
-            NoShows=[n.model_dump() for n in no_shows_list],
+            bed_assignments.append(
+                {
+                    "bed_id": bed.bed_id,
+                    "patient_id": ba.patient_id if ba else 0,
+                    "patient_name": patient_name,
+                    "sickness": sickness,
+                    "days_of_stay": days_of_stay,
+                }
+            )
+
+        queue_data = []
+        for entry in session.query(PatientQueue).order_by(PatientQueue.queue_id).all():
+            patient = session.query(Patient).filter_by(patient_id=entry.patient_id).first()
+            queue_data.append(
+                {
+                    "place_in_queue": entry.queue_id,
+                    "patient_id": patient.patient_id,
+                    "patient_name": f"{patient.first_name} {patient.last_name}",
+                }
+            )
+
+        session.rollback()
+        session.close()
+
+        return ListOfTables(
+            BedAssignment=bed_assignments, PatientQueue=queue_data, NoShows=[n.model_dump() for n in no_shows_list]
         )
-        return tables
 
     except Exception as e:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
