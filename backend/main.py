@@ -62,12 +62,10 @@ def get_tables():
     def delete_patient_by_id_from_queue(patient_id: int):
         entry = session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
         if entry:
-            qid = entry.queue_id
             session.delete(entry)
-            session.flush()
-            session.query(PatientQueue).filter(PatientQueue.queue_id > qid).update(
-                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session="auto"
-            )
+            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
+            for i, entry in enumerate(queue):
+                entry.queue_id = i + 1
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
