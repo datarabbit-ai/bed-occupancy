@@ -5,7 +5,7 @@ import requests
 import streamlit as st
 
 if "day_for_simulation" not in st.session_state:
-    st.session_state.day_for_simulation = 1
+    st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 st.title("Bed Assignments")
 st.header(f"Day {st.session_state.day_for_simulation}")

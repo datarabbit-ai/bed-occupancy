@@ -20,6 +20,12 @@ day_for_simulation = 1
 last_change = 1
 
 
+@app.get("/get-current-day")
+def get_current_day():
+    global day_for_simulation
+    return {"day": day_for_simulation}
+
+
 @app.get("/update-day")
 def update_day(delta: int = Query(...)):
     global day_for_simulation, last_change
