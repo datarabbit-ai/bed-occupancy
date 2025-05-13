@@ -66,7 +66,8 @@ def add_patients_to_queue(session):
         queue.append(PatientQueue(patient_id=selected, queue_id=max_queue_position))
         available_ids.remove(selected)
         cooldown_ids.append(selected)
-        if len(cooldown_ids) > 60:
+        if len(cooldown_ids) >= 60:
+            available_ids.append(cooldown_ids[0])
             cooldown_ids.pop(0)
 
     session.add_all(queue)
