@@ -5,29 +5,9 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 
-class BedAssignmentResponse(BaseModel):
-    bed_id: int
-    patient_id: int
-    patient_name: str
-    sickness: str
-    days_of_stay: int
-
-
-class PatientQueueResponse(BaseModel):
-    place_in_queue: int
-    patient_id: int
-    patient_name: str
-
-
 class NoShow(BaseModel):
     patient_id: int
     patient_name: str
-
-
-class ListOfTables(BaseModel):
-    BedAssignment: list[BedAssignmentResponse]
-    PatientQueue: list[PatientQueueResponse]
-    NoShows: list[NoShow]
 
 
 class Patient(Base):
@@ -62,7 +42,8 @@ class BedAssignment(Base):
 
 class PatientQueue(Base):
     __tablename__ = "patient_queue"
-    queue_id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
+    queue_id = Column(Integer, unique=True)
 
     patient = relationship("Patient", back_populates="queue_entry")
