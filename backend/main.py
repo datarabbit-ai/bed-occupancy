@@ -50,7 +50,10 @@ def get_tables():
             .all()
         )
         if log and patients_to_release:
-            logger.info(f"Patients to be released from hospital:\n{patients_to_release}")
+            logger.info(
+                "Patients to be released from hospital:\n"
+                + "\n".join(f"Patient ID: {p.patient_id}, Name: {p.first_name} {p.last_name}" for p in patients_to_release)
+            )
 
     def delete_patients_to_be_released():
         session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
