@@ -48,7 +48,6 @@ def get_tables():
 
     def delete_patients_to_be_released():
         session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
-        print("Patients released from hospital")
 
     def assign_bed_to_patient(bed_id: int, patient_id: int, days: int, log: bool):
         assignment = BedAssignment(bed_id=bed_id, patient_id=patient_id, days_of_stay=days)
