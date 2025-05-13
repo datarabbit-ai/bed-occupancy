@@ -64,8 +64,9 @@ def get_tables():
         if entry:
             qid = entry.queue_id
             session.delete(entry)
+            session.flush()
             session.query(PatientQueue).filter(PatientQueue.queue_id > qid).update(
-                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session=False
+                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session="auto"
             )
 
     def get_patient_name_by_id(patient_id: int) -> str:
