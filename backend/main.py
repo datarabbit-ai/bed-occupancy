@@ -116,8 +116,6 @@ def get_tables():
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-        session.flush()
-
         bed_assignments = []
         for bed in (
             session.query(Bed)

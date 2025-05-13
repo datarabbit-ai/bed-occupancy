@@ -23,7 +23,7 @@ def get_session() -> Session:
         DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
         engine = create_engine(DATABASE_URL)
-        SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+        SessionLocal = sessionmaker(bind=engine, autoflush=True, autocommit=False, future=True)
         return SessionLocal()
     except Exception as e:
         print(f"Failed to connect: {e}")
