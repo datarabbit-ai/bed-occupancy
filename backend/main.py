@@ -92,6 +92,7 @@ def get_tables():
 
         for iteration in range(day_for_simulation - 1):
             should_log = iteration == day_for_simulation - 2 and last_change == 1
+            should_give_no_shows = iteration == day_for_simulation - 2
 
             decrement_days_of_stay()
             print_patients_to_be_released(log=should_log)
@@ -111,8 +112,9 @@ def get_tables():
                 if not will_come:
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
-                    if should_log:
+                    if should_give_no_shows:
                         no_shows_list.append(no_show)
+                    if should_log:
                         logger.info(f"No-show: {no_show.patient_name}")
                 elif check_if_patient_has_bed(patient_id):
                     if should_log:
