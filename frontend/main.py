@@ -1,14 +1,20 @@
+import time
 from typing import Dict, Optional
 
 import pandas as pd
 import requests
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
+if "last_auto_update_time" not in st.session_state:
+    st.session_state.last_auto_update_time = time.time()
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
+
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 st.title("Bed Assignments")
 st.header(f"Day {st.session_state.day_for_simulation}")
+st_autorefresh(interval=7000, limit=30, key="auto_refresh")
 
 
 def get_list_of_tables() -> Optional[Dict]:
@@ -43,14 +49,19 @@ def simulate_previous_day() -> None:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
+now = time.time()
+if now - st.session_state.last_auto_update_time >= 7:
+    simulate_next_day()
+    st.session_state.last_auto_update_time = now
+
 tables = get_list_of_tables()
 bed_df = pd.DataFrame(tables["BedAssignment"])
 queue_df = pd.DataFrame(tables["PatientQueue"])
 no_shows_df = pd.DataFrame(tables["NoShows"])
 
 if not bed_df.empty:
-    # for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
-    #    bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
+        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
     st.dataframe(bed_df, use_container_width=True)
 else:
     st.info("No bed assignments found.")
