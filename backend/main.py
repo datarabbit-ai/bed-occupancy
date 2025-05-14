@@ -3,7 +3,7 @@ import logging.config
 import random
 import traceback
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
@@ -20,14 +20,23 @@ day_for_simulation = 1
 last_change = 1
 
 
-@app.get("/get-current-day")
-def get_current_day():
+@app.get("/get-current-day", response_model=Dict[str, int])
+def get_current_day() -> Dict[str, int]:
+    """
+    Returns the current day of the simulation as per it's state on the server to keep the frontend and backend in sync.
+    :return: JSON object with the current day of the simulation.
+    """
     global day_for_simulation
     return {"day": day_for_simulation}
 
 
-@app.get("/update-day")
-def update_day(delta: int = Query(...)):
+@app.get("/update-day", response_model=Dict[str, int])
+def update_day(delta: int = Query(...)) -> Dict[str, int]:
+    """
+    Updates the current day of the simulation.
+    :param delta: Either -1 or 1 to signal a rollback or a forward.
+    :return: Returns the day resolved on the server side.
+    """
     global day_for_simulation, last_change
     if delta not in (-1, 1):
         return {"error": "Invalid delta value. Use -1 or 1."}
@@ -38,7 +47,12 @@ def update_day(delta: int = Query(...)):
 
 
 @app.get("/get-tables", response_model=ListOfTables)
-def get_tables():
+def get_tables() -> ListOfTables:
+    """
+    Returns the current state of the simulation.
+    :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
+    """
+
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
             ba.days_of_stay -= 1
