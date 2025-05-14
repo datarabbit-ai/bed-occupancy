@@ -6,15 +6,19 @@ import requests
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
-if "last_auto_update_time" not in st.session_state:
-    st.session_state.last_auto_update_time = time.time()
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
+if "autorefresh_key_number" not in st.session_state:
+    st.session_state.autorefresh_key_number = 1
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 st.title("Bed Assignments")
-st.header(f"Day {st.session_state.day_for_simulation}")
-st_autorefresh(interval=7000, limit=30, key="auto_refresh")
+
+refreshes_number = st_autorefresh(
+    interval=10000, limit=None, key="auto_refresh" + str(st.session_state.autorefresh_key_number)
+)
+if "refreshes_number" not in st.session_state:
+    st.session_state.refreshes_number = refreshes_number
 
 
 def get_list_of_tables() -> Optional[Dict]:
@@ -35,6 +39,8 @@ def simulate_next_day() -> None:
         response = requests.get("http://backend:8000/update-day", params={"delta": 1})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.error_message = None
+        st.session_state.autorefresh_key_number += 1
+        st.session_state.refreshes_number = 0
 
     except Exception as e:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
@@ -45,14 +51,19 @@ def simulate_previous_day() -> None:
         response = requests.get("http://backend:8000/update-day", params={"delta": -1})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.error_message = None
+        st.session_state.autorefresh_key_number += 1
+        st.session_state.refreshes_number = 0
     except Exception as e:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
-now = time.time()
-if now - st.session_state.last_auto_update_time >= 7:
+if refreshes_number > st.session_state.refreshes_number:
     simulate_next_day()
-    st.session_state.last_auto_update_time = now
+    st.session_state.autorefresh_key_number -= 1
+    st.session_state.refreshes_number = refreshes_number
+
+
+st.header(f"Day {st.session_state.day_for_simulation}")
 
 tables = get_list_of_tables()
 bed_df = pd.DataFrame(tables["BedAssignment"])
