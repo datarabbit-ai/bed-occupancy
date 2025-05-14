@@ -1,11 +1,17 @@
 import json
 import logging.config
+import os
 import pathlib
 import random
-import sqlite3
 
 from data_generator import generate_fake_patient_data
 from database_structure_manager import check_data_existence, clear_database
+from dotenv import load_dotenv
+from models import Bed, BedAssignment, Patient, PatientQueue
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import sessionmaker
+
+load_dotenv()
 
 logger = logging.getLogger("hospital_logger")
 config_file = pathlib.Path("logger_config.json")
@@ -13,129 +19,98 @@ with open(config_file) as f:
     config = json.load(f)
 logging.config.dictConfig(config)
 
+DB_USER = os.getenv("POSTGRES_USERNAME", "postgres")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+DB_NAME = os.getenv("POSTGRES_NAME", "postgres")
+DB_HOST = os.getenv("POSTGRES_HOST", "db")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-def add_patients(database_connection: sqlite3.Connection) -> None:
-    cur = database_connection.cursor()
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+
+
+def add_patients(session):
     new_patients_number = random.randint(100, 150)
-
     for _ in range(new_patients_number):
-        new_patient = generate_fake_patient_data()
-        cur.execute(
-            "INSERT INTO patients(patient_id, first_name, last_name, urgency, contact_phone, sickness) VALUES (null, ?, ?, ?, ?, ?)",
-            (
-                new_patient.first_name,
-                new_patient.last_name,
-                new_patient.urgency,
-                new_patient.contact_phone,
-                new_patient.sickness,
-            ),
-        )
-
-    database_connection.commit()
+        p = generate_fake_patient_data()
+        session.add(Patient(**p.model_dump()))
     logger.info(f"Added {new_patients_number} generated patients to db")
 
 
-def add_beds(database_connection: sqlite3.Connection) -> None:
-    cur = database_connection.cursor()
+def add_beds(session):
     new_beds_number = random.randint(15, 20)
-
-    for _ in range(new_beds_number):
-        cur.execute("INSERT INTO beds(bed_id) VALUES (null)")
-
-    database_connection.commit()
+    beds = [Bed() for _ in range(new_beds_number)]
+    session.add_all(beds)
     logger.info(f"Added {new_beds_number} generated beds to db")
 
 
-def add_patients_to_queue(database_connection: sqlite3.Connection) -> None:
-    cur = database_connection.cursor()
+def add_patients_to_queue(session):
+    all_patient_ids = [p.patient_id for p in session.query(Patient).all()]
+    cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
 
-    cur.execute("SELECT patient_id FROM patients")
-    all_patient_ids = cur.fetchall()
+    if not all_patient_ids:
+        return
 
-    cur.execute("SELECT patient_id FROM bed_assignments")
-    patients_with_cooldown_ids = cur.fetchall()  # Patients added there will not be added to queue for some time to avoid frequent attempts to assign the patient to a bed once he is in hospital
+    new_patients_in_queue_number = random.randint(50, 100)
+    max_queue_position = session.query(func.max(PatientQueue.queue_id)).scalar() or 0
 
-    if all_patient_ids and patients_with_cooldown_ids:
-        new_patients_in_queue_number = random.randint(50, 100)
-        cur.execute("SELECT Max(queue_id) AS 'max_queue_position' FROM patient_queue")
-        maximum_queue_position = cur.fetchone()["max_queue_position"]
+    available_ids = list(set(all_patient_ids) - set(cooldown_ids))
+    queue = []
 
-        if not maximum_queue_position:
-            maximum_queue_position = 0
+    for _ in range(new_patients_in_queue_number):
+        if not available_ids:
+            break
+        selected = random.choice(available_ids)
+        max_queue_position += 1
+        queue.append(PatientQueue(patient_id=selected, queue_id=max_queue_position))
+        available_ids.remove(selected)
+        cooldown_ids.append(selected)
+        if len(cooldown_ids) >= 60:
+            available_ids.append(cooldown_ids[0])
+            cooldown_ids.pop(0)
 
-        for patient_id in patients_with_cooldown_ids:
-            all_patient_ids.remove(patient_id)
-
-        for _ in range(new_patients_in_queue_number):
-            patient_added_to_queue = random.choice(all_patient_ids)
-
-            cur.execute(
-                "INSERT INTO patient_queue(patient_id, queue_id) VALUES (?, ?)",
-                (
-                    patient_added_to_queue["patient_id"],
-                    maximum_queue_position + 1,
-                ),
-            )
-            maximum_queue_position += 1
-
-            all_patient_ids.remove(patient_added_to_queue)
-            patients_with_cooldown_ids.append(patient_added_to_queue)
-
-            if len(patients_with_cooldown_ids) == 60:
-                all_patient_ids.append(patients_with_cooldown_ids[0])
-                patients_with_cooldown_ids.remove(patients_with_cooldown_ids[0])
-
-        logger.info(f"Added {new_patients_in_queue_number} patients to queue in db")
-
-    database_connection.commit()
+    session.add_all(queue)
+    logger.info(f"Added {len(queue)} patients to queue in db")
 
 
-def add_patient_assignment_to_bed(database_connection: sqlite3.Connection) -> None:
-    cur = database_connection.cursor()
+def add_patient_assignment_to_bed(session):
+    bed_ids = [b.bed_id for b in session.query(Bed).all()]
+    patient_ids = [p.patient_id for p in session.query(Patient).all()]
 
-    cur.execute("SELECT bed_id FROM beds")
-    all_bed_ids = cur.fetchall()
+    assignments = []
+    for bed_id in bed_ids:
+        if not patient_ids:
+            break
+        patient_id = random.choice(patient_ids)
+        days_of_stay = random.randint(1, 7)
+        assignments.append(BedAssignment(bed_id=bed_id, patient_id=patient_id, days_of_stay=days_of_stay))
+        patient_ids.remove(patient_id)
 
-    cur.execute("SELECT patient_id FROM patients")
-    all_patient_ids = cur.fetchall()
+    session.add_all(assignments)
+    logger.info(f"Assigned {len(assignments)} patients to beds in db")
 
-    if all_bed_ids and all_patient_ids:
-        for row in all_bed_ids:
-            bed_id = row["bed_id"]
-            random_patient = random.choice(all_patient_ids)
 
-            # The average length of stay is adjusted so that total hospital occupancy is about 20 days
-            random_days_amount = random.randint(1, 7)
-
-            cur.execute(
-                "INSERT INTO bed_assignments(bed_id, patient_id, days_of_stay) VALUES (?, ?, ?)",
-                (
-                    bed_id,
-                    random_patient["patient_id"],
-                    random_days_amount,
-                ),
-            )
-
-            all_patient_ids.remove(random_patient)
-
-        logger.info(f"Assigned some patients to beds in db")
-
-    database_connection.commit()
+def main():
+    random.seed(43)
+    session = SessionLocal()
+    try:
+        if not check_data_existence(session):
+            clear_database(session)
+            add_patients(session)
+            add_beds(session)
+            add_patient_assignment_to_bed(session)
+            add_patients_to_queue(session)
+            session.commit()
+        else:
+            logger.info("Skipping data generation")
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error during data generation: {e}")
+        raise
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
-    random.seed(43)
-    if not check_data_existence("../db/hospital.db"):
-        clear_database("../db/hospital.db")
-
-        conn = sqlite3.connect("../db/hospital.db")
-        conn.row_factory = sqlite3.Row
-
-        add_patients(conn)
-        add_beds(conn)
-        add_patient_assignment_to_bed(conn)
-        add_patients_to_queue(conn)
-
-        conn.close()
-    else:
-        logger.info("Skipping data generation")
+    main()
