@@ -59,6 +59,7 @@ if refreshes_number is not None and refreshes_number > st.session_state.refreshe
 
 st.header(f"Day {st.session_state.day_for_simulation}")
 
+bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
