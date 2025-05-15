@@ -138,6 +138,7 @@ def get_tables():
 
             patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unoccupied"
             sickness = patient.sickness if patient else "Unoccupied"
+            pesel = patient.pesel if patient else "Unoccupied"
             days_of_stay = ba.days_of_stay if ba else 0
 
             bed_assignments.append(
@@ -146,6 +147,7 @@ def get_tables():
                     "patient_id": ba.patient_id if ba else 0,
                     "patient_name": patient_name,
                     "sickness": sickness,
+                    "PESEL": pesel,
                     "days_of_stay": days_of_stay,
                 }
             )
@@ -158,6 +160,7 @@ def get_tables():
                     "place_in_queue": entry.queue_id,
                     "patient_id": patient.patient_id,
                     "patient_name": f"{patient.first_name} {patient.last_name}",
+                    "PESEL": f"...{patient.pesel[-3:]}",
                 }
             )
 

@@ -10,6 +10,7 @@ class BedAssignmentResponse(BaseModel):
     patient_id: int
     patient_name: str
     sickness: str
+    PESEL: str
     days_of_stay: int
 
 
@@ -17,6 +18,7 @@ class PatientQueueResponse(BaseModel):
     place_in_queue: int
     patient_id: int
     patient_name: str
+    PESEL: str
 
 
 class NoShow(BaseModel):
