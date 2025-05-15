@@ -98,7 +98,7 @@ def get_tables():
             print_patients_to_be_released(log=should_log)
             delete_patients_to_be_released()
 
-            assigned_beds = session.query(BedAssignment.bed_id).subquery()
+            assigned_beds = session.query(BedAssignment.bed_id).scalar_subquery()
             bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
 
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
