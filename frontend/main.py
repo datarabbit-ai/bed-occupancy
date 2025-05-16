@@ -14,10 +14,6 @@ if "day_for_simulation" not in st.session_state:
 if "refreshes_number" not in st.session_state:
     st.session_state.refreshes_number = 0
 
-refreshes_number = None
-if st.session_state.day_for_simulation < 20:
-    refreshes_number = st_autorefresh(interval=10000, limit=None)
-
 st.html(
     """
     <style>
@@ -53,6 +49,10 @@ def update_day(delta: int) -> None:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
+refreshes_number = None
+if st.session_state.day_for_simulation < 20:
+    refreshes_number = st_autorefresh(interval=10000, limit=None)
+
 if refreshes_number is not None and refreshes_number > st.session_state.refreshes_number:
     update_day(delta=1)
     st.session_state.refreshes_number = refreshes_number
@@ -67,7 +67,7 @@ if tables:
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
 if not bed_df.empty:
-    for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
+    for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
         bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
     st.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
