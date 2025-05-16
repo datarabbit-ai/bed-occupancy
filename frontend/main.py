@@ -3,6 +3,7 @@ from typing import Dict, Optional
 import pandas as pd
 import requests
 import streamlit as st
+from agent import *
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -22,6 +23,41 @@ st.html(
     </style>
     """
 )
+
+
+def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
+    """
+    Handles the process of rescheduling a patient's appointment by initiating a voice conversation
+    with the patient and analyzing their consent.
+
+    :param name: The first name of the patient.
+    :param surname: The last name of the patient.
+    :param sickness: The sickness or condition of the patient.
+    :param old_day: The current day of the patient's visit.
+    :param new_day: The suggested day for the new appointment.
+    :return: A boolean indicating whether the patient consented to the rescheduling.
+    """
+    # conversation = prepare_conversation(
+    #     patient_name=name,
+    #     patient_surname=surname,
+    #     pesel=pesel,
+    #     patient_sickness=sickness,
+    #     current_visit_day=old_day,
+    #     suggested_appointment_day=new_day,
+    # )
+    # conversation_id = establish_voice_conversation(conversation)
+    # return check_patient_consent_to_reschedule(conversation_id)
+    return True
+
+
+def agent_call(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int):
+    st.session_state.consent = handle_patient_rescheduling(
+        name=name, surname=surname, pesel=pesel, sickness=sickness, old_day=old_day, new_day=new_day
+    )
+    if st.session_state.consent:
+        response = requests.get(
+            "http://backend:8000/add-patient-to-approvers", params={"patient_id": st.session_state.patient_id}
+        )
 
 
 def get_list_of_tables() -> Optional[Dict]:
@@ -61,9 +97,29 @@ bed_df = pd.DataFrame(tables["BedAssignment"])
 queue_df = pd.DataFrame(tables["PatientQueue"])
 no_shows_df = pd.DataFrame(tables["NoShows"])
 
+if len(bed_df[bed_df["patient_id"] == 0]) > 0:
+    st.session_state.queue_id = 0
+    st.session_state.patient_id = queue_df["patient_id"][st.session_state.queue_id]
+    name = queue_df["patient_name"][st.session_state.queue_id].split()[0]
+    surname = queue_df["patient_name"][st.session_state.queue_id].split()[1]
+    pesel = queue_df["PESEL"][st.session_state.queue_id][-3:]
+    response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": st.session_state.patient_id})
+    st.session_state.consent = False
+    st.sidebar.button(
+        "Call patient 📞",
+        on_click=lambda: agent_call(
+            name=name,
+            surname=surname,
+            pesel=pesel,
+            sickness=response.json()["sickness"],
+            old_day=response.json()["old_day"],
+            new_day=response.json()["new_day"],
+        ),
+    )
+
 if not bed_df.empty:
-    # for col in ["patient_id", "patient_name", "sickness", "days_of_stay"]:
-    #    bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    for col in ["patient_id", "patient_name", "sickness", "days_of_stay", "PESEL"]:
+        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
     st.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
     st.info("No bed assignments found.")
