@@ -7,7 +7,6 @@ import streamlit as st
 from agent import *
 from streamlit_autorefresh import st_autorefresh
 
-
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 st.title("Bed Assignments")
 
