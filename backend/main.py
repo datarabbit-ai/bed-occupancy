@@ -19,7 +19,7 @@ logging.config.dictConfig(config)
 app = FastAPI()
 day_for_simulation = 1
 last_change = 1
-patients_consent_dictionary: dict[int, list[int]] = {}
+patients_consent_dictionary: dict[int, list[int]] = {1: []}
 
 
 @app.get("/get-current-day")
@@ -110,9 +110,6 @@ def get_tables():
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
 
-            for queue_x in queue:
-                logger.info(queue_x.patient_id)
-
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
                 patient_id = entry.patient_id
@@ -133,7 +130,7 @@ def get_tables():
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-            for patient_id in patients_consent_dictionary[day_for_simulation]:
+            for patient_id in patients_consent_dictionary[iteration + 2]:
                 if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
@@ -207,7 +204,6 @@ def get_patient_data(patient_id: int):
     # queue_id = session.query(PatientQueue).filter_by(patient_id=patient_id).first().queue_id
     sickness = patient.sickness
     old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
-    logger.info(f"{patient.sickness}, {patient.first_name}, {new_day}")
     session.rollback()
     session.close()
     return {"sickness": sickness, "old_day": old_day, "new_day": new_day}
