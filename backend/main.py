@@ -1,5 +1,6 @@
 import json
 import logging.config
+import math
 import random
 import traceback
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
-from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue
+from models import *
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -18,6 +19,7 @@ logging.config.dictConfig(config)
 app = FastAPI()
 day_for_simulation = 1
 last_change = 1
+patients_consent_dictionary: dict[int, list[int]] = {1: []}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -43,6 +45,10 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
     if delta == 1 and day_for_simulation < 20 or delta == -1 and day_for_simulation > 1:
         day_for_simulation += delta
         last_change = delta
+        if delta == 1:
+            patients_consent_dictionary[day_for_simulation] = []
+        else:
+            patients_consent_dictionary.pop(day_for_simulation + 1)
     return {"day": day_for_simulation}
 
 
@@ -118,10 +124,9 @@ def get_tables() -> ListOfTables:
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
 
-            for entry in queue:
+            for i in range(min(len(queue), len(bed_ids))):
+                entry = queue[i]
                 patient_id = entry.patient_id
-                if bed_iterator >= len(bed_ids):
-                    break
                 will_come = random.choice([True] * 4 + [False])
                 if not will_come:
                     delete_patient_by_id_from_queue(patient_id)
@@ -131,6 +136,16 @@ def get_tables() -> ListOfTables:
                     if should_log:
                         logger.info(f"No-show: {no_show.patient_name}")
                 elif check_if_patient_has_bed(patient_id):
+                    if should_log:
+                        logger.info(f"Patient {patient_id} already has a bed")
+                else:
+                    days = random.randint(1, 7)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
+                    delete_patient_by_id_from_queue(patient_id)
+                    bed_iterator += 1
+
+            for patient_id in patients_consent_dictionary[iteration + 2]:
+                if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
@@ -189,3 +204,20 @@ def get_tables() -> ListOfTables:
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return {"error": "Server Error", "message": error_message}
+
+
+@app.get("/add-patient-to-approvers")
+def add_patient_to_approvers(patient_id: int) -> None:
+    patients_consent_dictionary[day_for_simulation].append(patient_id)
+
+
+@app.get("/get-patient-data")
+def get_patient_data(patient_id: int):
+    session = get_session()
+    patient = session.query(Patient).filter_by(patient_id=patient_id).first()
+    # queue_id = session.query(PatientQueue).filter_by(patient_id=patient_id).first().queue_id
+    sickness = patient.sickness
+    old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
+    session.rollback()
+    session.close()
+    return {"sickness": sickness, "old_day": old_day, "new_day": new_day}
