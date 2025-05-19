@@ -1,3 +1,4 @@
+import random
 from typing import Dict, Optional
 
 import pandas as pd
@@ -48,17 +49,38 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     # )
     # conversation_id = establish_voice_conversation(conversation)
     # return check_patient_consent_to_reschedule(conversation_id)
-    return True
+    will_come = random.choice([True, True, False, False, False])
+    return will_come
 
 
-def agent_call(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int):
-    st.session_state.consent = handle_patient_rescheduling(
-        name=name, surname=surname, pesel=pesel, sickness=sickness, old_day=old_day, new_day=new_day
-    )
-    if st.session_state.consent:
-        response = requests.get(
-            "http://backend:8000/add-patient-to-approvers", params={"patient_id": st.session_state.patient_id}
+def agent_call(queue_df: pd.DataFrame) -> None:
+    queue_id = 0
+
+    while queue_id < len(queue_df):
+        patient_id = queue_df["patient_id"][queue_id]
+        name, surname = queue_df["patient_name"][queue_id].split()
+        pesel = queue_df["PESEL"][queue_id][-3:]
+
+        response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
+        consent = handle_patient_rescheduling(
+            name=name,
+            surname=surname,
+            pesel=pesel,
+            sickness=response["sickness"],
+            old_day=response["old_day"],
+            new_day=response["new_day"],
         )
+
+        if consent:
+            st.session_state.patient_id = patient_id
+            st.session_state.consent = True
+            requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
+            st.success(f"{name} {surname} agreed to reschedule.")
+            return
+        else:
+            queue_id += 1
+
+    st.warning("No patient agreed to reschedule.")
 
 
 def get_list_of_tables() -> Optional[Dict]:
@@ -99,24 +121,8 @@ queue_df = pd.DataFrame(tables["PatientQueue"])
 no_shows_df = pd.DataFrame(tables["NoShows"])
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
-    st.session_state.queue_id = 0
-    st.session_state.patient_id = queue_df["patient_id"][st.session_state.queue_id]
-    name = queue_df["patient_name"][st.session_state.queue_id].split()[0]
-    surname = queue_df["patient_name"][st.session_state.queue_id].split()[1]
-    pesel = queue_df["PESEL"][st.session_state.queue_id][-3:]
-    response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": st.session_state.patient_id})
     st.session_state.consent = False
-    st.sidebar.button(
-        "Call next patient in queue 📞",
-        on_click=lambda: agent_call(
-            name=name,
-            surname=surname,
-            pesel=pesel,
-            sickness=response.json()["sickness"],
-            old_day=response.json()["old_day"],
-            new_day=response.json()["new_day"],
-        ),
-    )
+    st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
 
 if not bed_df.empty:
     for col in ["patient_id", "patient_name", "sickness", "days_of_stay", "PESEL"]:
