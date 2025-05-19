@@ -113,7 +113,7 @@ def get_tables():
             for queue_x in queue:
                 logger.info(queue_x.patient_id)
 
-            for i in range(0, len(bed_ids)):
+            for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
                 patient_id = entry.patient_id
                 will_come = random.choice([True] * 4 + [False])
