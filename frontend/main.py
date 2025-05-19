@@ -32,6 +32,7 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
 
     :param name: The first name of the patient.
     :param surname: The last name of the patient.
+    :param pesel: The PESEL number of the patient.
     :param sickness: The sickness or condition of the patient.
     :param old_day: The current day of the patient's visit.
     :param new_day: The suggested day for the new appointment.
@@ -97,7 +98,7 @@ bed_df = pd.DataFrame(tables["BedAssignment"])
 queue_df = pd.DataFrame(tables["PatientQueue"])
 no_shows_df = pd.DataFrame(tables["NoShows"])
 
-if len(bed_df[bed_df["patient_id"] == 0]) > 0:
+if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.queue_id = 0
     st.session_state.patient_id = queue_df["patient_id"][st.session_state.queue_id]
     name = queue_df["patient_name"][st.session_state.queue_id].split()[0]
@@ -106,7 +107,7 @@ if len(bed_df[bed_df["patient_id"] == 0]) > 0:
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": st.session_state.patient_id})
     st.session_state.consent = False
     st.sidebar.button(
-        "Call patient 📞",
+        "Call next patient in queue 📞",
         on_click=lambda: agent_call(
             name=name,
             surname=surname,
