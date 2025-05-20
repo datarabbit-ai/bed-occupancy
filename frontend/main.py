@@ -25,6 +25,25 @@ st.html(
         section[data-testid="stMain"]{
             width: 70% !important;
         }
+        .main .block-container {
+            max-width: 1200px;
+        }
+        /* Style for the box */
+        .box {
+            background-color: #f0f2f6;
+            border: 1px solid #d0d3d9;
+            border-radius: 5px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .box:hover {
+            background-color: #e0e2e6;
+        }
     </style>
     """
 )
