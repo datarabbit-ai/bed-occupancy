@@ -32,9 +32,82 @@ st.html(
         section[data-testid="stMain"]{
             width: 70% !important;
         }
+        .main .block-container {
+            max-width: 1200px;
+        }
+        .box {
+            border: 1px solid #d0d3d9;
+            border-radius: 5px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .box-empty {
+            background-color: #cbfbc4;
+
+            &:hover {
+                background-color: #9fca97;
+            }
+
+        }
+        .box-occupied {
+            background-color: #fb9493;
+
+            &:hover {
+                background-color: #cf9c9c;
+            }
+        }
     </style>
     """
 )
+
+
+def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
+    """
+    Creates a scrollable grid of boxes with tooltips on hover
+
+    Parameters:
+    - df: pandas DataFrame, each row represents a box
+    - boxes_per_row: int, number of boxes to display per row
+    """
+    # Calculate number of boxes from DataFrame
+    num_boxes = len(df)
+
+    # Calculate number of rows needed
+    num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
+
+    # Create the grid
+    for row in range(num_rows):
+        cols = st.columns(boxes_per_row)
+
+        for col in range(boxes_per_row):
+            box_index = row * boxes_per_row + col
+
+            if box_index < num_boxes:
+                with cols[col]:
+                    # Get data for this box
+                    data_row = df.iloc[box_index]
+
+                    box_title = f"Bed {box_index + 1}"
+
+                    # Create a box with HTML
+                    if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
+                        st.markdown(f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True)
+
+                    # Format tooltip information with row data
+                    tooltip_info = ""
+                    for column, value in data_row.items():
+                        tooltip_info += f"**{column}**: {value}\n\n"
+
+                    # Add tooltip using Streamlit's help feature
+                    st.caption("", help=tooltip_info)
 
 
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
@@ -149,9 +222,10 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
-    for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
-        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
-    st.dataframe(bed_df, use_container_width=True, hide_index=True)
+    create_box_grid(bed_df)
+    # for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
+    #     bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    # st.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
     st.info("No bed assignments found.")
 
