@@ -49,6 +49,46 @@ st.html(
 )
 
 
+def create_box_grid(df: pd.DataFrame, boxes_per_row=4):
+    """
+    Creates a scrollable grid of boxes with tooltips on hover
+
+    Parameters:
+    - df: pandas DataFrame, each row represents a box
+    - boxes_per_row: int, number of boxes to display per row
+    """
+    # Calculate number of boxes from DataFrame
+    num_boxes = len(df)
+
+    # Calculate number of rows needed
+    num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
+
+    # Create the grid
+    for row in range(num_rows):
+        cols = st.columns(boxes_per_row)
+
+        for col in range(boxes_per_row):
+            box_index = row * boxes_per_row + col
+
+            if box_index < num_boxes:
+                with cols[col]:
+                    # Get data for this box
+                    data_row = df.iloc[box_index]
+
+                    box_title = f"Bed {box_index + 1}"
+
+                    # Create a box with HTML
+                    st.markdown(f"""<div class="box">{box_title}</div>""", unsafe_allow_html=True)
+
+                    # Format tooltip information with row data
+                    tooltip_info = ""
+                    for column, value in data_row.items():
+                        tooltip_info += f"**{column}**: {value}\n\n"
+
+                    # Add tooltip using Streamlit's help feature
+                    st.caption("ℹ️", help=tooltip_info)
+
+
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
