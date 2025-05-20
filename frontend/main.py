@@ -83,7 +83,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     box_title = f"Bed {box_index + 1}"
 
                     # Create a box with HTML
-                    if df.iloc[box_index][df["patient_id"] == 0 or df["patient_id"] is None]:
+                    if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True)
                     else:
                         st.markdown(f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True)
