@@ -30,7 +30,6 @@ st.html(
         }
         /* Style for the box */
         .box {
-            background-color: #f0f2f6;
             border: 1px solid #d0d3d9;
             border-radius: 5px;
             height: 100px;
@@ -43,6 +42,12 @@ st.html(
         }
         .box:hover {
             background-color: #e0e2e6;
+        }
+        .box-empty {
+            background-color: #ff8080;
+        }
+        .box-occupied {
+            background-color: #80ff80;
         }
     </style>
     """
@@ -78,7 +83,10 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     box_title = f"Bed {box_index + 1}"
 
                     # Create a box with HTML
-                    st.markdown(f"""<div class="box">{box_title}</div>""", unsafe_allow_html=True)
+                    if data_row.items()[0]["patient_id"] is None or data_row.items()[0]["patient_id"] == 0:
+                        st.markdown(f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True)
 
                     # Format tooltip information with row data
                     tooltip_info = ""
