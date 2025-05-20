@@ -49,7 +49,7 @@ st.html(
 )
 
 
-def create_box_grid(df: pd.DataFrame, boxes_per_row=4):
+def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
     """
     Creates a scrollable grid of boxes with tooltips on hover
 
@@ -189,9 +189,10 @@ if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
 
 if not bed_df.empty:
-    for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
-        bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
-    st.dataframe(bed_df, use_container_width=True, hide_index=True)
+    create_box_grid(bed_df)
+    # for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
+    #     bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
+    # st.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
     st.info("No bed assignments found.")
 
