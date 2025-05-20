@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from agent import *
+from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
@@ -53,8 +54,15 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     # )
     # conversation_id = establish_voice_conversation(conversation)
     # return check_patient_consent_to_reschedule(conversation_id)
-    will_come = random.choice([True, True, False, False, False])
-    return will_come
+
+    conversation_ids = (
+        ["conv_01jvmfw4nmf7nrp2vs3em3q9hn"] * 12
+        + ["conv_01jvmchxvdfeystykhfdcb0tr1"] * 7
+        + ["conv_01jvmcvacefw68528gty0j0dj6"] * 1
+    )
+    selected_conversation_id = random.choice(conversation_ids)
+    result = check_patient_consent_to_reschedule(selected_conversation_id)
+    return result
 
 
 def agent_call(queue_df: pd.DataFrame) -> None:
