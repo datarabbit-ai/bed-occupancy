@@ -28,7 +28,6 @@ st.html(
         .main .block-container {
             max-width: 1200px;
         }
-        /* Style for the box */
         .box {
             border: 1px solid #d0d3d9;
             border-radius: 5px;
@@ -40,14 +39,21 @@ st.html(
             margin-bottom: 15px;
             cursor: pointer;
         }
-        .box:hover {
-            background-color: #e0e2e6;
-        }
+
         .box-empty {
-            background-color: #ff8080;
+            background-color: #cbfbc4;
+
+            &:hover {
+                background-color: #9fca97;
+            }
+
         }
         .box-occupied {
-            background-color: #80ff80;
+            background-color: #fb9493;
+
+            &:hover {
+                background-color: #cf9c9c;
+            }
         }
     </style>
     """
