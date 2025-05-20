@@ -94,7 +94,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         tooltip_info += f"**{column}**: {value}\n\n"
 
                     # Add tooltip using Streamlit's help feature
-                    st.caption("ℹ️", help=tooltip_info)
+                    st.caption("", help=tooltip_info)
 
 
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
