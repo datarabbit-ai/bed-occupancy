@@ -112,8 +112,20 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
                     # Format tooltip information with row data
                     tooltip_info = ""
-                    for column, value in data_row.items():
-                        tooltip_info += f"{column}: {value}<br>"
+                    headers: list[str] = []
+                    definitions: list[str] = []
+                    headers, definitions = list(zip(*data_row.items()))
+                    # for column, value in data_row.items():
+                    #     headers.append(column)
+                    #     definitions.append(value)
+
+                    tooltip_info += "<table><tr>"
+                    for header in headers:
+                        tooltip_info += f"<th>{header}</th>"
+                    tooltip_info += "</tr><tr>"
+                    for definition in definitions:
+                        tooltip_info += f"<td>{definition}</td>"
+                    tooltip_info += "</tr></table>"
 
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
