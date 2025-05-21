@@ -25,36 +25,6 @@ st.html(
         section[data-testid="stMain"]{
             width: 70% !important;
         }
-        .main .block-container {
-            max-width: 1200px;
-        }
-        .box {
-            border: 1px solid #d0d3d9;
-            border-radius: 5px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            margin-bottom: 15px;
-            cursor: pointer;
-        }
-
-        .box-empty {
-            background-color: #cbfbc4;
-
-            &:hover {
-                background-color: #9fca97;
-            }
-
-        }
-        .box-occupied {
-            background-color: #fb9493;
-
-            &:hover {
-                background-color: #cf9c9c;
-            }
-        }
 
         .tooltip {
             position: relative;
@@ -87,6 +57,38 @@ st.html(
             margin: 0;
             padding: 1px 2px;
             font-weight: 200;
+        }
+
+
+        .main .block-container {
+            max-width: 1200px;
+        }
+        .box {
+            border: 1px solid #d0d3d9;
+            border-radius: 5px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        .box-empty {
+            background-color: #cbfbc4;
+
+            &:hover {
+                background-color: #9fca97;
+            }
+
+        }
+        .box-occupied {
+            background-color: #fb9493;
+
+            &:hover {
+                background-color: #cf9c9c;
+            }
         }
     </style>
     """
