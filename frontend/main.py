@@ -88,19 +88,20 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
                     box_title = f"Bed {box_index + 1}"
 
-                    # Create a box with HTML
-                    if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
-                        st.markdown(f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True)
-
                     # Format tooltip information with row data
                     tooltip_info = ""
                     for column, value in data_row.items():
                         tooltip_info += f"**{column}**: {value}\n\n"
 
-                    # Add tooltip using Streamlit's help feature
-                    st.caption("", help=tooltip_info)
+                    # Create a box with HTML
+                    if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
+                        st.markdown(
+                            f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True, help=tooltip_info
+                        )
+                    else:
+                        st.markdown(
+                            f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True, help=tooltip_info
+                        )
 
 
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
