@@ -8,7 +8,7 @@ from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
-from models import *
+from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
