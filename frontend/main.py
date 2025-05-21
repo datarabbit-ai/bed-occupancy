@@ -55,6 +55,25 @@ st.html(
                 background-color: #cf9c9c;
             }
         }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 240px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
     </style>
     """
 )
@@ -96,11 +115,13 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(
-                            f"""<div class="box box-empty">{box_title}</div>""", unsafe_allow_html=True, help=tooltip_info
+                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                            unsafe_allow_html=True,
                         )
                     else:
                         st.markdown(
-                            f"""<div class="box box-occupied">{box_title}</div>""", unsafe_allow_html=True, help=tooltip_info
+                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                            unsafe_allow_html=True,
                         )
 
 
