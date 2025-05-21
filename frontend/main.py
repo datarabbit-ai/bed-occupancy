@@ -123,7 +123,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         )
                     else:
                         st.markdown(
-                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext">This bed is empty!</span></div>""",
                             unsafe_allow_html=True,
                         )
 
