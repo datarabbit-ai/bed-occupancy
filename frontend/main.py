@@ -131,7 +131,6 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     box_title = f"Bed {box_index + 1}"
 
                     # Format tooltip information with row data
-                    tooltip_info = ""
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
                     table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
 
