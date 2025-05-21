@@ -135,12 +135,13 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
                     table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
 
-                    tooltip_info += "<table><tr>"
+                    tooltip_info = "<table style='border-collapse: collapse;'>"
+                    tooltip_info += "<tr>"
                     for header in table_headers:
-                        tooltip_info += f"<th>{header}</th>"
+                        tooltip_info += f"<th style='border: 1px solid #ccc; padding: 4px; font-weight: bold;'>{header}</th>"
                     tooltip_info += "</tr><tr>"
                     for definition in table_data:
-                        tooltip_info += f"<td>{definition}</td>"
+                        tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
                     tooltip_info += "</tr></table>"
 
                     # Create a box with HTML
