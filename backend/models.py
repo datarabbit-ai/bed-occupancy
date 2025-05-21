@@ -10,7 +10,7 @@ class BedAssignmentResponse(BaseModel):
     patient_id: int
     patient_name: str
     sickness: str
-    PESEL: str
+    pesel: str
     days_of_stay: int
 
 
