@@ -38,8 +38,8 @@ class Statistics(BaseModel):
     OccupancyDifference: str
     AverageOccupancy: str
     AverageOccupancyDifference: str
-    AverageStayLenght: float
-    AverageStayLenghtDifference: float
+    AverageStayLength: float
+    AverageStayLengthDifference: float
 
 
 class Patient(Base):

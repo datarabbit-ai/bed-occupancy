@@ -125,6 +125,19 @@ def update_day(delta: int) -> None:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
+def get_analytic_data() -> Optional[Dict]:
+    try:
+        response = requests.get("http://backend:8000/get-statistics")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            main_tab.error("Failed to fetch data from the server.")
+            return None
+    except Exception as e:
+        main_tab.error(f"Failed to connect to the server: {e}")
+        return None
+
+
 def toggle_auto_day_change() -> None:
     st.session_state.auto_day_change = not st.session_state.auto_day_change
 
@@ -172,7 +185,28 @@ st.sidebar.toggle(
     label="Activate automatic day change", value=st.session_state.auto_day_change, on_change=toggle_auto_day_change
 )
 
+
 statistics_tab.subheader("Bed occupancy statistics")
+
+analytic_data = get_analytic_data()
+
+col1, col2, col3 = statistics_tab.columns(3)
+col1.metric(label="Beds occupancy", value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True)
+col2.metric(
+    label="Average beds occupancy",
+    value=analytic_data["AverageOccupancy"],
+    delta=analytic_data["AverageOccupancyDifference"],
+    border=True,
+)
+col3.metric(
+    label="Average length of stay",
+    value=analytic_data["AverageStayLength"],
+    delta=analytic_data["AverageStayLengthDifference"],
+    border=True,
+)
+
+df = pd.DataFrame(analytic_data["OccupancyInTime"])
+statistics_tab.line_chart(df, x="Date", use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:

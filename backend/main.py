@@ -20,7 +20,7 @@ day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
 occupancy_in_time: dict[str, list] = {"Date": [], "Occupancy": []}
-stay_lengths: list = []
+stay_lengths: dict[int, list[int]] = {}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -55,15 +55,29 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
 
 @app.get("/get-statistics", response_model=Statistics)
 def get_statistics() -> Statistics:
+    def calculate_average_in_dictionary(data: dict) -> float:
+        total_sum = sum(sum(v) for v in data.values() if isinstance(v, list))
+        total_items_number = sum(len(v) for v in data.values() if isinstance(v, list))
+        logger.info(str(total_sum) + ", " + str(total_items_number))
+        return total_sum / total_items_number
+
+    global occupancy_in_time, stay_lengths
+    session = get_session()
+
+    stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
+
+    session.rollback()
+    session.close()
+
+    avg_stay_length = calculate_average_in_dictionary(stay_lengths)
     if len(stay_lengths) != 1:
-        avg_stay_length = sum(stay_lengths) / len(stay_lengths)
-        stay_lengths.pop(-1)
-        avg_stay_length_diff = avg_stay_length - (sum(stay_lengths) / len(stay_lengths))
+        max_key = max(stay_lengths.keys())
+        stay_lengths.pop(max_key)
+        avg_stay_length_diff = avg_stay_length - calculate_average_in_dictionary(stay_lengths)
     else:
-        avg_stay_length = stay_lengths[0]
         avg_stay_length_diff = 0
 
-    occupancy_data = occupancy_in_time["Occupancy"]
+    occupancy_data = occupancy_in_time["Occupancy"].copy()
 
     if len(occupancy_data) != 1:
         occupancy = occupancy_data[-1]
@@ -81,12 +95,12 @@ def get_statistics() -> Statistics:
 
     return Statistics(
         OccupancyInTime={"Date": occupancy_in_time["Date"], "Occupancy [%]": occupancy_in_time["Occupancy"]},
-        Occupancy=str(occupancy) + "%",
-        OccupancyDifference=str(occupancy_diff) + "%",
-        AverageOccupancy=str(avg_occupancy) + "%",
-        AverageOccupancyDifference=str(avg_occupancy_diff) + "%",
-        AverageStayLenght=avg_stay_length,
-        AverageStayLenghtDifference=avg_stay_length_diff,
+        Occupancy=str(round(occupancy, 3)) + "%",
+        OccupancyDifference=str(round(occupancy_diff, 3)) + "%",
+        AverageOccupancy=str(round(avg_occupancy, 3)) + "%",
+        AverageOccupancyDifference=str(round(avg_occupancy_diff, 3)) + "%",
+        AverageStayLength=round(avg_stay_length, 3),
+        AverageStayLengthDifference=round(avg_stay_length_diff, 3),
     )
 
 
@@ -146,8 +160,9 @@ def get_tables() -> ListOfTables:
 
         beds_number = get_beds_number()
 
-        occupancy_in_time = {"Date": [1], "Beds_occupied": [beds_number]}
-        stay_lengths = []
+        global occupancy_in_time, stay_lengths
+        occupancy_in_time = {"Date": [1], "Occupancy": [100]}
+        stay_lengths = {}
 
         if last_change == 1:
             logger.info(f"Current simulation day: {day_for_simulation}")
@@ -188,10 +203,14 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = random.randint(1, 7)
-                    stay_lengths.append(days)
+
+                    if iteration + 2 not in stay_lengths:
+                        stay_lengths[iteration + 2] = []
+                    stay_lengths[iteration + 2].append(days)
+
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
-                    occupied_beds_number -= 1
+                    occupied_beds_number += 1
                     bed_iterator += 1
 
             for patient_id in patients_consent_dictionary[iteration + 2]:
@@ -200,10 +219,14 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = random.randint(1, 7)
-                    stay_lengths.append(days)
+
+                    if iteration + 2 not in stay_lengths:
+                        stay_lengths[iteration + 2] = []
+                    stay_lengths[iteration + 2].append(days)
+
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
-                    occupied_beds_number -= 1
+                    occupied_beds_number += 1
                     bed_iterator += 1
 
             occupancy_in_time["Date"].append(iteration + 2)
