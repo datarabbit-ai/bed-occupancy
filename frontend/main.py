@@ -77,6 +77,17 @@ st.html(
         .tooltip:hover .tooltiptext {
             visibility: visible;
         }
+        .tooltiptext table {
+            font-size: 0.8em;
+            margin: 0;
+            padding: 0;
+        }
+        .tooltiptext table td, .tooltiptext table th {
+            font-size: 1em;
+            margin: 0;
+            padding: 1px 2px;
+            font-weight: 200;
+        }
     </style>
     """
 )
