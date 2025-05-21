@@ -62,7 +62,7 @@ st.html(
         }
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 240px;
+            width: max-content;
             background-color: black;
             color: #fff;
             text-align: center;
@@ -110,7 +110,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     # Format tooltip information with row data
                     tooltip_info = ""
                     for column, value in data_row.items():
-                        tooltip_info += f"**{column}**: {value}\n\n"
+                        tooltip_info += f"{column}: {value}<br>"
 
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
