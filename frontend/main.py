@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from agent import *
+from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
@@ -16,6 +17,12 @@ if "day_for_simulation" not in st.session_state:
 if "refreshes_number" not in st.session_state:
     st.session_state.refreshes_number = 0
 
+if "auto_day_change" not in st.session_state:
+    st.session_state.auto_day_change = False
+
+if "button_pressed" not in st.session_state:
+    st.session_state.button_pressed = False
+
 st.html(
     """
     <style>
@@ -25,7 +32,7 @@ st.html(
         section[data-testid="stMain"]{
             width: 70% !important;
         }
-
+        
         .tooltip {
             position: relative;
             display: inline-block;
@@ -147,7 +154,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                             unsafe_allow_html=True,
                         )
 
-
+                        
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
@@ -171,8 +178,15 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     # )
     # conversation_id = establish_voice_conversation(conversation)
     # return check_patient_consent_to_reschedule(conversation_id)
-    will_come = random.choice([True, True, False, False, False])
-    return will_come
+
+    conversation_ids = (
+        ["conv_01jvmfw4nmf7nrp2vs3em3q9hn"] * 12
+        + ["conv_01jvmchxvdfeystykhfdcb0tr1"] * 7
+        + ["conv_01jvmcvacefw68528gty0j0dj6"] * 1
+    )
+    selected_conversation_id = random.choice(conversation_ids)
+    result = check_patient_consent_to_reschedule(selected_conversation_id)
+    return result
 
 
 def agent_call(queue_df: pd.DataFrame) -> None:
@@ -202,6 +216,8 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         else:
             queue_id += 1
 
+    st.session_state.button_pressed = True
+
     st.warning("No patient agreed to reschedule.")
 
 
@@ -226,15 +242,14 @@ def update_day(delta: int) -> None:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
-refreshes_number = None
-if st.session_state.day_for_simulation < 20:
-    refreshes_number = st_autorefresh(interval=10000, limit=None)
+def toggle_auto_day_change() -> None:
+    st.session_state.auto_day_change = not st.session_state.auto_day_change
 
-if refreshes_number is not None and refreshes_number > st.session_state.refreshes_number:
+
+if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
-    st.session_state.refreshes_number = refreshes_number
-
-st.header(f"Day {st.session_state.day_for_simulation}")
+elif st.session_state.button_pressed:
+    st.session_state.button_pressed = False
 
 bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables()
@@ -243,9 +258,13 @@ if tables:
     queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
+st.header(f"Day {st.session_state.day_for_simulation}")
+
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.consent = False
     st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
+    st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
     create_box_grid(bed_df)
@@ -264,9 +283,13 @@ if not no_shows_df.empty:
 else:
     st.sidebar.info("No no-shows found.")
 
-if st.session_state.day_for_simulation < 20:
+st.sidebar.toggle(
+    label="Activate automatic day change", value=st.session_state.auto_day_change, on_change=toggle_auto_day_change
+)
+
+if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
     st.button("➡️ Simulate Next Day", on_click=lambda: update_day(delta=1))
-if st.session_state.day_for_simulation > 1:
+if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
     st.button("⬅️ Simulate Previous Day", on_click=lambda: update_day(delta=-1))
 
 if "error_message" in st.session_state and st.session_state.error_message:

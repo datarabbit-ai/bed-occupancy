@@ -92,11 +92,11 @@ def generate_random_date_between_ages(min_age, max_age):
 
 def generate_fake_patient_data() -> Patient:
     if random.randint(1, 2) == 1:
-        name = fake.first_name_female()
+        name = fake.first_name_female().split()[0]
         surname = fake.last_name_female()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
     else:
-        name = fake.first_name_male()
+        name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
     random_urgency = fake.enum(Urgency)

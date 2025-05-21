@@ -215,7 +215,6 @@ def add_patient_to_approvers(patient_id: int) -> None:
 def get_patient_data(patient_id: int):
     session = get_session()
     patient = session.query(Patient).filter_by(patient_id=patient_id).first()
-    # queue_id = session.query(PatientQueue).filter_by(patient_id=patient_id).first().queue_id
     sickness = patient.sickness
     old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
     session.rollback()
