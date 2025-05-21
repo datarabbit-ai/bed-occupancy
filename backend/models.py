@@ -32,6 +32,16 @@ class ListOfTables(BaseModel):
     NoShows: list[NoShow]
 
 
+class Statistics(BaseModel):
+    OccupancyInTime: dict[str, list]
+    Occupancy: str
+    OccupancyDifference: str
+    AverageOccupancy: str
+    AverageOccupancyDifference: str
+    AverageStayLenght: float
+    AverageStayLenghtDifference: float
+
+
 class Patient(Base):
     __tablename__ = "patients"
     patient_id = Column(Integer, primary_key=True)

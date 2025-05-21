@@ -9,7 +9,8 @@ from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
-st.title("Bed Assignments")
+main_tab, statistics_tab = st.tabs(["Current state", "Data analysis"])
+main_tab.title("Bed Assignments")
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -93,14 +94,14 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             st.session_state.patient_id = patient_id
             st.session_state.consent = True
             requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
-            st.success(f"{name} {surname} agreed to reschedule.")
+            main_tab.success(f"{name} {surname} agreed to reschedule.")
             return
         else:
             queue_id += 1
 
     st.session_state.button_pressed = True
 
-    st.warning("No patient agreed to reschedule.")
+    main_tab.warning("No patient agreed to reschedule.")
 
 
 def get_list_of_tables() -> Optional[Dict]:
@@ -109,10 +110,10 @@ def get_list_of_tables() -> Optional[Dict]:
         if response.status_code == 200:
             return response.json()
         else:
-            st.error("Failed to fetch data from the server.")
+            main_tab.error("Failed to fetch data from the server.")
             return None
     except Exception as e:
-        st.error(f"Failed to connect to the server: {e}")
+        main_tab.error(f"Failed to connect to the server: {e}")
         return None
 
 
@@ -140,7 +141,7 @@ if tables:
     queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
-st.header(f"Day {st.session_state.day_for_simulation}")
+main_tab.header(f"Day {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.consent = False
@@ -151,9 +152,9 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
 if not bed_df.empty:
     for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
         bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
-    st.dataframe(bed_df, use_container_width=True, hide_index=True)
+    main_tab.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
-    st.info("No bed assignments found.")
+    main_tab.info("No bed assignments found.")
 
 st.sidebar.subheader("Patients in queue")
 if not queue_df.empty:
@@ -170,6 +171,9 @@ else:
 st.sidebar.toggle(
     label="Activate automatic day change", value=st.session_state.auto_day_change, on_change=toggle_auto_day_change
 )
+
+statistics_tab.subheader("Bed occupancy statistics")
+
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
     st.button("➡️ Simulate Next Day", on_click=lambda: update_day(delta=1))

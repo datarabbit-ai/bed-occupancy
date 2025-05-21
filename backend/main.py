@@ -1,6 +1,5 @@
 import json
 import logging.config
-import math
 import random
 import traceback
 from pathlib import Path
@@ -8,7 +7,7 @@ from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
-from models import *
+from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue, Statistics
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -20,6 +19,8 @@ app = FastAPI()
 day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
+occupancy_in_time: dict[str, list] = {"Date": [], "Occupancy": []}
+stay_lengths: list = []
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -50,6 +51,43 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
         else:
             patients_consent_dictionary.pop(day_for_simulation + 1)
     return {"day": day_for_simulation}
+
+
+@app.get("/get-statistics", response_model=Statistics)
+def get_statistics() -> Statistics:
+    if len(stay_lengths) != 1:
+        avg_stay_length = sum(stay_lengths) / len(stay_lengths)
+        stay_lengths.pop(-1)
+        avg_stay_length_diff = avg_stay_length - (sum(stay_lengths) / len(stay_lengths))
+    else:
+        avg_stay_length = stay_lengths[0]
+        avg_stay_length_diff = 0
+
+    occupancy_data = occupancy_in_time["Occupancy"]
+
+    if len(occupancy_data) != 1:
+        occupancy = occupancy_data[-1]
+        occupancy_diff = occupancy_data[-1] - occupancy_data[-2]
+
+        avg_occupancy = sum(occupancy_data) / len(occupancy_data)
+        occupancy_data.pop(-1)
+        avg_occupancy_diff = avg_occupancy - (sum(occupancy_data) / len(occupancy_data))
+    else:
+        occupancy = occupancy_data[0]
+        occupancy_diff = 0
+
+        avg_occupancy = occupancy_data[0]
+        avg_occupancy_diff = 0
+
+    return Statistics(
+        OccupancyInTime={"Date": occupancy_in_time["Date"], "Occupancy [%]": occupancy_in_time["Occupancy"]},
+        Occupancy=str(occupancy) + "%",
+        OccupancyDifference=str(occupancy_diff) + "%",
+        AverageOccupancy=str(avg_occupancy) + "%",
+        AverageOccupancyDifference=str(avg_occupancy_diff) + "%",
+        AverageStayLenght=avg_stay_length,
+        AverageStayLenghtDifference=avg_stay_length_diff,
+    )
 
 
 @app.get("/get-tables", response_model=ListOfTables)
@@ -99,9 +137,17 @@ def get_tables() -> ListOfTables:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
         return f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
 
+    def get_beds_number() -> int:
+        return session.query(Bed).count()
+
     try:
         random.seed(43)
         session = get_session()
+
+        beds_number = get_beds_number()
+
+        occupancy_in_time = {"Date": [1], "Beds_occupied": [beds_number]}
+        stay_lengths = []
 
         if last_change == 1:
             logger.info(f"Current simulation day: {day_for_simulation}")
@@ -120,6 +166,8 @@ def get_tables() -> ListOfTables:
 
             assigned_beds = session.query(BedAssignment.bed_id).scalar_subquery()
             bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
+
+            occupied_beds_number = beds_number - len(bed_ids)
 
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
@@ -140,8 +188,10 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = random.randint(1, 7)
+                    stay_lengths.append(days)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
+                    occupied_beds_number -= 1
                     bed_iterator += 1
 
             for patient_id in patients_consent_dictionary[iteration + 2]:
@@ -150,9 +200,14 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = random.randint(1, 7)
+                    stay_lengths.append(days)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
+                    occupied_beds_number -= 1
                     bed_iterator += 1
+
+            occupancy_in_time["Date"].append(iteration + 2)
+            occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
 
         bed_assignments = []
         for bed in (
