@@ -62,7 +62,7 @@ st.html(
         }
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 200px;
+            width: max-content;
             background-color: black;
             color: #fff;
             text-align: center;
@@ -71,7 +71,7 @@ st.html(
             position: absolute;
             bottom: 110%;
             left: 50%;
-            margin-left: -100px;
+            transform: translateX(-50%);
             z-index: 100;
         }
         .tooltip:hover .tooltiptext {
