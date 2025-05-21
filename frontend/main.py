@@ -76,18 +76,18 @@ st.html(
         }
 
         .box-empty {
-            background-color: #cbfbc4;
+            background-color: oklch(80% 0.23 140);
 
             &:hover {
-                background-color: #9fca97;
+                background-color: oklch(90% 0.23 140);
             }
 
         }
         .box-occupied {
-            background-color: #fb9493;
+            background-color: oklch(80% 0.25 25);
 
             &:hover {
-                background-color: #cf9c9c;
+                background-color: oklch(90% 0.25 25);
             }
         }
     </style>
