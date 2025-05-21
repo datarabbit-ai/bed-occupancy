@@ -66,8 +66,8 @@ st.html(
             background-color: black;
             color: #fff;
             text-align: center;
-            padding: 5px 0;
-            border-radius: 6px;
+            padding: 8px;
+            border-radius: 8px;
             position: absolute;
             z-index: 1;
         }
