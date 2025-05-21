@@ -32,7 +32,7 @@ st.html(
         section[data-testid="stMain"]{
             width: 70% !important;
         }
-        
+
         .tooltip {
             position: relative;
             display: inline-block;
@@ -132,7 +132,8 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
                     # Format tooltip information with row data
                     tooltip_info = ""
-                    table_headers, table_data = list(zip(*data_row.items())) if data_row else ([], [])
+                    filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
+                    table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
 
                     tooltip_info += "<table><tr>"
                     for header in table_headers:
@@ -154,7 +155,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                             unsafe_allow_html=True,
                         )
 
-                        
+
 def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
