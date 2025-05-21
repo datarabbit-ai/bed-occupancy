@@ -125,12 +125,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
                     # Format tooltip information with row data
                     tooltip_info = ""
-                    headers: list[str] = []
-                    definitions: list[str] = []
                     headers, definitions = list(zip(*data_row.items()))
-                    # for column, value in data_row.items():
-                    #     headers.append(column)
-                    #     definitions.append(value)
 
                     tooltip_info += "<table><tr>"
                     for header in headers:
