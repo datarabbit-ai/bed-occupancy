@@ -62,15 +62,16 @@ st.html(
         }
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: max-content;
+            width: 200px;
             background-color: black;
             color: #fff;
             text-align: center;
             padding: 8px;
             border-radius: 8px;
             position: absolute;
-            top: -8x;
-            right: 110%;
+            bottom: 110%;
+            left: 50%;
+            margin-left: -100px;
             z-index: 100;
         }
         .tooltip:hover .tooltiptext {
