@@ -69,7 +69,9 @@ st.html(
             padding: 8px;
             border-radius: 8px;
             position: absolute;
-            z-index: 1;
+            top: -8x;
+            right: 110%;
+            z-index: 100;
         }
         .tooltip:hover .tooltiptext {
             visibility: visible;
