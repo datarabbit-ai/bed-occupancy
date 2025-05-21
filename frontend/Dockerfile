@@ -13,9 +13,7 @@ COPY requirements.txt .
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
-COPY main.py ./
-COPY agent.py ./
-COPY *.json ./
+COPY main.py agent.py *.json ./
 
 EXPOSE 8501
 
