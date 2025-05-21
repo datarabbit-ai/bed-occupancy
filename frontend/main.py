@@ -249,9 +249,6 @@ if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
 
 if not bed_df.empty:
     create_box_grid(bed_df)
-    # for col in ["patient_id", "patient_name", "sickness", "PESEL", "days_of_stay"]:
-    #     bed_df[col] = bed_df[col].apply(lambda x: None if x == 0 or x == "Unoccupied" else x)
-    # st.dataframe(bed_df, use_container_width=True, hide_index=True)
 else:
     st.info("No bed assignments found.")
 
