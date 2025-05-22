@@ -104,7 +104,8 @@ def get_tables() -> ListOfTables:
         return f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
 
     try:
-        random.seed(43)
+        rnd = random.Random()
+        rnd.seed(43)
         session = get_session()
 
         if rollback_flag == 1:
@@ -131,7 +132,7 @@ def get_tables() -> ListOfTables:
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
                 patient_id = entry.patient_id
-                will_come = random.choice([True] * 4 + [False])
+                will_come = rnd.choice([True] * 4 + [False])
                 if not will_come:
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
@@ -143,7 +144,7 @@ def get_tables() -> ListOfTables:
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = random.randint(1, 7)
+                    days = rnd.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
@@ -153,7 +154,7 @@ def get_tables() -> ListOfTables:
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = random.randint(1, 7)
+                    days = rnd.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
