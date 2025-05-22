@@ -181,7 +181,7 @@ def get_tables() -> ListOfTables:
                     "patient_id": ba.patient_id if ba else 0,
                     "patient_name": patient_name,
                     "sickness": sickness,
-                    "PESEL": pesel,
+                    "pesel": pesel,
                     "days_of_stay": days_of_stay,
                 }
             )
@@ -194,7 +194,7 @@ def get_tables() -> ListOfTables:
                     "place_in_queue": entry.queue_id,
                     "patient_id": patient.patient_id,
                     "patient_name": f"{patient.first_name} {patient.last_name}",
-                    "PESEL": f"...{patient.pesel[-3:]}",
+                    "pesel": f"...{patient.pesel[-3:]}",
                 }
             )
 

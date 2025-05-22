@@ -196,7 +196,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
     while queue_id < len(queue_df):
         patient_id = queue_df["patient_id"][queue_id]
         name, surname = queue_df["patient_name"][queue_id].split()
-        pesel = queue_df["PESEL"][queue_id][-3:]
+        pesel = queue_df["pesel"][queue_id][-3:]
 
         response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
         consent = handle_patient_rescheduling(
@@ -214,6 +214,9 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
             st.success(f"{name} {surname} agreed to reschedule.")
             return
+        elif consent is None:
+            st.info("Patient consent is unknown, calling one more time.")
+            continue
         else:
             queue_id += 1
 
