@@ -215,6 +215,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             st.success(f"{name} {surname} agreed to reschedule.")
             return
         elif consent is None:
+            st.info("Patient consent is unknown, calling one more time.")
             continue
         else:
             queue_id += 1
