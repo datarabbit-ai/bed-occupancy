@@ -345,6 +345,30 @@ no_shows_df_copy["Date"] = pd.Categorical(
 statistics_tab.line_chart(no_shows_df_copy, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
 
 
+statistics_tab.subheader("Phone calls statistics")
+
+col1, col2 = statistics_tab.columns(2)
+col1.metric(
+    label="Percentage of calls resulting in rescheduling",
+    value=analytic_data["ConsentsPercentage"],
+    delta=analytic_data["ConsentsPercentageDifference"],
+    border=True,
+)
+col2.metric(
+    label="Average percentage of calls resulting in rescheduling",
+    value=analytic_data["AverageConstentsPercentage"],
+    delta=analytic_data["AverageConstentsPercentageDifference"],
+    border=True,
+)
+
+calls_df = pd.DataFrame(analytic_data["CallsInTime"])
+calls_df_copy = calls_df.copy()
+calls_df_copy["Date"] = pd.Categorical(
+    calls_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(calls_df_copy["Date"])], ordered=True
+)
+statistics_tab.line_chart(calls_df_copy, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+
+
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
     st.button("➡️ Simulate Next Day", on_click=lambda: update_day(delta=1))
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:

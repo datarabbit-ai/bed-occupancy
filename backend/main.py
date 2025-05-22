@@ -19,7 +19,7 @@ app = FastAPI()
 day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
-calls_in_time: dict[int, int] = {1: 0}
+calls_in_time: dict[str, list] = {"Date": [1], "CallsNumber": [0]}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -47,10 +47,12 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
         last_change = delta
         if delta == 1:
             patients_consent_dictionary[day_for_simulation] = []
-            calls_in_time[day_for_simulation] = 0
+            calls_in_time["Date"].append(day_for_simulation)
+            calls_in_time["CallsNumber"].append(0)
         else:
             patients_consent_dictionary.pop(day_for_simulation + 1)
-            calls_in_time.pop(day_for_simulation + 1)
+            calls_in_time["Date"].pop(day_for_simulation)
+            calls_in_time["CallsNumber"].pop(day_for_simulation)
     return {"day": day_for_simulation}
 
 
@@ -163,7 +165,29 @@ def get_tables_and_statistics() -> ListOfTables:
             avg_no_shows_perc_diff = 0
 
         # Calls calculations
-        calls_data = calls_numbers_dict.copy()
+        percentage_list = []
+        for i in range(len(calls_numbers_dict["CallsNumber"])):
+            if calls_numbers_dict["CallsNumber"][i] != 0:
+                percentage_list.append(len(consent_dict[i + 1]) / calls_numbers_dict["CallsNumber"][i] * 100)
+            else:
+                percentage_list.append("No calls made")
+
+        consent_percentage = percentage_list[-1]
+        consent_percentage_diff = (
+            percentage_list[-1] - percentage_list[-2]
+            if percentage_list[-1] != "No calls made" and percentage_list[-2] != "No calls made"
+            else "No calls made"
+        )
+
+        total_sum = sum(x for x in percentage_list if x != "No calls made")
+        items_number = sum(1 for x in percentage_list if x != "No calls made")
+        avg_consent_perc = total_sum / items_number if items_number != 0 else "No calls made"
+
+        percentage_list.pop(-1)
+
+        total_sum = sum(x for x in percentage_list if x != "No calls made")
+        items_number = sum(1 for x in percentage_list if x != "No calls made")
+        avg_consent_perc_diff = total_sum / items_number if items_number != 0 else "No calls made"
 
         return Statistics(
             OccupancyInTime=occupancy_in_time,
@@ -178,6 +202,19 @@ def get_tables_and_statistics() -> ListOfTables:
             NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
             AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
             AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            CallsInTime=calls_numbers_dict,
+            ConsentsPercentage=f"{consent_percentage:.3f}".rstrip("0").rstrip(".") + "%"
+            if consent_percentage != "No calls made"
+            else "No calls made",
+            ConsentsPercentageDifference=f"{consent_percentage_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if consent_percentage_diff != "No calls made"
+            else "No calls made",
+            AverageConstentsPercentage=f"{avg_consent_perc:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_consent_perc != "No calls made"
+            else "No calls made",
+            AverageConstentsPercentageDifference=f"{avg_consent_perc_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_consent_perc_diff != "No calls made"
+            else "No calls made",
         )
 
     try:
@@ -325,7 +362,7 @@ def add_patient_to_approvers(patient_id: int) -> None:
 
 @app.get("/increase-calls-number")
 def increase_calls_number() -> None:
-    calls_in_time[day_for_simulation] += 1
+    calls_in_time["CallsNumber"][day_for_simulation - 1] += 1
 
 
 @app.get("/get-patient-data")
