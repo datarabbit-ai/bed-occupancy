@@ -17,7 +17,7 @@ conversation_initiation_client_data = {
         "dynamic_variables": {
             "patient_name": "Jan",
             "patient_surname": "Topolewski",
-            "pesel": "234",
+            "personal_number": 234,
             "patient_sickness": "zapalenie kolana",
             "current_visit_day": 10,
             "suggested_appointment_day": 5,
