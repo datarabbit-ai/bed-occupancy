@@ -214,6 +214,8 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
             st.success(f"{name} {surname} agreed to reschedule.")
             return
+        elif consent is None:
+            continue
         else:
             queue_id += 1
 
