@@ -59,6 +59,10 @@ def get_tables() -> ListOfTables:
     :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
     """
 
+    day = day_for_simulation
+    rollback_flag = last_change
+    consent_dict = patients_consent_dictionary
+
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
             ba.days_of_stay -= 1
@@ -103,16 +107,16 @@ def get_tables() -> ListOfTables:
         random.seed(43)
         session = get_session()
 
-        if last_change == 1:
-            logger.info(f"Current simulation day: {day_for_simulation}")
+        if rollback_flag == 1:
+            logger.info(f"Current simulation day: {day}")
         else:
-            logger.info(f"Rollback of simulation to day {day_for_simulation}")
+            logger.info(f"Rollback of simulation to day {day}")
 
         no_shows_list: List[NoShow] = []
 
-        for iteration in range(day_for_simulation - 1):
-            should_log = iteration == day_for_simulation - 2 and last_change == 1
-            should_give_no_shows = iteration == day_for_simulation - 2
+        for iteration in range(day - 1):
+            should_log = iteration == day - 2 and rollback_flag == 1
+            should_give_no_shows = iteration == day - 2
 
             decrement_days_of_stay()
             print_patients_to_be_released(log=should_log)
@@ -144,7 +148,7 @@ def get_tables() -> ListOfTables:
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-            for patient_id in patients_consent_dictionary[iteration + 2]:
+            for patient_id in consent_dict[iteration + 2]:
                 if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
