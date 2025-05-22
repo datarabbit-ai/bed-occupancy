@@ -196,7 +196,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
     while queue_id < len(queue_df):
         patient_id = queue_df["patient_id"][queue_id]
         name, surname = queue_df["patient_name"][queue_id].split()
-        pesel = queue_df["PESEL"][queue_id][-3:]
+        pesel = queue_df["pesel"][queue_id][-3:]
 
         response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
         consent = handle_patient_rescheduling(
