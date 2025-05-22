@@ -19,6 +19,7 @@ app = FastAPI()
 day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
+calls_in_time: dict[int, int] = {1: 0}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -46,8 +47,10 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
         last_change = delta
         if delta == 1:
             patients_consent_dictionary[day_for_simulation] = []
+            calls_in_time[day_for_simulation] = 0
         else:
             patients_consent_dictionary.pop(day_for_simulation + 1)
+            calls_in_time.pop(day_for_simulation + 1)
     return {"day": day_for_simulation}
 
 
@@ -61,6 +64,7 @@ def get_tables_and_statistics() -> ListOfTables:
     day = day_for_simulation
     rollback_flag = last_change
     consent_dict = patients_consent_dictionary.copy()
+    calls_numbers_dict = calls_in_time.copy()
     occupancy_in_time = {"Date": [1], "Occupancy": [100]}
     no_shows_in_time = {"Date": [1], "NoShows": [0]}
     stay_lengths = {}
@@ -115,6 +119,7 @@ def get_tables_and_statistics() -> ListOfTables:
         return total_sum / total_items_number
 
     def calculate_statistics() -> Statistics:
+        # Calculation of average length of stay
         avg_stay_length = calculate_average_in_dictionary(stay_lengths)
         if len(stay_lengths) != 1:
             max_key = max(stay_lengths.keys())
@@ -123,6 +128,7 @@ def get_tables_and_statistics() -> ListOfTables:
         else:
             avg_stay_length_diff = 0
 
+        # Hospital occupancy calculations
         occupancy_data = occupancy_in_time["Occupancy"].copy()
 
         if len(occupancy_data) != 1:
@@ -139,6 +145,7 @@ def get_tables_and_statistics() -> ListOfTables:
             avg_occupancy = occupancy_data[0]
             avg_occupancy_diff = 0
 
+        # No-shows calculations
         no_shows_data = no_shows_in_time["NoShows"].copy()
 
         if len(no_shows_data) != 1:
@@ -154,6 +161,9 @@ def get_tables_and_statistics() -> ListOfTables:
 
             avg_no_shows_perc = no_shows_data[0]
             avg_no_shows_perc_diff = 0
+
+        # Calls calculations
+        calls_data = calls_numbers_dict.copy()
 
         return Statistics(
             OccupancyInTime=occupancy_in_time,
@@ -311,6 +321,11 @@ def get_tables_and_statistics() -> ListOfTables:
 @app.get("/add-patient-to-approvers")
 def add_patient_to_approvers(patient_id: int) -> None:
     patients_consent_dictionary[day_for_simulation].append(patient_id)
+
+
+@app.get("/increase-calls-number")
+def increase_calls_number() -> None:
+    calls_in_time[day_for_simulation] += 1
 
 
 @app.get("/get-patient-data")

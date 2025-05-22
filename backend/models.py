@@ -39,6 +39,7 @@ class Statistics(BaseModel):
     NoShowsPercentageDifference: str
     AverageNoShowsPercentage: str
     AverageNoShowsPercentageDifference: str
+    CallsInTime: dict[str, list]
 
 
 class ListOfTables(BaseModel):
