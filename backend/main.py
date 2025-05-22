@@ -1,9 +1,10 @@
 import json
 import logging.config
+import math
 import random
 import traceback
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
@@ -18,27 +19,46 @@ logging.config.dictConfig(config)
 app = FastAPI()
 day_for_simulation = 1
 last_change = 1
+patients_consent_dictionary: dict[int, list[int]] = {1: []}
 
 
-@app.get("/get-current-day")
-def get_current_day():
+@app.get("/get-current-day", response_model=Dict[str, int])
+def get_current_day() -> Dict[str, int]:
+    """
+    Returns the current day of the simulation as per it's state on the server to keep the frontend and backend in sync.
+    :return: JSON object with the current day of the simulation.
+    """
     global day_for_simulation
     return {"day": day_for_simulation}
 
 
-@app.get("/update-day")
-def update_day(delta: int = Query(...)):
+@app.get("/update-day", response_model=Dict[str, int])
+def update_day(delta: int = Query(...)) -> Dict[str, int]:
+    """
+    Updates the current day of the simulation.
+    :param delta: Either -1 or 1 to signal a rollback or a forward.
+    :return: Returns the day resolved on the server side.
+    """
     global day_for_simulation, last_change
     if delta not in (-1, 1):
         return {"error": "Invalid delta value. Use -1 or 1."}
     if delta == 1 and day_for_simulation < 20 or delta == -1 and day_for_simulation > 1:
         day_for_simulation += delta
         last_change = delta
+        if delta == 1:
+            patients_consent_dictionary[day_for_simulation] = []
+        else:
+            patients_consent_dictionary.pop(day_for_simulation + 1)
     return {"day": day_for_simulation}
 
 
 @app.get("/get-tables", response_model=ListOfTables)
-def get_tables():
+def get_tables() -> ListOfTables:
+    """
+    Returns the current state of the simulation.
+    :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
+    """
+
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
             ba.days_of_stay -= 1
@@ -98,16 +118,15 @@ def get_tables():
             print_patients_to_be_released(log=should_log)
             delete_patients_to_be_released()
 
-            assigned_beds = session.query(BedAssignment.bed_id).subquery()
+            assigned_beds = session.query(BedAssignment.bed_id).scalar_subquery()
             bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
 
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
 
-            for entry in queue:
+            for i in range(min(len(queue), len(bed_ids))):
+                entry = queue[i]
                 patient_id = entry.patient_id
-                if bed_iterator >= len(bed_ids):
-                    break
                 will_come = random.choice([True] * 4 + [False])
                 if not will_come:
                     delete_patient_by_id_from_queue(patient_id)
@@ -117,6 +136,16 @@ def get_tables():
                     if should_log:
                         logger.info(f"No-show: {no_show.patient_name}")
                 elif check_if_patient_has_bed(patient_id):
+                    if should_log:
+                        logger.info(f"Patient {patient_id} already has a bed")
+                else:
+                    days = random.randint(1, 7)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
+                    delete_patient_by_id_from_queue(patient_id)
+                    bed_iterator += 1
+
+            for patient_id in patients_consent_dictionary[iteration + 2]:
+                if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
@@ -138,6 +167,7 @@ def get_tables():
 
             patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unoccupied"
             sickness = patient.sickness if patient else "Unoccupied"
+            pesel = patient.pesel if patient else "Unoccupied"
             days_of_stay = ba.days_of_stay if ba else 0
 
             bed_assignments.append(
@@ -146,6 +176,7 @@ def get_tables():
                     "patient_id": ba.patient_id if ba else 0,
                     "patient_name": patient_name,
                     "sickness": sickness,
+                    "PESEL": pesel,
                     "days_of_stay": days_of_stay,
                 }
             )
@@ -158,6 +189,7 @@ def get_tables():
                     "place_in_queue": entry.queue_id,
                     "patient_id": patient.patient_id,
                     "patient_name": f"{patient.first_name} {patient.last_name}",
+                    "PESEL": f"...{patient.pesel[-3:]}",
                 }
             )
 
@@ -172,3 +204,19 @@ def get_tables():
         error_message = f"Error occurred: {str(e)}\n{traceback.format_exc()}"
         logger.error(error_message)
         return {"error": "Server Error", "message": error_message}
+
+
+@app.get("/add-patient-to-approvers")
+def add_patient_to_approvers(patient_id: int) -> None:
+    patients_consent_dictionary[day_for_simulation].append(patient_id)
+
+
+@app.get("/get-patient-data")
+def get_patient_data(patient_id: int):
+    session = get_session()
+    patient = session.query(Patient).filter_by(patient_id=patient_id).first()
+    sickness = patient.sickness
+    old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
+    session.rollback()
+    session.close()
+    return {"sickness": sickness, "old_day": old_day, "new_day": new_day}
