@@ -61,7 +61,7 @@ def get_tables() -> ListOfTables:
 
     day = day_for_simulation
     rollback_flag = last_change
-    consent_dict = patients_consent_dictionary
+    consent_dict = patients_consent_dictionary.copy()
 
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
