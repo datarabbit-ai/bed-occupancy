@@ -38,8 +38,13 @@ class Statistics(BaseModel):
     OccupancyDifference: str
     AverageOccupancy: str
     AverageOccupancyDifference: str
-    AverageStayLength: float
-    AverageStayLengthDifference: float
+    AverageStayLength: str
+    AverageStayLengthDifference: str
+    NoShowsInTime: dict[str, list]
+    NoShowsPercentage: str
+    NoShowsPercentageDifference: str
+    AverageNoShowsPercentage: str
+    AverageNoShowsPercentageDifference: str
 
 
 class Patient(Base):

@@ -21,6 +21,7 @@ last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
 occupancy_in_time: dict[str, list] = {"Date": [], "Occupancy": []}
 stay_lengths: dict[int, list[int]] = {}
+no_shows_in_time: dict[str, list] = {"Date": [], "NoShows": []}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -61,7 +62,7 @@ def get_statistics() -> Statistics:
         logger.info(str(total_sum) + ", " + str(total_items_number))
         return total_sum / total_items_number
 
-    global occupancy_in_time, stay_lengths
+    global occupancy_in_time, stay_lengths, no_shows_in_time
     session = get_session()
 
     stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
@@ -93,14 +94,35 @@ def get_statistics() -> Statistics:
         avg_occupancy = occupancy_data[0]
         avg_occupancy_diff = 0
 
+    no_shows_data = no_shows_in_time["NoShows"].copy()
+
+    if len(no_shows_data) != 1:
+        no_shows_perc = no_shows_data[-1]
+        no_shows_perc_diff = no_shows_data[-1] - no_shows_data[-2]
+
+        avg_no_shows_perc = sum(no_shows_data) / len(no_shows_data)
+        no_shows_data.pop(-1)
+        avg_no_shows_perc_diff = avg_no_shows_perc - (sum(no_shows_data) / len(no_shows_data))
+    else:
+        no_shows_perc = no_shows_data[0]
+        no_shows_perc_diff = 0
+
+        avg_no_shows_perc = no_shows_data[0]
+        avg_no_shows_perc_diff = 0
+
     return Statistics(
-        OccupancyInTime={"Date": occupancy_in_time["Date"], "Occupancy [%]": occupancy_in_time["Occupancy"]},
-        Occupancy=str(round(occupancy, 3)) + "%",
-        OccupancyDifference=str(round(occupancy_diff, 3)) + "%",
-        AverageOccupancy=str(round(avg_occupancy, 3)) + "%",
-        AverageOccupancyDifference=str(round(avg_occupancy_diff, 3)) + "%",
-        AverageStayLength=round(avg_stay_length, 3),
-        AverageStayLengthDifference=round(avg_stay_length_diff, 3),
+        OccupancyInTime=occupancy_in_time,
+        Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+        OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+        AverageOccupancy=f"{avg_occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+        AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+        AverageStayLength=f"{avg_stay_length:.3f}".rstrip("0").rstrip("."),
+        AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip("."),
+        NoShowsInTime=no_shows_in_time,
+        NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+        NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+        AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+        AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
     )
 
 
@@ -160,8 +182,9 @@ def get_tables() -> ListOfTables:
 
         beds_number = get_beds_number()
 
-        global occupancy_in_time, stay_lengths
+        global occupancy_in_time, stay_lengths, no_shows_in_time
         occupancy_in_time = {"Date": [1], "Occupancy": [100]}
+        no_shows_in_time = {"Date": [1], "NoShows": [0]}
         stay_lengths = {}
 
         if last_change == 1:
@@ -183,6 +206,7 @@ def get_tables() -> ListOfTables:
             bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
 
             occupied_beds_number = beds_number - len(bed_ids)
+            no_shows_number = 0
 
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
@@ -192,6 +216,8 @@ def get_tables() -> ListOfTables:
                 patient_id = entry.patient_id
                 will_come = random.choice([True] * 4 + [False])
                 if not will_come:
+                    no_shows_number += 1
+
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
                     if should_give_no_shows:
@@ -231,6 +257,9 @@ def get_tables() -> ListOfTables:
 
             occupancy_in_time["Date"].append(iteration + 2)
             occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
+
+            no_shows_in_time["Date"].append(iteration + 2)
+            no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
 
         bed_assignments = []
         for bed in (

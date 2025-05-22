@@ -205,8 +205,35 @@ col3.metric(
     border=True,
 )
 
-df = pd.DataFrame(analytic_data["OccupancyInTime"])
-statistics_tab.line_chart(df, x="Date", use_container_width=True)
+occupancy_df = pd.DataFrame(analytic_data["OccupancyInTime"])
+occupancy_df_copy = occupancy_df.copy()
+occupancy_df_copy["Date"] = pd.Categorical(
+    occupancy_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(occupancy_df_copy["Date"])], ordered=True
+)
+statistics_tab.line_chart(occupancy_df_copy, x="Date", y_label="Occupancy [%]", use_container_width=True)
+
+statistics_tab.subheader("No-show statistics")
+
+col1, col2 = statistics_tab.columns(2)
+col1.metric(
+    label="No-shows percentage",
+    value=analytic_data["NoShowsPercentage"],
+    delta=analytic_data["NoShowsPercentageDifference"],
+    border=True,
+)
+col2.metric(
+    label="Average no-shows percentage",
+    value=analytic_data["AverageNoShowsPercentage"],
+    delta=analytic_data["AverageNoShowsPercentageDifference"],
+    border=True,
+)
+
+no_shows_df = pd.DataFrame(analytic_data["NoShowsInTime"])
+no_shows_df_copy = no_shows_df.copy()
+no_shows_df_copy["Date"] = pd.Categorical(
+    no_shows_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(no_shows_df_copy["Date"])], ordered=True
+)
+statistics_tab.line_chart(no_shows_df_copy, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
