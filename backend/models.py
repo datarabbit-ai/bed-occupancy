@@ -26,12 +26,6 @@ class NoShow(BaseModel):
     patient_name: str
 
 
-class ListOfTables(BaseModel):
-    BedAssignment: list[BedAssignmentResponse]
-    PatientQueue: list[PatientQueueResponse]
-    NoShows: list[NoShow]
-
-
 class Statistics(BaseModel):
     OccupancyInTime: dict[str, list]
     Occupancy: str
@@ -45,6 +39,13 @@ class Statistics(BaseModel):
     NoShowsPercentageDifference: str
     AverageNoShowsPercentage: str
     AverageNoShowsPercentageDifference: str
+
+
+class ListOfTables(BaseModel):
+    BedAssignment: list[BedAssignmentResponse]
+    PatientQueue: list[PatientQueueResponse]
+    NoShows: list[NoShow]
+    Statistics: Statistics
 
 
 class Patient(Base):

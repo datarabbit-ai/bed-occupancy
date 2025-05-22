@@ -119,7 +119,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
     # Create the grid
     for row in range(num_rows):
-        cols = st.columns(boxes_per_row)
+        cols = main_tab.columns(boxes_per_row)
 
         for col in range(boxes_per_row):
             box_index = row * boxes_per_row + col
@@ -226,9 +226,9 @@ def agent_call(queue_df: pd.DataFrame) -> None:
     main_tab.warning("No patient agreed to reschedule.")
 
 
-def get_list_of_tables() -> Optional[Dict]:
+def get_list_of_tables_and_statistics() -> Optional[Dict]:
     try:
-        response = requests.get("http://backend:8000/get-tables")
+        response = requests.get("http://backend:8000/get-tables-and-statistics")
         if response.status_code == 200:
             return response.json()
         else:
@@ -247,19 +247,6 @@ def update_day(delta: int) -> None:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
 
-def get_analytic_data() -> Optional[Dict]:
-    try:
-        response = requests.get("http://backend:8000/get-statistics")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            main_tab.error("Failed to fetch data from the server.")
-            return None
-    except Exception as e:
-        main_tab.error(f"Failed to connect to the server: {e}")
-        return None
-
-
 def toggle_auto_day_change() -> None:
     st.session_state.auto_day_change = not st.session_state.auto_day_change
 
@@ -270,7 +257,7 @@ elif st.session_state.button_pressed:
     st.session_state.button_pressed = False
 
 bed_df, queue_df, no_shows_df = None, None, None
-tables = get_list_of_tables()
+tables = get_list_of_tables_and_statistics()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
     queue_df = pd.DataFrame(tables["PatientQueue"])
@@ -308,7 +295,7 @@ st.sidebar.toggle(
 
 statistics_tab.subheader("Bed occupancy statistics")
 
-analytic_data = get_analytic_data()
+analytic_data = tables["Statistics"]
 
 col1, col2, col3 = statistics_tab.columns(3)
 col1.metric(label="Beds occupancy", value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True)

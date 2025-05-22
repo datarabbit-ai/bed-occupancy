@@ -19,9 +19,6 @@ app = FastAPI()
 day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
-occupancy_in_time: dict[str, list] = {"Date": [], "Occupancy": []}
-stay_lengths: dict[int, list[int]] = {}
-no_shows_in_time: dict[str, list] = {"Date": [], "NoShows": []}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -54,80 +51,8 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
     return {"day": day_for_simulation}
 
 
-@app.get("/get-statistics", response_model=Statistics)
-def get_statistics() -> Statistics:
-    def calculate_average_in_dictionary(data: dict) -> float:
-        total_sum = sum(sum(v) for v in data.values() if isinstance(v, list))
-        total_items_number = sum(len(v) for v in data.values() if isinstance(v, list))
-        logger.info(str(total_sum) + ", " + str(total_items_number))
-        return total_sum / total_items_number
-
-    global occupancy_in_time, stay_lengths, no_shows_in_time
-    session = get_session()
-
-    stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
-
-    session.rollback()
-    session.close()
-
-    avg_stay_length = calculate_average_in_dictionary(stay_lengths)
-    if len(stay_lengths) != 1:
-        max_key = max(stay_lengths.keys())
-        stay_lengths.pop(max_key)
-        avg_stay_length_diff = avg_stay_length - calculate_average_in_dictionary(stay_lengths)
-    else:
-        avg_stay_length_diff = 0
-
-    occupancy_data = occupancy_in_time["Occupancy"].copy()
-
-    if len(occupancy_data) != 1:
-        occupancy = occupancy_data[-1]
-        occupancy_diff = occupancy_data[-1] - occupancy_data[-2]
-
-        avg_occupancy = sum(occupancy_data) / len(occupancy_data)
-        occupancy_data.pop(-1)
-        avg_occupancy_diff = avg_occupancy - (sum(occupancy_data) / len(occupancy_data))
-    else:
-        occupancy = occupancy_data[0]
-        occupancy_diff = 0
-
-        avg_occupancy = occupancy_data[0]
-        avg_occupancy_diff = 0
-
-    no_shows_data = no_shows_in_time["NoShows"].copy()
-
-    if len(no_shows_data) != 1:
-        no_shows_perc = no_shows_data[-1]
-        no_shows_perc_diff = no_shows_data[-1] - no_shows_data[-2]
-
-        avg_no_shows_perc = sum(no_shows_data) / len(no_shows_data)
-        no_shows_data.pop(-1)
-        avg_no_shows_perc_diff = avg_no_shows_perc - (sum(no_shows_data) / len(no_shows_data))
-    else:
-        no_shows_perc = no_shows_data[0]
-        no_shows_perc_diff = 0
-
-        avg_no_shows_perc = no_shows_data[0]
-        avg_no_shows_perc_diff = 0
-
-    return Statistics(
-        OccupancyInTime=occupancy_in_time,
-        Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
-        OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
-        AverageOccupancy=f"{avg_occupancy:.3f}".rstrip("0").rstrip(".") + "%",
-        AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
-        AverageStayLength=f"{avg_stay_length:.3f}".rstrip("0").rstrip("."),
-        AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip("."),
-        NoShowsInTime=no_shows_in_time,
-        NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
-        NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
-        AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
-        AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
-    )
-
-
-@app.get("/get-tables", response_model=ListOfTables)
-def get_tables() -> ListOfTables:
+@app.get("/get-tables-and-statistics", response_model=ListOfTables)
+def get_tables_and_statistics() -> ListOfTables:
     """
     Returns the current state of the simulation.
     :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
@@ -136,6 +61,9 @@ def get_tables() -> ListOfTables:
     day = day_for_simulation
     rollback_flag = last_change
     consent_dict = patients_consent_dictionary.copy()
+    occupancy_in_time = {"Date": [1], "Occupancy": [100]}
+    no_shows_in_time = {"Date": [1], "NoShows": [0]}
+    stay_lengths = {}
 
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
@@ -180,17 +108,76 @@ def get_tables() -> ListOfTables:
     def get_beds_number() -> int:
         return session.query(Bed).count()
 
+    def calculate_average_in_dictionary(data: dict) -> float:
+        total_sum = sum(sum(v) for v in data.values() if isinstance(v, list))
+        total_items_number = sum(len(v) for v in data.values() if isinstance(v, list))
+        logger.info(str(total_sum) + ", " + str(total_items_number))
+        return total_sum / total_items_number
+
+    def calculate_statistics() -> Statistics:
+        avg_stay_length = calculate_average_in_dictionary(stay_lengths)
+        if len(stay_lengths) != 1:
+            max_key = max(stay_lengths.keys())
+            stay_lengths.pop(max_key)
+            avg_stay_length_diff = avg_stay_length - calculate_average_in_dictionary(stay_lengths)
+        else:
+            avg_stay_length_diff = 0
+
+        occupancy_data = occupancy_in_time["Occupancy"].copy()
+
+        if len(occupancy_data) != 1:
+            occupancy = occupancy_data[-1]
+            occupancy_diff = occupancy_data[-1] - occupancy_data[-2]
+
+            avg_occupancy = sum(occupancy_data) / len(occupancy_data)
+            occupancy_data.pop(-1)
+            avg_occupancy_diff = avg_occupancy - (sum(occupancy_data) / len(occupancy_data))
+        else:
+            occupancy = occupancy_data[0]
+            occupancy_diff = 0
+
+            avg_occupancy = occupancy_data[0]
+            avg_occupancy_diff = 0
+
+        no_shows_data = no_shows_in_time["NoShows"].copy()
+
+        if len(no_shows_data) != 1:
+            no_shows_perc = no_shows_data[-1]
+            no_shows_perc_diff = no_shows_data[-1] - no_shows_data[-2]
+
+            avg_no_shows_perc = sum(no_shows_data) / len(no_shows_data)
+            no_shows_data.pop(-1)
+            avg_no_shows_perc_diff = avg_no_shows_perc - (sum(no_shows_data) / len(no_shows_data))
+        else:
+            no_shows_perc = no_shows_data[0]
+            no_shows_perc_diff = 0
+
+            avg_no_shows_perc = no_shows_data[0]
+            avg_no_shows_perc_diff = 0
+
+        return Statistics(
+            OccupancyInTime=occupancy_in_time,
+            Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+            OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageOccupancy=f"{avg_occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageStayLength=f"{avg_stay_length:.3f}".rstrip("0").rstrip("."),
+            AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip("."),
+            NoShowsInTime=no_shows_in_time,
+            NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+            NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+        )
+
     try:
         rnd = random.Random()
         rnd.seed(43)
         session = get_session()
 
-        beds_number = get_beds_number()
+        stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
 
-        global occupancy_in_time, stay_lengths, no_shows_in_time
-        occupancy_in_time = {"Date": [1], "Occupancy": [100]}
-        no_shows_in_time = {"Date": [1], "NoShows": [0]}
-        stay_lengths = {}
+        beds_number = get_beds_number()
 
         if rollback_flag == 1:
             logger.info(f"Current simulation day: {day}")
@@ -309,7 +296,10 @@ def get_tables() -> ListOfTables:
         session.close()
 
         return ListOfTables(
-            BedAssignment=bed_assignments, PatientQueue=queue_data, NoShows=[n.model_dump() for n in no_shows_list]
+            BedAssignment=bed_assignments,
+            PatientQueue=queue_data,
+            NoShows=[n.model_dump() for n in no_shows_list],
+            Statistics=calculate_statistics(),
         )
 
     except Exception as e:
