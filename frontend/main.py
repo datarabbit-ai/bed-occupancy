@@ -1,4 +1,3 @@
-import random
 from typing import Dict, Optional
 
 import pandas as pd
@@ -170,25 +169,9 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     :param new_day: The suggested day for the new appointment.
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
-    # conversation = prepare_conversation(
-    #     patient_name=name,
-    #     patient_surname=surname,
-    #     pesel=pesel,
-    #     patient_sickness=sickness,
-    #     current_visit_day=old_day,
-    #     suggested_appointment_day=new_day,
-    # )
-    # conversation_id = establish_voice_conversation(conversation)
-    # return check_patient_consent_to_reschedule(conversation_id)
 
-    conversation_ids = (
-        ["conv_01jvmfw4nmf7nrp2vs3em3q9hn"] * 12
-        + ["conv_01jvmchxvdfeystykhfdcb0tr1"] * 7
-        + ["conv_01jvmcvacefw68528gty0j0dj6"] * 1
-    )
-    selected_conversation_id = random.choice(conversation_ids)
-    result = check_patient_consent_to_reschedule(selected_conversation_id)
-    return result
+    conversation_id = call_patient(name, surname, pesel, sickness, old_day, new_day)
+    return check_patient_consent_to_reschedule(conversation_id)
 
 
 def agent_call(queue_df: pd.DataFrame) -> None:

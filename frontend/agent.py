@@ -6,14 +6,18 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from elevenlabs.client import ElevenLabs
-from elevenlabs.conversational_ai.conversation import Conversation, ConversationInitiationData
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
+from elevenlabs import ElevenLabs
+from elevenlabs.conversational_ai.conversation import (
+    Conversation,
+    ConversationInitiationData,
+)
 
 load_dotenv()
 
 agent_id = os.getenv("AGENT_ID")
 api_key = os.getenv("ELEVENLABS_API_KEY")
+phone_to_call = os.getenv("PHONE_TO_CALL")
+agent_phone_number_id = os.getenv("AGENT_PHONE_NUMBER_ID")
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("./logger_config.json")
@@ -29,19 +33,27 @@ if not agent_id:
     logger.error("Error: AGENT_ID environment variable is not set")
     sys.exit(1)
 
+if not phone_to_call:
+    logger.error("Error: PHONE_TO_CALL environment variable is not set")
+    sys.exit(1)
+
+if not agent_phone_number_id:
+    logger.error("Error: AGENT_PHONE_NUMBER_ID environment variable is not set")
+    sys.exit(1)
+
 client = ElevenLabs(api_key=api_key)
 
 
-def prepare_conversation(
+def call_patient(
     patient_name: str,
     patient_surname: str,
     pesel: str,
     patient_sickness: str,
     current_visit_day: int,
     suggested_appointment_day: int,
-) -> Conversation:
+) -> str | None:
     """
-    Prepares a conversation session with dynamic variables for a patient.
+    Calls a patient using the ElevenLabs API and initiates a conversation.
 
     :param patient_name: The first name of the patient.
     :param patient_surname: The last name of the patient.
@@ -49,29 +61,30 @@ def prepare_conversation(
     :param patient_sickness: The sickness or condition of the patient.
     :param current_visit_day: The current day of the patient's visit.
     :param suggested_appointment_day: The suggested day for the next appointment.
-    :return: A `Conversation` object configured with the provided patient details.
+    :return: The conversation ID if the call was successful, or `None` if an error occurred.
     """
-    config = ConversationInitiationData(
+    conversation_initiation_client_data = ConversationInitiationData(
         dynamic_variables={
             "patient_name": patient_name,
             "patient_surname": patient_surname,
-            "pesel": pesel,
+            "personal_number": pesel,
             "patient_sickness": patient_sickness,
             "current_visit_day": current_visit_day,
             "suggested_appointment_day": suggested_appointment_day,
         }
     )
-
-    return Conversation(
-        client,
-        agent_id,
-        requires_auth=bool(api_key),
-        audio_interface=DefaultAudioInterface(),
-        config=config,
-        callback_agent_response=lambda response: logger.info(f"Agent: {response}"),
-        callback_agent_response_correction=lambda original, corrected: logger.info(f"Agent corrected: {corrected}"),
-        callback_user_transcript=lambda transcript: logger.info(f"User: {transcript}"),
-    )
+    try:
+        response = client.conversational_ai.twilio_outbound_call(
+            agent_id=agent_id,
+            agent_phone_number_id=agent_phone_number_id,
+            to_number=phone_to_call,
+            conversation_initiation_client_data=conversation_initiation_client_data,
+        )
+        logger.info(f"Conversation ID: {response.conversation_id}")
+        return response.conversation_id
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return None
 
 
 def establish_voice_conversation(conversation: Conversation) -> str | None:

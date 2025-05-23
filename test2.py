@@ -23,9 +23,10 @@ conversation_initiation_client_data = {
     }
 }
 
-client.conversational_ai.twilio_outbound_call(
+response = client.conversational_ai.twilio_outbound_call(
     agent_id=AGENT_ID,
     agent_phone_number_id=AGENT_PHONE_NUMBER_ID,
     to_number=PHONE_TO_CALL,
     conversation_initiation_client_data=conversation_initiation_client_data,
 )
+print(response.conversation_id)
