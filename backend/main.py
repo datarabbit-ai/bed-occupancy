@@ -221,7 +221,7 @@ def get_tables_and_statistics() -> ListOfTables:
         rnd = random.Random()
         rnd.seed(43)
         session = get_session()
-
+        
         stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
 
         beds_number = get_beds_number()
@@ -268,7 +268,6 @@ def get_tables_and_statistics() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = rnd.randint(1, 7)
-
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
                     stay_lengths[iteration + 2].append(days)
@@ -284,7 +283,6 @@ def get_tables_and_statistics() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = rnd.randint(1, 7)
-
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
                     stay_lengths[iteration + 2].append(days)
