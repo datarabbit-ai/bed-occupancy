@@ -48,6 +48,7 @@ client = ElevenLabs(api_key=api_key)
 def call_patient(
     patient_name: str,
     patient_surname: str,
+    gender: str,
     pesel: str,
     patient_sickness: str,
     current_visit_day: int,
@@ -68,6 +69,7 @@ def call_patient(
         dynamic_variables={
             "patient_name": patient_name,
             "patient_surname": patient_surname,
+            "gender": gender,
             "personal_number": pesel,
             "patient_sickness": patient_sickness,
             "current_visit_day": current_visit_day,

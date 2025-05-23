@@ -157,7 +157,9 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         )
 
 
-def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
+def handle_patient_rescheduling(
+    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int
+) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
     with the patient and analyzing their consent.
@@ -171,7 +173,7 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(name, surname, pesel, sickness, old_day, new_day)
+    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day)
     return check_patient_consent_to_reschedule(conversation_id)
 
 
@@ -187,6 +189,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         consent = handle_patient_rescheduling(
             name=name,
             surname=surname,
+            gender=response["gender"],
             pesel=pesel,
             sickness=response["sickness"],
             old_day=response["old_day"],

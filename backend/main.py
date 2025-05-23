@@ -372,7 +372,8 @@ def get_patient_data(patient_id: int):
     session = get_session()
     patient = session.query(Patient).filter_by(patient_id=patient_id).first()
     sickness = patient.sickness
+    gender = patient.gender
     old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
     session.rollback()
     session.close()
-    return {"sickness": sickness, "old_day": old_day, "new_day": new_day}
+    return {"sickness": sickness, "gender": gender, "old_day": old_day, "new_day": new_day}
