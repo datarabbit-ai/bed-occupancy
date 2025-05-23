@@ -59,6 +59,10 @@ def get_tables() -> ListOfTables:
     :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
     """
 
+    day = day_for_simulation
+    rollback_flag = last_change
+    consent_dict = patients_consent_dictionary.copy()
+
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
             ba.days_of_stay -= 1
@@ -100,19 +104,20 @@ def get_tables() -> ListOfTables:
         return f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
 
     try:
-        random.seed(43)
+        rnd = random.Random()
+        rnd.seed(43)
         session = get_session()
 
-        if last_change == 1:
-            logger.info(f"Current simulation day: {day_for_simulation}")
+        if rollback_flag == 1:
+            logger.info(f"Current simulation day: {day}")
         else:
-            logger.info(f"Rollback of simulation to day {day_for_simulation}")
+            logger.info(f"Rollback of simulation to day {day}")
 
         no_shows_list: List[NoShow] = []
 
-        for iteration in range(day_for_simulation - 1):
-            should_log = iteration == day_for_simulation - 2 and last_change == 1
-            should_give_no_shows = iteration == day_for_simulation - 2
+        for iteration in range(day - 1):
+            should_log = iteration == day - 2 and rollback_flag == 1
+            should_give_no_shows = iteration == day - 2
 
             decrement_days_of_stay()
             print_patients_to_be_released(log=should_log)
@@ -127,7 +132,7 @@ def get_tables() -> ListOfTables:
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
                 patient_id = entry.patient_id
-                will_come = random.choice([True] * 4 + [False])
+                will_come = rnd.choice([True] * 4 + [False])
                 if not will_come:
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
@@ -139,17 +144,17 @@ def get_tables() -> ListOfTables:
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = random.randint(1, 7)
+                    days = rnd.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
 
-            for patient_id in patients_consent_dictionary[iteration + 2]:
+            for patient_id in consent_dict[iteration + 2]:
                 if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = random.randint(1, 7)
+                    days = rnd.randint(1, 7)
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     bed_iterator += 1
@@ -176,7 +181,7 @@ def get_tables() -> ListOfTables:
                     "patient_id": ba.patient_id if ba else 0,
                     "patient_name": patient_name,
                     "sickness": sickness,
-                    "PESEL": pesel,
+                    "pesel": pesel,
                     "days_of_stay": days_of_stay,
                 }
             )
@@ -189,7 +194,7 @@ def get_tables() -> ListOfTables:
                     "place_in_queue": entry.queue_id,
                     "patient_id": patient.patient_id,
                     "patient_name": f"{patient.first_name} {patient.last_name}",
-                    "PESEL": f"...{patient.pesel[-3:]}",
+                    "pesel": f"...{patient.pesel[-3:]}",
                 }
             )
 
