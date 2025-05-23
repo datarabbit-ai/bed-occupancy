@@ -1,6 +1,5 @@
 import json
 import logging.config
-import math
 import random
 import traceback
 from pathlib import Path
@@ -8,7 +7,7 @@ from typing import Dict, List
 
 from db_operations import get_session
 from fastapi import FastAPI, Query
-from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue
+from models import Bed, BedAssignment, ListOfTables, NoShow, Patient, PatientQueue, Statistics
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -20,6 +19,7 @@ app = FastAPI()
 day_for_simulation = 1
 last_change = 1
 patients_consent_dictionary: dict[int, list[int]] = {1: []}
+calls_in_time: dict[str, list] = {"Date": [1], "CallsNumber": [0]}
 
 
 @app.get("/get-current-day", response_model=Dict[str, int])
@@ -47,13 +47,17 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
         last_change = delta
         if delta == 1:
             patients_consent_dictionary[day_for_simulation] = []
+            calls_in_time["Date"].append(day_for_simulation)
+            calls_in_time["CallsNumber"].append(0)
         else:
             patients_consent_dictionary.pop(day_for_simulation + 1)
+            calls_in_time["Date"].pop(day_for_simulation)
+            calls_in_time["CallsNumber"].pop(day_for_simulation)
     return {"day": day_for_simulation}
 
 
-@app.get("/get-tables", response_model=ListOfTables)
-def get_tables() -> ListOfTables:
+@app.get("/get-tables-and-statistics", response_model=ListOfTables)
+def get_tables_and_statistics() -> ListOfTables:
     """
     Returns the current state of the simulation.
     :return: A JSON object with three lists: BedAssignment, PatientQueue, and NoShows.
@@ -62,6 +66,10 @@ def get_tables() -> ListOfTables:
     day = day_for_simulation
     rollback_flag = last_change
     consent_dict = patients_consent_dictionary.copy()
+    calls_numbers_dict = calls_in_time.copy()
+    occupancy_in_time = {"Date": [1], "Occupancy": [100]}
+    no_shows_in_time = {"Date": [1], "NoShows": [0]}
+    stay_lengths = {}
 
     def decrement_days_of_stay():
         for ba in session.query(BedAssignment).all():
@@ -103,10 +111,120 @@ def get_tables() -> ListOfTables:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
         return f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
 
+    def get_beds_number() -> int:
+        return session.query(Bed).count()
+
+    def calculate_average_in_dictionary(data: dict) -> float:
+        total_sum = sum(sum(v) for v in data.values() if isinstance(v, list))
+        total_items_number = sum(len(v) for v in data.values() if isinstance(v, list))
+        logger.info(str(total_sum) + ", " + str(total_items_number))
+        return total_sum / total_items_number
+
+    def calculate_statistics() -> Statistics:
+        # Calculation of average length of stay
+        avg_stay_length = calculate_average_in_dictionary(stay_lengths)
+        if len(stay_lengths) != 1:
+            max_key = max(stay_lengths.keys())
+            stay_lengths.pop(max_key)
+            avg_stay_length_diff = avg_stay_length - calculate_average_in_dictionary(stay_lengths)
+        else:
+            avg_stay_length_diff = 0
+
+        # Hospital occupancy calculations
+        occupancy_data = occupancy_in_time["Occupancy"].copy()
+
+        if len(occupancy_data) != 1:
+            occupancy = occupancy_data[-1]
+            occupancy_diff = occupancy_data[-1] - occupancy_data[-2]
+
+            avg_occupancy = sum(occupancy_data) / len(occupancy_data)
+            occupancy_data.pop(-1)
+            avg_occupancy_diff = avg_occupancy - (sum(occupancy_data) / len(occupancy_data))
+        else:
+            occupancy = occupancy_data[0]
+            occupancy_diff = 0
+
+            avg_occupancy = occupancy_data[0]
+            avg_occupancy_diff = 0
+
+        # No-shows calculations
+        no_shows_data = no_shows_in_time["NoShows"].copy()
+
+        if len(no_shows_data) != 1:
+            no_shows_perc = no_shows_data[-1]
+            no_shows_perc_diff = no_shows_data[-1] - no_shows_data[-2]
+
+            avg_no_shows_perc = sum(no_shows_data) / len(no_shows_data)
+            no_shows_data.pop(-1)
+            avg_no_shows_perc_diff = avg_no_shows_perc - (sum(no_shows_data) / len(no_shows_data))
+        else:
+            no_shows_perc = no_shows_data[0]
+            no_shows_perc_diff = 0
+
+            avg_no_shows_perc = no_shows_data[0]
+            avg_no_shows_perc_diff = 0
+
+        # Calls calculations
+        percentage_list = []
+        for i in range(len(calls_numbers_dict["CallsNumber"])):
+            if calls_numbers_dict["CallsNumber"][i] != 0:
+                percentage_list.append(len(consent_dict[i + 1]) / calls_numbers_dict["CallsNumber"][i] * 100)
+            else:
+                percentage_list.append("No calls made")
+
+        consent_percentage = percentage_list[-1]
+        consent_percentage_diff = (
+            percentage_list[-1] - percentage_list[-2]
+            if percentage_list[-1] != "No calls made" and percentage_list[-2] != "No calls made"
+            else "No calls made"
+        )
+
+        total_sum = sum(x for x in percentage_list if x != "No calls made")
+        items_number = sum(1 for x in percentage_list if x != "No calls made")
+        avg_consent_perc = total_sum / items_number if items_number != 0 else "No calls made"
+
+        percentage_list.pop(-1)
+
+        total_sum = sum(x for x in percentage_list if x != "No calls made")
+        items_number = sum(1 for x in percentage_list if x != "No calls made")
+        avg_consent_perc_diff = total_sum / items_number if items_number != 0 else "No calls made"
+
+        return Statistics(
+            OccupancyInTime=occupancy_in_time,
+            Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+            OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageOccupancy=f"{avg_occupancy:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageStayLength=f"{avg_stay_length:.3f}".rstrip("0").rstrip("."),
+            AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip("."),
+            NoShowsInTime=no_shows_in_time,
+            NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+            NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            CallsInTime=calls_numbers_dict,
+            ConsentsPercentage=f"{consent_percentage:.3f}".rstrip("0").rstrip(".") + "%"
+            if consent_percentage != "No calls made"
+            else "No calls made",
+            ConsentsPercentageDifference=f"{consent_percentage_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if consent_percentage_diff != "No calls made"
+            else "No calls made",
+            AverageConstentsPercentage=f"{avg_consent_perc:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_consent_perc != "No calls made"
+            else "No calls made",
+            AverageConstentsPercentageDifference=f"{avg_consent_perc_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_consent_perc_diff != "No calls made"
+            else "No calls made",
+        )
+
     try:
         rnd = random.Random()
         rnd.seed(43)
         session = get_session()
+
+        stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
+
+        beds_number = get_beds_number()
 
         if rollback_flag == 1:
             logger.info(f"Current simulation day: {day}")
@@ -126,6 +244,9 @@ def get_tables() -> ListOfTables:
             assigned_beds = session.query(BedAssignment.bed_id).scalar_subquery()
             bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
 
+            occupied_beds_number = beds_number - len(bed_ids)
+            no_shows_number = 0
+
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             bed_iterator = 0
 
@@ -134,6 +255,8 @@ def get_tables() -> ListOfTables:
                 patient_id = entry.patient_id
                 will_come = rnd.choice([True] * 4 + [False])
                 if not will_come:
+                    no_shows_number += 1
+
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
                     if should_give_no_shows:
@@ -145,8 +268,14 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = rnd.randint(1, 7)
+
+                    if iteration + 2 not in stay_lengths:
+                        stay_lengths[iteration + 2] = []
+                    stay_lengths[iteration + 2].append(days)
+
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
+                    occupied_beds_number += 1
                     bed_iterator += 1
 
             for patient_id in consent_dict[iteration + 2]:
@@ -155,9 +284,21 @@ def get_tables() -> ListOfTables:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
                     days = rnd.randint(1, 7)
+
+                    if iteration + 2 not in stay_lengths:
+                        stay_lengths[iteration + 2] = []
+                    stay_lengths[iteration + 2].append(days)
+
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
                     delete_patient_by_id_from_queue(patient_id)
+                    occupied_beds_number += 1
                     bed_iterator += 1
+
+            occupancy_in_time["Date"].append(iteration + 2)
+            occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
+
+            no_shows_in_time["Date"].append(iteration + 2)
+            no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
 
         bed_assignments = []
         for bed in (
@@ -202,7 +343,10 @@ def get_tables() -> ListOfTables:
         session.close()
 
         return ListOfTables(
-            BedAssignment=bed_assignments, PatientQueue=queue_data, NoShows=[n.model_dump() for n in no_shows_list]
+            BedAssignment=bed_assignments,
+            PatientQueue=queue_data,
+            NoShows=[n.model_dump() for n in no_shows_list],
+            Statistics=calculate_statistics(),
         )
 
     except Exception as e:
@@ -214,6 +358,11 @@ def get_tables() -> ListOfTables:
 @app.get("/add-patient-to-approvers")
 def add_patient_to_approvers(patient_id: int) -> None:
     patients_consent_dictionary[day_for_simulation].append(patient_id)
+
+
+@app.get("/increase-calls-number")
+def increase_calls_number() -> None:
+    calls_in_time["CallsNumber"][day_for_simulation - 1] += 1
 
 
 @app.get("/get-patient-data")
