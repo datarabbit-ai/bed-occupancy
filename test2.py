@@ -13,15 +13,13 @@ AGENT_PHONE_NUMBER_ID = os.getenv("AGENT_PHONE_NUMBER_ID")
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 conversation_initiation_client_data = {
-    "conversation_initiation_client_data": {
-        "dynamic_variables": {
-            "patient_name": "Jan",
-            "patient_surname": "Topolewski",
-            "personal_number": 234,
-            "patient_sickness": "zapalenie kolana",
-            "current_visit_day": 10,
-            "suggested_appointment_day": 5,
-        }
+    "dynamic_variables": {
+        "patient_name": "Michał",
+        "patient_surname": "Mikołajczak",
+        "personal_number": 234,
+        "patient_sickness": "zapalenie kolana",
+        "current_visit_day": 10,
+        "suggested_appointment_day": 5,
     }
 }
 
