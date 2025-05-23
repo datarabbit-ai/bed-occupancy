@@ -291,6 +291,7 @@ if not no_shows_df.empty:
 else:
     st.sidebar.info("No no-shows found.")
 
+st.sidebar.subheader(f"Auto: {st.session_state.auto_day_change}, Button press: {st.session_state.button_pressed}")
 st.sidebar.toggle(
     label="Activate automatic day change", value=st.session_state.auto_day_change, on_change=toggle_auto_day_change
 )
