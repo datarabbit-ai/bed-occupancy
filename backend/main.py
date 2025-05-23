@@ -221,7 +221,7 @@ def get_tables_and_statistics() -> ListOfTables:
         rnd = random.Random()
         rnd.seed(43)
         session = get_session()
-        
+
         stay_lengths[1] = [d[0] for d in session.query(BedAssignment.days_of_stay).all()]
 
         beds_number = get_beds_number()
