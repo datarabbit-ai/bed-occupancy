@@ -31,7 +31,8 @@ st.html(
             width: 30% !important;
         }
         section[data-testid="stMain"]{
-            width: 70% !important;
+            min-width: 70% !important;
+            max-width: 100%;
         }
 
         .tooltip {
@@ -253,6 +254,14 @@ def toggle_auto_day_change() -> None:
     st.session_state.auto_day_change = not st.session_state.auto_day_change
 
 
+def sort_values_for_charts_by_dates(data) -> pd.DataFrame:
+    data_copy = data.copy()
+    data_copy["Date"] = pd.Categorical(
+        data_copy["Date"].astype(str), categories=[str(x) for x in sorted(data_copy["Date"])], ordered=True
+    )
+    return data_copy
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -314,12 +323,8 @@ col3.metric(
     border=True,
 )
 
-occupancy_df = pd.DataFrame(analytic_data["OccupancyInTime"])
-occupancy_df_copy = occupancy_df.copy()
-occupancy_df_copy["Date"] = pd.Categorical(
-    occupancy_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(occupancy_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(occupancy_df_copy, x="Date", y_label="Occupancy [%]", use_container_width=True)
+occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
+statistics_tab.line_chart(occupancy_df, x="Date", y_label="Occupancy [%]", use_container_width=True)
 
 statistics_tab.subheader("No-show statistics")
 
@@ -337,12 +342,8 @@ col2.metric(
     border=True,
 )
 
-no_shows_df = pd.DataFrame(analytic_data["NoShowsInTime"])
-no_shows_df_copy = no_shows_df.copy()
-no_shows_df_copy["Date"] = pd.Categorical(
-    no_shows_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(no_shows_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(no_shows_df_copy, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
+no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
+statistics_tab.line_chart(no_shows_df, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
 
 
 statistics_tab.subheader("Phone calls statistics")
@@ -361,12 +362,8 @@ col2.metric(
     border=True,
 )
 
-calls_df = pd.DataFrame(analytic_data["CallsInTime"])
-calls_df_copy = calls_df.copy()
-calls_df_copy["Date"] = pd.Categorical(
-    calls_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(calls_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(calls_df_copy, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
+statistics_tab.bar_chart(calls_df, x="Date", y_label="Number of phone calls completed", use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:

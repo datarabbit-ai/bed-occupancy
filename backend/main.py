@@ -187,7 +187,11 @@ def get_tables_and_statistics() -> ListOfTables:
 
         total_sum = sum(x for x in percentage_list if x != "No calls made")
         items_number = sum(1 for x in percentage_list if x != "No calls made")
-        avg_consent_perc_diff = total_sum / items_number if items_number != 0 else "No calls made"
+        avg_consent_perc_diff = (
+            avg_consent_perc - (total_sum / items_number)
+            if items_number != 0 and avg_consent_perc != "No calls made"
+            else "No calls made"
+        )
 
         return Statistics(
             OccupancyInTime=occupancy_in_time,
