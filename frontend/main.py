@@ -201,10 +201,11 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             main_tab.success(f"{name} {surname} agreed to reschedule.")
             return
         elif consent is None:
-            st.info("Patient consent is unknown, calling one more time.")
+            st.info(f"{name} {surname}'s consent is unknown, calling one more time.")
             continue
         else:
             queue_id += 1
+            st.error(f"{name} {surname} did not agree to reschedule.")
             requests.get("http://backend:8000/increase-calls-number")
 
     st.session_state.button_pressed = True
