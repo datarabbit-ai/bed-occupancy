@@ -26,10 +26,31 @@ class NoShow(BaseModel):
     patient_name: str
 
 
+class Statistics(BaseModel):
+    OccupancyInTime: dict[str, list]
+    Occupancy: str
+    OccupancyDifference: str
+    AverageOccupancy: str
+    AverageOccupancyDifference: str
+    AverageStayLength: str
+    AverageStayLengthDifference: str
+    NoShowsInTime: dict[str, list]
+    NoShowsPercentage: str
+    NoShowsPercentageDifference: str
+    AverageNoShowsPercentage: str
+    AverageNoShowsPercentageDifference: str
+    CallsInTime: dict[str, list]
+    ConsentsPercentage: str
+    ConsentsPercentageDifference: str
+    AverageConstentsPercentage: str
+    AverageConstentsPercentageDifference: str
+
+
 class ListOfTables(BaseModel):
     BedAssignment: list[BedAssignmentResponse]
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
+    Statistics: Statistics
 
 
 class Patient(Base):
