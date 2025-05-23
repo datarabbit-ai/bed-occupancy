@@ -1,4 +1,3 @@
-import random
 from typing import Dict, Optional
 
 import pandas as pd
@@ -31,7 +30,8 @@ st.html(
             width: 30% !important;
         }
         section[data-testid="stMain"]{
-            width: 70% !important;
+            min-width: 70% !important;
+            max-width: 100%;
         }
 
         .tooltip {
@@ -170,25 +170,9 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     :param new_day: The suggested day for the new appointment.
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
-    # conversation = prepare_conversation(
-    #     patient_name=name,
-    #     patient_surname=surname,
-    #     pesel=pesel,
-    #     patient_sickness=sickness,
-    #     current_visit_day=old_day,
-    #     suggested_appointment_day=new_day,
-    # )
-    # conversation_id = establish_voice_conversation(conversation)
-    # return check_patient_consent_to_reschedule(conversation_id)
 
-    conversation_ids = (
-        ["conv_01jvmfw4nmf7nrp2vs3em3q9hn"] * 12
-        + ["conv_01jvmchxvdfeystykhfdcb0tr1"] * 7
-        + ["conv_01jvmcvacefw68528gty0j0dj6"] * 1
-    )
-    selected_conversation_id = random.choice(conversation_ids)
-    result = check_patient_consent_to_reschedule(selected_conversation_id)
-    return result
+    conversation_id = call_patient(name, surname, pesel, sickness, old_day, new_day)
+    return check_patient_consent_to_reschedule(conversation_id)
 
 
 def agent_call(queue_df: pd.DataFrame) -> None:
@@ -217,10 +201,11 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             main_tab.success(f"{name} {surname} agreed to reschedule.")
             return
         elif consent is None:
-            st.info("Patient consent is unknown, calling one more time.")
+            st.info(f"{name} {surname}'s consent is unknown, calling one more time.")
             continue
         else:
             queue_id += 1
+            st.error(f"{name} {surname} did not agree to reschedule.")
             requests.get("http://backend:8000/increase-calls-number")
 
     st.session_state.button_pressed = True
@@ -253,6 +238,14 @@ def toggle_auto_day_change() -> None:
     st.session_state.auto_day_change = not st.session_state.auto_day_change
 
 
+def sort_values_for_charts_by_dates(data) -> pd.DataFrame:
+    data_copy = data.copy()
+    data_copy["Date"] = pd.Categorical(
+        data_copy["Date"].astype(str), categories=[str(x) for x in sorted(data_copy["Date"])], ordered=True
+    )
+    return data_copy
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -269,6 +262,7 @@ main_tab.header(f"Day {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.consent = False
+    st.session_state.auto_day_change = False
     st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
@@ -290,9 +284,7 @@ if not no_shows_df.empty:
 else:
     st.sidebar.info("No no-shows found.")
 
-st.sidebar.toggle(
-    label="Activate automatic day change", value=st.session_state.auto_day_change, on_change=toggle_auto_day_change
-)
+st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
 
 
 statistics_tab.subheader("Bed occupancy statistics")
@@ -314,12 +306,8 @@ col3.metric(
     border=True,
 )
 
-occupancy_df = pd.DataFrame(analytic_data["OccupancyInTime"])
-occupancy_df_copy = occupancy_df.copy()
-occupancy_df_copy["Date"] = pd.Categorical(
-    occupancy_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(occupancy_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(occupancy_df_copy, x="Date", y_label="Occupancy [%]", use_container_width=True)
+occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
+statistics_tab.line_chart(occupancy_df, x="Date", y_label="Occupancy [%]", use_container_width=True)
 
 statistics_tab.subheader("No-show statistics")
 
@@ -337,12 +325,8 @@ col2.metric(
     border=True,
 )
 
-no_shows_df = pd.DataFrame(analytic_data["NoShowsInTime"])
-no_shows_df_copy = no_shows_df.copy()
-no_shows_df_copy["Date"] = pd.Categorical(
-    no_shows_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(no_shows_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(no_shows_df_copy, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
+no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
+statistics_tab.line_chart(no_shows_df, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
 
 
 statistics_tab.subheader("Phone calls statistics")
@@ -361,12 +345,8 @@ col2.metric(
     border=True,
 )
 
-calls_df = pd.DataFrame(analytic_data["CallsInTime"])
-calls_df_copy = calls_df.copy()
-calls_df_copy["Date"] = pd.Categorical(
-    calls_df_copy["Date"].astype(str), categories=[str(x) for x in sorted(calls_df_copy["Date"])], ordered=True
-)
-statistics_tab.line_chart(calls_df_copy, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
+statistics_tab.bar_chart(calls_df, x="Date", y_label="Number of phone calls completed", use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
