@@ -24,6 +24,7 @@ if "current_patient_index" not in st.session_state:
 if "consent" not in st.session_state:
     st.session_state.consent = False
 
+st.session_state.consent = False
 
 st.html(
     """
