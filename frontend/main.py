@@ -166,6 +166,7 @@ def handle_patient_rescheduling(
 
     :param name: The first name of the patient.
     :param surname: The last name of the patient.
+    :param gender: The gender of the patient.
     :param pesel: The PESEL number of the patient.
     :param sickness: The sickness or condition of the patient.
     :param old_day: The current day of the patient's visit.
