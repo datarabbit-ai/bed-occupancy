@@ -90,7 +90,7 @@ def generate_fake_patient_data() -> Patient:
         name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
-        gender = "mążczyzna"
+        gender = "mężczyzna"
     random_urgency = fake.enum(Urgency)
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
     random_sickness = fake.random_element(sicknesses)
