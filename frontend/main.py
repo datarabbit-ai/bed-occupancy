@@ -239,7 +239,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         st.session_state.current_patient_index += 1
         st.session_state.button_pressed = True
     else:
-        main_tab.info(f"{name} {surname}{_("'s consent is unknown")}.")
+        main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
 def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
