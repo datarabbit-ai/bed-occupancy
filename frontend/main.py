@@ -281,7 +281,14 @@ else:
 
 st.sidebar.subheader("Patients in queue")
 if not queue_df.empty:
-    st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
+
+    def highlight_current_row(row):
+        if row.name == st.session_state.current_patient_index:
+            return ["background-color: #fddb3a"] * len(row)
+        return [""] * len(row)
+
+    styled_df = queue_df.style.apply(highlight_current_row, axis=1)
+    st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
 else:
     st.sidebar.info("No patients found in the queue.")
 
