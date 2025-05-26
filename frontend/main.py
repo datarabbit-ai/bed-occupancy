@@ -247,7 +247,9 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         st.session_state.patient_id = patient_id
         requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
         requests.get("http://backend:8000/increase-calls-number")
+
         main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
+  
         st.session_state.current_patient_index = 0
         st.session_state.button_pressed = True
     elif consent is False:
