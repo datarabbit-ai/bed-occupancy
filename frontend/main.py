@@ -289,13 +289,17 @@ else:
 
 st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:
-    st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
+    queue_df_display = queue_df.copy()
+    queue_df_display.columns = [_("Place in queue"), _("Patient's number"), _("Patient's name"), _("Personal number")]
+    st.sidebar.dataframe(queue_df_display, use_container_width=True, hide_index=True)
 else:
     st.sidebar.info(_("No patients found in the queue."))
 
 st.sidebar.subheader(_("Patients absent on a given day"))
 if not no_shows_df.empty:
-    st.sidebar.dataframe(no_shows_df, use_container_width=True, hide_index=True)
+    no_shows_df_display = no_shows_df.copy()
+    no_shows_df_display.columns = [_("Patient's number"), _("Patient's name")]
+    st.sidebar.dataframe(no_shows_df_display, use_container_width=True, hide_index=True)
 else:
     st.sidebar.info(_("No no-shows found."))
 
