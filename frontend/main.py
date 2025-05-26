@@ -8,8 +8,9 @@ from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
-_ = gettext.gettext
+st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 
+_ = gettext.gettext
 language = st.sidebar.selectbox("", ["en", "pl"])
 try:
     localizator = gettext.translation("base", localedir="locales", languages=[language])
@@ -18,7 +19,6 @@ try:
 except:
     pass
 
-st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
 
