@@ -56,6 +56,17 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
     return {"day": day_for_simulation}
 
 
+@app.get("/reset-simulation", response_model=Dict[str, int])
+def reset_simulation() -> Dict[str, int]:
+    global patients_consent_dictionary, day_for_simulation, last_change, calls_in_time
+    day_for_simulation = 1
+    last_change = 1
+    patients_consent_dictionary = {1: []}
+    calls_in_time = {"Date": [1], "CallsNumber": [0]}
+    logger.info("Resetting the simulation")
+    return {"day": day_for_simulation}
+
+
 @app.get("/get-tables-and-statistics", response_model=ListOfTables)
 def get_tables_and_statistics() -> ListOfTables:
     """
@@ -68,7 +79,7 @@ def get_tables_and_statistics() -> ListOfTables:
     consent_dict = patients_consent_dictionary.copy()
     calls_numbers_dict = calls_in_time.copy()
     occupancy_in_time = {"Date": [1], "Occupancy": [100]}
-    no_shows_in_time = {"Date": [1], "NoShows": [0]}
+    no_shows_in_time = {"Date": [1], "NoShows": [0], "NoShowsNumber": [0]}
     stay_lengths = {}
 
     def decrement_days_of_stay():
@@ -219,7 +230,7 @@ def get_tables_and_statistics() -> ListOfTables:
             AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip(".")
             if avg_stay_length_diff != "No previous day"
             else "No previous day",
-            NoShowsInTime=no_shows_in_time,
+            NoShowsInTime={"Date": no_shows_in_time["Date"], "NoShowsNumber": no_shows_in_time["NoShowsNumber"]},
             NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%"
             if no_shows_perc != "No incoming patients"
             else "No incoming patients",
@@ -330,6 +341,8 @@ def get_tables_and_statistics() -> ListOfTables:
                 no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
             else:
                 no_shows_in_time["NoShows"].append("No incoming patients")
+
+            no_shows_in_time["NoShowsNumber"].append(no_shows_number)
 
         bed_assignments = []
         for bed in (
