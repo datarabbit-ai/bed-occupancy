@@ -1,7 +1,6 @@
 import json
 import logging.config
 import os
-import random
 import signal
 import sys
 import time
@@ -66,29 +65,29 @@ def call_patient(
     :param suggested_appointment_day: The suggested day for the next appointment.
     :return: The conversation ID if the call was successful, or `None` if an error occurred.
     """
-    # conversation_initiation_client_data = ConversationInitiationData(
-    #     dynamic_variables={
-    #         "patient_name": patient_name,
-    #         "patient_surname": patient_surname,
-    #         "gender": gender,
-    #         "personal_number": pesel,
-    #         "patient_sickness": patient_sickness,
-    #         "current_visit_day": current_visit_day,
-    #         "suggested_appointment_day": suggested_appointment_day,
-    #     }
-    # )
-    # try:
-    #     response = client.conversational_ai.twilio_outbound_call(
-    #         agent_id=agent_id,
-    #         agent_phone_number_id=agent_phone_number_id,
-    #         to_number=phone_to_call,
-    #         conversation_initiation_client_data=conversation_initiation_client_data,
-    #     )
-    #     logger.info(f"Conversation ID: {response.conversation_id}")
-    #     return response.conversation_id
-    # except Exception as e:
-    #     logger.error(f"Error: {e}")
-    #     return None
+    conversation_initiation_client_data = ConversationInitiationData(
+        dynamic_variables={
+            "patient_name": patient_name,
+            "patient_surname": patient_surname,
+            "gender": gender,
+            "personal_number": pesel,
+            "patient_sickness": patient_sickness,
+            "current_visit_day": current_visit_day,
+            "suggested_appointment_day": suggested_appointment_day,
+        }
+    )
+    try:
+        response = client.conversational_ai.twilio_outbound_call(
+            agent_id=agent_id,
+            agent_phone_number_id=agent_phone_number_id,
+            to_number=phone_to_call,
+            conversation_initiation_client_data=conversation_initiation_client_data,
+        )
+        logger.info(f"Conversation ID: {response.conversation_id}")
+        return response.conversation_id
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return None
 
 
 def establish_voice_conversation(conversation: Conversation) -> str | None:
@@ -122,27 +121,25 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
     :param conversation_id: The ID of the conversation to analyze.
     :return: A boolean indicating whether the patient agreed to reschedule.
     """
-    # max_attempts = 60
+    max_attempts = 60
 
-    # for attempt in range(max_attempts):
-    #     conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
-    #     status = conversation_data.status
-    #     if status == "done":
-    #         break
-    #     logger.info(f"Conversation status: {status} (Attempt {attempt + 1})")
-    #     time.sleep(5)
-    # else:
-    #     logger.warning("Conversation did not complete in time.")
-    #     return False
+    for attempt in range(max_attempts):
+        conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
+        status = conversation_data.status
+        if status == "done":
+            break
+        logger.info(f"Conversation status: {status} (Attempt {attempt + 1})")
+        time.sleep(5)
+    else:
+        logger.warning("Conversation did not complete in time.")
+        return False
 
-    # new_conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
-    # result: bool = (
-    #     json.loads(new_conversation_data.analysis.json())
-    #     .get("data_collection_results", {})
-    #     .get("consent_to_change_the_date", {})
-    #     .get("value", None)
-    # )
-    # logger.info(f"Patient agreed: {result}")
-    # return result
-
-    return random.choice([False, True, None])
+    new_conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
+    result: bool = (
+        json.loads(new_conversation_data.analysis.json())
+        .get("data_collection_results", {})
+        .get("consent_to_change_the_date", {})
+        .get("value", None)
+    )
+    logger.info(f"Patient agreed: {result}")
+    return result
