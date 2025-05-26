@@ -14,6 +14,14 @@ st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 main_tab, statistics_tab = st.tabs(["Current state", "Data analysis"])
 main_tab.title(_("Bed Assignments"))
 
+language = st.sidebar.selectbox("", ["en", "pl"])
+try:
+    localizator = gettext.translation("base", localedir="locales", languages=[language])
+    localizator.install()
+    _ = localizator.gettext
+except:
+    pass
+
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
 
