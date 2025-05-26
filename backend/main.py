@@ -205,12 +205,6 @@ def get_tables_and_statistics() -> ListOfTables:
             else "No calls made"
         )
 
-        if len(no_shows_in_time["Date"]) != 0:
-            no_shows_in_time["Date"].append(no_shows_in_time["Date"][-1] + 1)
-        else:
-            no_shows_in_time["Date"].append(1)
-        no_shows_in_time["NoShows"].append("No incoming patients")
-
         return Statistics(
             OccupancyInTime=occupancy_in_time,
             Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
