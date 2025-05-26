@@ -213,22 +213,6 @@ def agent_call(queue_df: pd.DataFrame) -> None:
     name, surname = queue_df["patient_name"][idx].split()
     pesel = queue_df["pesel"][idx][-3:]
 
-    # <<<<<<< HEAD
-    #         if consent:
-    #             st.session_state.patient_id = patient_id
-    #             st.session_state.consent = True
-    #             requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
-    #             requests.get("http://backend:8000/increase-calls-number")
-    #             main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
-    #             return
-    #         elif consent is None:
-    #             st.info(f"{name} {surname}{_("'s consent is unknown, calling one more time.")}")
-    #             continue
-    #         else:
-    #             queue_id += 1
-    #             st.error(f"{name} {surname} {_('did not agree to reschedule.')}")
-    #             requests.get("http://backend:8000/increase-calls-number")
-    # =======
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
     consent = handle_patient_rescheduling(
         name=name,
@@ -239,35 +223,28 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         old_day=response["old_day"],
         new_day=response["new_day"],
     )
-    # >>>>>>> main
 
     st.session_state.consent = consent
 
-    # <<<<<<< HEAD
-    #     main_tab.warning(_("No patient agreed to reschedule."))
-    # =======
     if consent is True:
         st.session_state.patient_id = patient_id
         requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
         requests.get("http://backend:8000/increase-calls-number")
-        main_tab.success(f"{name} {surname} agreed to reschedule.")
+        main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
         st.session_state.current_patient_index = 0
         st.session_state.button_pressed = True
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
-        main_tab.error(f"{name} {surname} did not agree to reschedule.")
+        main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
         st.session_state.current_patient_index += 1
         st.session_state.button_pressed = True
     else:
-        main_tab.info(f"{name} {surname}'s consent is unknown.")
+        main_tab.info(f"{name} {surname}{_("'s consent is unknown, calling one more time")}.")
 
 
 def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
     st.session_state.current_patient_index += 1
     agent_call(queue_df)
-
-
-# >>>>>>> main
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -310,7 +287,7 @@ def reset_day_for_simulation() -> None:
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.current_patient_index = 0
     except Exception as e:
-        st.session_state.error_message = f"Failed to connect to the server: {e}"
+        st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
@@ -329,16 +306,12 @@ main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
-    # <<<<<<< HEAD
-    #     st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
-    # =======
     if st.session_state.consent is not None:
-        st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+        st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
     else:
-        st.sidebar.button("Call patient again 🔁", on_click=lambda: agent_call(queue_df))
+        st.sidebar.button(f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df))
         if st.session_state.current_patient_index < len(queue_df) - 1:
-            st.sidebar.button("Call next patient in queue 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
-# >>>>>>> main
+            st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
@@ -362,10 +335,10 @@ if not queue_df.empty:
 
     if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
         styled_df = queue_df.style.apply(highlight_current_row, axis=1)
+        styled_df.columns = [_("Place in queue"), _("Patient's number"), _("Patient's name"), _("Personal number")]
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:
         st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
-# >>>>>>> main
 else:
     st.sidebar.info(_("No patients found in the queue."))
 
@@ -380,7 +353,7 @@ else:
 st.sidebar.toggle(label=_("Activate automatic day change"), value=st.session_state.auto_day_change, key="auto_day_change")
 
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
-    st.sidebar.button("Reset simulation", on_click=reset_day_for_simulation)
+    st.sidebar.button(_("Reset simulation"), on_click=reset_day_for_simulation)
 
 statistics_tab.subheader(_("Bed occupancy statistics"))
 
@@ -419,16 +392,15 @@ col3.metric(
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-# <<<<<<< HEAD
-# statistics_tab.line_chart(occupancy_df, x="Date", x_label=_("Date"), y_label=_("Occupancy [%]"), use_container_width=True)
-# =======
 chart = (
     alt.Chart(occupancy_df)
     .mark_line(point=True)
-    .encode(x="Date", y=alt.Y("Occupancy", axis=alt.Axis(title="Occupancy [%]", format="d"), scale=alt.Scale(domain=[0, 100])))
+    .encode(
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
+        y=alt.Y("Occupancy", axis=alt.Axis(title=_("Occupancy [%]"), format="d"), scale=alt.Scale(domain=[0, 100])),
+    )
 )
 statistics_tab.altair_chart(chart, use_container_width=True)
-# >>>>>>> main
 
 statistics_tab.subheader(_("No-show statistics"))
 
@@ -455,26 +427,20 @@ col2.metric(
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-# <<<<<<< HEAD
-# statistics_tab.line_chart(
-#     no_shows_df, x="Date", x_label=_("Date"), y_label=_("No-shows percentage [%]"), use_container_width=True
-# )
-# =======
 chart = (
     alt.Chart(no_shows_df)
     .mark_bar()
     .encode(
-        x="Date",
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
         y=alt.Y(
             "NoShowsNumber",
             axis=alt.Axis(
-                title="Number of no-shows", values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
+                title=_("Number of no-shows"), values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
             ),
         ),
     )
 )
 statistics_tab.altair_chart(chart, use_container_width=True)
-# >>>>>>> main
 
 
 statistics_tab.subheader(_("Phone calls statistics"))
@@ -508,26 +474,20 @@ col2.metric(
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-# <<<<<<< HEAD
-# statistics_tab.bar_chart(
-#     calls_df, x="Date", x_label=_("Date"), y_label=_("Number of phone calls completed"), use_container_width=True
-# )
-# =======
 chart = (
     alt.Chart(calls_df)
     .mark_bar()
     .encode(
-        x="Date",
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
         y=alt.Y(
             "CallsNumber",
             axis=alt.Axis(
-                title="Number of phone calls completed", values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
+                title=_("Number of phone calls completed"), values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
             ),
         ),
     )
 )
 statistics_tab.altair_chart(chart, use_container_width=True)
-# >>>>>>> main
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
