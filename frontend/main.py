@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
@@ -255,6 +256,14 @@ def sort_values_for_charts_by_dates(data) -> pd.DataFrame:
     return data_copy
 
 
+def reset_day_for_simulation() -> None:
+    try:
+        response = requests.get("http://backend:8000/reset-simulation")
+        st.session_state.day_for_simulation = response.json()["day"]
+    except Exception as e:
+        st.session_state.error_message = f"Failed to connect to the server: {e}"
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -304,6 +313,8 @@ else:
 
 st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
 
+if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
+    st.sidebar.button("Reset simulation", on_click=reset_day_for_simulation)
 
 statistics_tab.subheader("Bed occupancy statistics")
 
@@ -325,7 +336,12 @@ col3.metric(
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-statistics_tab.line_chart(occupancy_df, x="Date", y_label="Occupancy [%]", use_container_width=True)
+chart = (
+    alt.Chart(occupancy_df)
+    .mark_line(point=True)
+    .encode(x="Date", y=alt.Y("Occupancy", axis=alt.Axis(title="Occupancy [%]", format="d"), scale=alt.Scale(domain=[0, 100])))
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 statistics_tab.subheader("No-show statistics")
 
@@ -344,7 +360,20 @@ col2.metric(
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-statistics_tab.line_chart(no_shows_df, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
+chart = (
+    alt.Chart(no_shows_df)
+    .mark_bar()
+    .encode(
+        x="Date",
+        y=alt.Y(
+            "NoShowsNumber",
+            axis=alt.Axis(
+                title="Number of no-shows", values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
+            ),
+        ),
+    )
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 
 statistics_tab.subheader("Phone calls statistics")
@@ -364,7 +393,20 @@ col2.metric(
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-statistics_tab.bar_chart(calls_df, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+chart = (
+    alt.Chart(calls_df)
+    .mark_bar()
+    .encode(
+        x="Date",
+        y=alt.Y(
+            "CallsNumber",
+            axis=alt.Axis(
+                title="Number of phone calls completed", values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
+            ),
+        ),
+    )
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
