@@ -12,7 +12,7 @@ from streamlit_autorefresh import st_autorefresh
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 
 _ = gettext.gettext
-language = st.sidebar.selectbox("", ["en", "pl"])
+language = st.sidebar.selectbox("Choose language", ["en", "pl"], label_visibility="collapsed")
 try:
     localizator = gettext.translation("base", localedir="locales", languages=[language])
     localizator.install()
@@ -79,6 +79,16 @@ st.html(
             margin: 0;
             padding: 1px 2px;
             font-weight: 200;
+        }
+        .left-side{
+            left: 0 !important;
+            right: auto !important;
+            transform: none !important;
+        }
+        .right-side{
+            left: auto !important;
+            right: 0 !important;
+            transform: none !important;
         }
 
 
@@ -167,15 +177,22 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
                     tooltip_info += "</tr></table>"
 
+                    if col == 0:
+                        side_class = "left-side"
+                    elif col == 3:
+                        side_class = "right-side"
+                    else:
+                        side_class = ""
+
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(
-                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
                             unsafe_allow_html=True,
                         )
                     else:
                         st.markdown(
-                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext  {side_class}">{tooltip_info}</span></div>""",
                             unsafe_allow_html=True,
                         )
 
