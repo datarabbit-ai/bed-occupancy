@@ -31,7 +31,7 @@ msgstr "Łóżko"
 
 #: main.py:161
 msgid "This bed is empty!"
-msgstr "To łóżko jest zajęte!"
+msgstr "To łóżko jest wolne!"
 
 #: main.py:216
 msgid "agreed to reschedule"
