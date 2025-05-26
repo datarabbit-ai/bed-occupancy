@@ -239,6 +239,7 @@ def update_day(delta: int) -> None:
     try:
         response = requests.get("http://backend:8000/update-day", params={"delta": delta})
         st.session_state.day_for_simulation = response.json()["day"]
+        st.session_state.current_patient_index = 0
     except Exception as e:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
@@ -259,6 +260,7 @@ def reset_day_for_simulation() -> None:
     try:
         response = requests.get("http://backend:8000/reset-simulation")
         st.session_state.day_for_simulation = response.json()["day"]
+        st.session_state.current_patient_index = 0
     except Exception as e:
         st.session_state.error_message = f"Failed to connect to the server: {e}"
 
