@@ -23,48 +23,43 @@ class Patient(BaseModel):
 
 
 Faker.seed(42)
-
-sicknesses = [
-    "Zapalenie płuc",
-    "Udar",
-    "Zawał",
-    "Niewydolność serca",
-    "Grypa",
-    "COVID-19",
-    "Astma",
-    "Zapalenie oskrzeli",
-    "Zapalenie opłucnej",
-    "Zapalenie opon",
-    "Sepsa",
-    "Odwodnienie",
-    "Cukrzyca",
-    "Zapalenie trzustki",
-    "Zapalenie wątroby",
-    "Zapalenie nerek",
-    "Niewydolność nerek",
-    "Kamica nerkowa",
-    "Kamica żółciowa",
-    "Zapalenie wyrostka",
-    "Wrzody",
-    "Padaczka",
-    "Borelioza",
-    "Złamanie nogi",
-    "Złamanie ręki",
-    "Złamanie biodra",
-    "Skręcenie kostki",
-    "Zwichnięcie barku",
-    "Oparzenie",
-    "Odmrożenie",
-    "Zatrucie",
-    "Migdałki",
-    "Choroba Parkinsona",
-    "Choroba Crohna",
-    "Wrzodziejące jelito",
-    "Zapalenie stawów",
-    "Tężec",
-    "Nadciśnienie",
-    "Niedociśnienie",
+common_sicknesses = [
+    "Endoprotezoplastyka stawu biodrowego",
+    "Endoprotezoplastyka stawu kolanowego",
+    "Operacja zaćmy",
+    "Artroskopia stawu kolanowego",
+    "Usunięcie migdałków podniebiennych",
+    "Plastyka przegrody nosowej",
+    "Cholecystektomia",
+    "Operacja przepukliny pachwinowej",
+    "Operacja żylaków kończyn dolnych",
+    "Operacja kręgosłupa lędźwiowego",
+    "Laparoskopia diagnostyczna",
+    "Zabieg usunięcia brodawczaka krtani",
+    "Adenotomia",
+    "Irydektomia",
+    "Kraniektomia",
+    "Splenektomia",
+    "Gastrektomia",
 ]
+
+male_sicknesses = common_sicknesses + [
+    "Prostatektomia",
+    "Leczenie raka prostaty",
+    "Korekcja wodniaka jądra",
+    "Operacja żylaków powrózka nasiennego",
+    "Rekonstrukcja cewki moczowej",
+]
+
+female_sicknesses = common_sicknesses + [
+    "Histerektomia",
+    "Zabieg usunięcia torbieli jajnika",
+    "Zabieg usunięcia mięśniaków macicy",
+    "Zabieg usunięcia guzka piersi",
+    "Leczenie endometriozy",
+    "Zabieg łyżeczkowania jamy macicy",
+]
+
 
 fake = Faker("pl_PL")
 
@@ -85,15 +80,16 @@ def generate_fake_patient_data() -> Patient:
         name = fake.first_name_female().split()[0]
         surname = fake.last_name_female()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
+        random_sickness = fake.random_element(female_sicknesses)
         gender = "kobieta"
     else:
         name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
+        random_sickness = fake.random_element(male_sicknesses)
         gender = "mężczyzna"
     random_urgency = fake.enum(Urgency)
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
-    random_sickness = fake.random_element(sicknesses)
     return Patient(
         first_name=name,
         last_name=surname,
