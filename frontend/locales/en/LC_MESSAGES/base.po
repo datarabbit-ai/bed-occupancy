@@ -1,0 +1,153 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2025 ORGANIZATION
+# U-DESKTOP-6RAEH9E\wikto <wikto@desktop-6raeh9e>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-05-26 11:20+0200\n"
+"PO-Revision-Date: 2025-05-26 12:13+0200\n"
+"Last-Translator: U-DESKTOP-6RAEH9E\\wikto <wikto@desktop-6raeh9e>\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ASCII\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: main.py:13
+msgid "Hospital bed management"
+msgstr "Hospital bed management"
+
+#: main.py:15
+msgid "Bed Assignments"
+msgstr "Bed Assignments"
+
+#: main.py:135
+msgid "Bed"
+msgstr "Bed"
+
+#: main.py:153
+msgid "This bed is empty!"
+msgstr "This bed is empty!"
+
+#: main.py:208
+msgid "agreed to reschedule"
+msgstr "agreed to reschedule"
+
+#: main.py:211
+msgid "'s consent is unknown, calling one more time."
+msgstr "'s consent is unknown, calling one more time."
+
+#: main.py:215
+msgid "did not agree to reschedule."
+msgstr "did not agree to reschedule."
+
+#: main.py:220
+msgid "No patient agreed to reschedule."
+msgstr "No patient agreed to reschedule."
+
+#: main.py:229
+msgid "Failed to fetch data from the server."
+msgstr "Failed to fetch data from the server."
+
+#: main.py:232 main.py:241
+msgid "Failed to connect to the server"
+msgstr "Failed to connect to the server"
+
+#: main.py:268
+msgid "Day"
+msgstr "Day"
+
+#: main.py:273
+msgid "Call next patient in queue"
+msgstr "Call next patient in queue"
+
+#: main.py:280
+msgid "No bed assignments found."
+msgstr "No bed assignments found."
+
+#: main.py:282
+msgid "Patients in queue"
+msgstr "Patients in queue"
+
+#: main.py:286
+msgid "No patients found in the queue."
+msgstr "No patients found in the queue."
+
+#: main.py:288
+msgid "Patients absent on a given day"
+msgstr "Patients absent on a given day"
+
+#: main.py:292
+msgid "No no-shows found."
+msgstr "No no-shows found."
+
+#: main.py:294
+msgid "Activate automatic day change"
+msgstr "Activate automatic day change"
+
+#: main.py:297
+msgid "Bed occupancy statistics"
+msgstr "Bed occupancy statistics"
+
+#: main.py:303
+msgid "Beds occupancy"
+msgstr "Beds occupancy"
+
+#: main.py:306
+msgid "Average beds occupancy"
+msgstr "Average beds occupancy"
+
+#: main.py:312
+msgid "Average length of stay"
+msgstr "Average length of stay"
+
+#: main.py:319
+msgid "Occupancy [%]"
+msgstr "Occupancy [%]"
+
+#: main.py:319 main.py:338 main.py:358
+msgid "Date"
+msgstr "Date"
+
+#: main.py:321
+msgid "No-show statistics"
+msgstr "No-show statistics"
+
+#: main.py:325
+msgid "No-shows percentage"
+msgstr "No-shows percentage"
+
+#: main.py:331
+msgid "Average no-shows percentage"
+msgstr "Average no-shows percentage"
+
+#: main.py:338
+msgid "No-shows percentage [%]"
+msgstr "No-shows percentage [%]"
+
+#: main.py:341
+msgid "Phone calls statistics"
+msgstr "Phone calls statistics"
+
+#: main.py:345
+msgid "Percentage of calls resulting in rescheduling"
+msgstr "Percentage of calls resulting in rescheduling"
+
+#: main.py:351
+msgid "Average percentage of calls resulting in rescheduling"
+msgstr "Average percentage of calls resulting in rescheduling"
+
+#: main.py:358
+msgid "Number of phone calls completed"
+msgstr "Number of phone calls completed"
+
+#: main.py:362
+msgid "Simulate Next Day"
+msgstr "Simulate Next Day"
+
+#: main.py:364
+msgid "Simulate Previous Day"
+msgstr "Simulate Previous Day"
