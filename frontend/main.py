@@ -222,6 +222,11 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         main_tab.info(f"{name} {surname}'s consent is unknown.")
 
 
+def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
+    st.session_state.current_patient_index += 1
+    agent_call(queue_df)
+
+
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
     try:
         response = requests.get("http://backend:8000/get-tables-and-statistics")
@@ -285,6 +290,8 @@ if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
         st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
     else:
         st.sidebar.button("Call patient again 🔁", on_click=lambda: agent_call(queue_df))
+        if st.session_state.current_patient_index < len(queue_df) - 1:
+            st.sidebar.button("Call next patient in queue 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
