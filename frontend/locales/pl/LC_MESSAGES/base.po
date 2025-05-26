@@ -66,8 +66,8 @@ msgid "did not agree to reschedule"
 msgstr "nie wyraził/a zgody na zmianę terminu"
 
 #: main.py:242
-msgid "'s consent is unknown, calling one more time"
-msgstr " nie odpowiedział/a na pytanie, dzwonię jeszcze raz"
+msgid "'s consent is unknown"
+msgstr " nie odpowiedział/a na pytanie"
 
 #: main.py:256
 msgid "Failed to fetch data from the server."
