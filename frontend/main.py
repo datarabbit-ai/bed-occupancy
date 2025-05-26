@@ -270,7 +270,7 @@ main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.consent = False
     st.session_state.auto_day_change = False
-    st.sidebar.button(_("Call next patient in queue 📞"), on_click=lambda: agent_call(queue_df))
+    st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
@@ -359,9 +359,9 @@ statistics_tab.bar_chart(calls_df, x=_("Date"), y_label=_("Number of phone calls
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
-    st.button(_("➡️ Simulate Next Day"), on_click=lambda: update_day(delta=1))
+    st.button(f"➡️ {_('Simulate Next Day')}", on_click=lambda: update_day(delta=1))
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
-    st.button(_("⬅️ Simulate Previous Day"), on_click=lambda: update_day(delta=-1))
+    st.button(f"⬅️ {_('Simulate Previous Day')}", on_click=lambda: update_day(delta=-1))
 
 if "error_message" in st.session_state and st.session_state.error_message:
     st.error(st.session_state.error_message)
