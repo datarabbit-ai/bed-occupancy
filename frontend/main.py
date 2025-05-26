@@ -324,7 +324,7 @@ col3.metric(
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-statistics_tab.line_chart(occupancy_df, x=_("Date"), y_label=_("Occupancy [%]"), use_container_width=True)
+statistics_tab.line_chart(occupancy_df, x="Date", y_label=_("Occupancy [%]"), use_container_width=True)
 
 statistics_tab.subheader(_("No-show statistics"))
 
@@ -343,7 +343,7 @@ col2.metric(
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-statistics_tab.line_chart(no_shows_df, x=_("Date"), y_label=_("No-shows percentage [%]"), use_container_width=True)
+statistics_tab.line_chart(no_shows_df, x="Date", y_label=_("No-shows percentage [%]"), use_container_width=True)
 
 
 statistics_tab.subheader(_("Phone calls statistics"))
@@ -363,7 +363,7 @@ col2.metric(
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-statistics_tab.bar_chart(calls_df, x=_("Date"), y_label=_("Number of phone calls completed"), use_container_width=True)
+statistics_tab.bar_chart(calls_df, x="Date", y_label=_("Number of phone calls completed"), use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
