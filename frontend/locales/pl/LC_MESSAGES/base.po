@@ -125,54 +125,66 @@ msgstr "Statystyki zajętości łóżek"
 msgid "Beds occupancy"
 msgstr "Zajętość łóżek"
 
-#: main.py:327
+#: main.py:327 main.py:337 main.py:347 main.py:364 main.py:374
+msgid "No previous day"
+msgstr "Brak danych do analizy"
+
+#: main.py:334
 msgid "Average beds occupancy"
 msgstr "Średnia zajętość łóżek"
 
-#: main.py:333
+#: main.py:344
 msgid "Average length of stay"
 msgstr "Średnia długość pobytu w szpitalu"
 
-#: main.py:340
+#: main.py:355
 msgid "Occupancy [%]"
 msgstr "Zajętość łóżek [%]"
 
-#: main.py:342
+#: main.py:355 main.py:383 main.py:419
+msgid "Date"
+msgstr "Data"
+
+#: main.py:357
 msgid "No-show statistics"
 msgstr "Statystyki nieobecności pacjentów"
 
-#: main.py:346
+#: main.py:361
 msgid "No-shows percentage"
 msgstr "Procent nieobecności"
 
-#: main.py:352
+#: main.py:371
 msgid "Average no-shows percentage"
 msgstr "Średni procent nieobecności"
 
-#: main.py:359
+#: main.py:383
 msgid "No-shows percentage [%]"
 msgstr "Procent nieobecności [%]"
 
-#: main.py:362
+#: main.py:387
 msgid "Phone calls statistics"
 msgstr "Statystyki rozmów telefonicznych z pacjentami"
 
-#: main.py:366
+#: main.py:391
 msgid "Percentage of calls resulting in rescheduling"
 msgstr "Rozmowy, które doprowadziły do zmiany terminu w procentach"
 
-#: main.py:372
+#: main.py:393 main.py:396 main.py:405 main.py:410
+msgid "No calls made"
+msgstr "Brak danych do analizy"
+
+#: main.py:403
 msgid "Average percentage of calls resulting in rescheduling"
 msgstr "Średni procent rozmów, które doprowadziły do zmiany terminu"
 
-#: main.py:379
+#: main.py:419
 msgid "Number of phone calls completed"
 msgstr "Ilość udanych połączeń telefonicznych"
 
-#: main.py:383
+#: main.py:424
 msgid "Simulate Next Day"
 msgstr "Symuluj następny dzień"
 
-#: main.py:385
+#: main.py:426
 msgid "Simulate Previous Day"
 msgstr "Symuluj poprzedni dzień"
