@@ -56,6 +56,17 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
     return {"day": day_for_simulation}
 
 
+@app.get("/reset-simulation", response_model=Dict[str, int])
+def reset_simulation() -> Dict[str, int]:
+    global patients_consent_dictionary, day_for_simulation, last_change, calls_in_time
+    day_for_simulation = 1
+    last_change = 1
+    patients_consent_dictionary = {1: []}
+    calls_in_time = {"Date": [1], "CallsNumber": [0]}
+    logger.info("Resetting the simulation")
+    return {"day": day_for_simulation}
+
+
 @app.get("/get-tables-and-statistics", response_model=ListOfTables)
 def get_tables_and_statistics() -> ListOfTables:
     """
@@ -68,7 +79,7 @@ def get_tables_and_statistics() -> ListOfTables:
     consent_dict = patients_consent_dictionary.copy()
     calls_numbers_dict = calls_in_time.copy()
     occupancy_in_time = {"Date": [1], "Occupancy": [100]}
-    no_shows_in_time = {"Date": [1], "NoShows": [0]}
+    no_shows_in_time = {"Date": [1], "NoShows": [0], "NoShowsNumber": [0]}
     stay_lengths = {}
 
     def decrement_days_of_stay():
@@ -117,7 +128,6 @@ def get_tables_and_statistics() -> ListOfTables:
     def calculate_average_in_dictionary(data: dict) -> float:
         total_sum = sum(sum(v) for v in data.values() if isinstance(v, list))
         total_items_number = sum(len(v) for v in data.values() if isinstance(v, list))
-        logger.info(str(total_sum) + ", " + str(total_items_number))
         return total_sum / total_items_number
 
     def calculate_statistics() -> Statistics:
@@ -128,7 +138,7 @@ def get_tables_and_statistics() -> ListOfTables:
             stay_lengths.pop(max_key)
             avg_stay_length_diff = avg_stay_length - calculate_average_in_dictionary(stay_lengths)
         else:
-            avg_stay_length_diff = 0
+            avg_stay_length_diff = "No previous day"
 
         # Hospital occupancy calculations
         occupancy_data = occupancy_in_time["Occupancy"].copy()
@@ -142,27 +152,40 @@ def get_tables_and_statistics() -> ListOfTables:
             avg_occupancy_diff = avg_occupancy - (sum(occupancy_data) / len(occupancy_data))
         else:
             occupancy = occupancy_data[0]
-            occupancy_diff = 0
+            occupancy_diff = "No previous day"
 
             avg_occupancy = occupancy_data[0]
-            avg_occupancy_diff = 0
+            avg_occupancy_diff = "No previous day"
 
         # No-shows calculations
         no_shows_data = no_shows_in_time["NoShows"].copy()
 
         if len(no_shows_data) != 1:
             no_shows_perc = no_shows_data[-1]
-            no_shows_perc_diff = no_shows_data[-1] - no_shows_data[-2]
+            no_shows_perc_diff = (
+                no_shows_data[-1] - no_shows_data[-2]
+                if no_shows_data[-1] != "No incoming patients" and no_shows_data[-1] != "No incoming patients"
+                else "No incoming patients"
+            )
 
-            avg_no_shows_perc = sum(no_shows_data) / len(no_shows_data)
+            total_sum = sum(x for x in no_shows_data if x != "No incoming patients")
+            items_number = sum(1 for x in no_shows_data if x != "No incoming patients")
+            avg_no_shows_perc = total_sum / items_number if items_number != 0 else "No incoming patients"
             no_shows_data.pop(-1)
-            avg_no_shows_perc_diff = avg_no_shows_perc - (sum(no_shows_data) / len(no_shows_data))
+
+            total_sum = sum(x for x in no_shows_data if x != "No incoming patients")
+            items_number = sum(1 for x in no_shows_data if x != "No incoming patients")
+            avg_no_shows_perc_diff = (
+                avg_no_shows_perc - (total_sum / items_number)
+                if items_number != 0 and avg_no_shows_perc != "No incoming patients"
+                else "No incoming patients"
+            )
         else:
             no_shows_perc = no_shows_data[0]
-            no_shows_perc_diff = 0
+            no_shows_perc_diff = "No previous day"
 
             avg_no_shows_perc = no_shows_data[0]
-            avg_no_shows_perc_diff = 0
+            avg_no_shows_perc_diff = "No previous day"
 
         # Calls calculations
         percentage_list = []
@@ -196,16 +219,30 @@ def get_tables_and_statistics() -> ListOfTables:
         return Statistics(
             OccupancyInTime=occupancy_in_time,
             Occupancy=f"{occupancy:.3f}".rstrip("0").rstrip(".") + "%",
-            OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            OccupancyDifference=f"{occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if occupancy_diff != "No previous day"
+            else "No previous day",
             AverageOccupancy=f"{avg_occupancy:.3f}".rstrip("0").rstrip(".") + "%",
-            AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageOccupancyDifference=f"{avg_occupancy_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_occupancy_diff != "No previous day"
+            else "No previous day",
             AverageStayLength=f"{avg_stay_length:.3f}".rstrip("0").rstrip("."),
-            AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip("."),
-            NoShowsInTime=no_shows_in_time,
-            NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
-            NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
-            AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%",
-            AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%",
+            AverageStayLengthDifference=f"{avg_stay_length_diff:.3f}".rstrip("0").rstrip(".")
+            if avg_stay_length_diff != "No previous day"
+            else "No previous day",
+            NoShowsInTime={"Date": no_shows_in_time["Date"], "NoShowsNumber": no_shows_in_time["NoShowsNumber"]},
+            NoShowsPercentage=f"{no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%"
+            if no_shows_perc != "No incoming patients"
+            else "No incoming patients",
+            NoShowsPercentageDifference=f"{no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if no_shows_perc_diff != "No incoming patients" and no_shows_perc_diff != "No previous day"
+            else no_shows_perc_diff,
+            AverageNoShowsPercentage=f"{avg_no_shows_perc:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_no_shows_perc != "No incoming patients"
+            else "No incoming patients",
+            AverageNoShowsPercentageDifference=f"{avg_no_shows_perc_diff:.3f}".rstrip("0").rstrip(".") + "%"
+            if avg_no_shows_perc_diff != "No incoming patients" and avg_no_shows_perc_diff != "No previous day"
+            else avg_no_shows_perc_diff,
             CallsInTime=calls_numbers_dict,
             ConsentsPercentage=f"{consent_percentage:.3f}".rstrip("0").rstrip(".") + "%"
             if consent_percentage != "No calls made"
@@ -300,7 +337,12 @@ def get_tables_and_statistics() -> ListOfTables:
             occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
 
             no_shows_in_time["Date"].append(iteration + 2)
-            no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
+            if len(bed_ids) > 0:
+                no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
+            else:
+                no_shows_in_time["NoShows"].append("No incoming patients")
+
+            no_shows_in_time["NoShowsNumber"].append(no_shows_number)
 
         bed_assignments = []
         for bed in (
@@ -372,7 +414,8 @@ def get_patient_data(patient_id: int):
     session = get_session()
     patient = session.query(Patient).filter_by(patient_id=patient_id).first()
     sickness = patient.sickness
+    gender = patient.gender
     old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
     session.rollback()
     session.close()
-    return {"sickness": sickness, "old_day": old_day, "new_day": new_day}
+    return {"sickness": sickness, "gender": gender, "old_day": old_day, "new_day": new_day}

@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
@@ -157,13 +158,16 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         )
 
 
-def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: str, old_day: int, new_day: int) -> bool:
+def handle_patient_rescheduling(
+    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int
+) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
     with the patient and analyzing their consent.
 
     :param name: The first name of the patient.
     :param surname: The last name of the patient.
+    :param gender: The gender of the patient.
     :param pesel: The PESEL number of the patient.
     :param sickness: The sickness or condition of the patient.
     :param old_day: The current day of the patient's visit.
@@ -171,7 +175,7 @@ def handle_patient_rescheduling(name: str, surname: str, pesel: str, sickness: s
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(name, surname, pesel, sickness, old_day, new_day)
+    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day)
     return check_patient_consent_to_reschedule(conversation_id)
 
 
@@ -187,6 +191,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         consent = handle_patient_rescheduling(
             name=name,
             surname=surname,
+            gender=response["gender"],
             pesel=pesel,
             sickness=response["sickness"],
             old_day=response["old_day"],
@@ -246,6 +251,14 @@ def sort_values_for_charts_by_dates(data) -> pd.DataFrame:
     return data_copy
 
 
+def reset_day_for_simulation() -> None:
+    try:
+        response = requests.get("http://backend:8000/reset-simulation")
+        st.session_state.day_for_simulation = response.json()["day"]
+    except Exception as e:
+        st.session_state.error_message = f"Failed to connect to the server: {e}"
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -286,6 +299,8 @@ else:
 
 st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
 
+if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
+    st.sidebar.button("Reset simulation", on_click=reset_day_for_simulation)
 
 statistics_tab.subheader("Bed occupancy statistics")
 
@@ -307,7 +322,12 @@ col3.metric(
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-statistics_tab.line_chart(occupancy_df, x="Date", y_label="Occupancy [%]", use_container_width=True)
+chart = (
+    alt.Chart(occupancy_df)
+    .mark_line(point=True)
+    .encode(x="Date", y=alt.Y("Occupancy", axis=alt.Axis(title="Occupancy [%]", format="d"), scale=alt.Scale(domain=[0, 100])))
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 statistics_tab.subheader("No-show statistics")
 
@@ -326,7 +346,20 @@ col2.metric(
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-statistics_tab.line_chart(no_shows_df, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
+chart = (
+    alt.Chart(no_shows_df)
+    .mark_bar()
+    .encode(
+        x="Date",
+        y=alt.Y(
+            "NoShowsNumber",
+            axis=alt.Axis(
+                title="Number of no-shows", values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
+            ),
+        ),
+    )
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 
 statistics_tab.subheader("Phone calls statistics")
@@ -346,7 +379,20 @@ col2.metric(
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-statistics_tab.bar_chart(calls_df, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+chart = (
+    alt.Chart(calls_df)
+    .mark_bar()
+    .encode(
+        x="Date",
+        y=alt.Y(
+            "CallsNumber",
+            axis=alt.Axis(
+                title="Number of phone calls completed", values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
+            ),
+        ),
+    )
+)
+statistics_tab.altair_chart(chart, use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
