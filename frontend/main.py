@@ -321,23 +321,38 @@ analytic_data = tables["Statistics"]
 
 col1, col2, col3 = statistics_tab.columns(3)
 col1.metric(
-    label=_("Beds occupancy"), value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True
+    label=_("Beds occupancy"),
+    value=analytic_data["Occupancy"],
+    delta=(
+        _("No previous day")
+        if analytic_data["OccupancyDifference"] == "No previous day"
+        else analytic_data["OccupancyDifference"]
+    ),
+    border=True,
 )
 col2.metric(
     label=_("Average beds occupancy"),
     value=analytic_data["AverageOccupancy"],
-    delta=analytic_data["AverageOccupancyDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageOccupancyDifference"] == "No previous day"
+        else analytic_data["AverageOccupancyDifference"]
+    ),
     border=True,
 )
 col3.metric(
     label=_("Average length of stay"),
     value=analytic_data["AverageStayLength"],
-    delta=analytic_data["AverageStayLengthDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageStayLengthDifference"] == "No previous day"
+        else analytic_data["AverageStayLengthDifference"]
+    ),
     border=True,
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-statistics_tab.line_chart(occupancy_df, x="Date", y_label=_("Occupancy [%]"), use_container_width=True)
+statistics_tab.line_chart(occupancy_df, x="Date", x_label=_("Date"), y_label=_("Occupancy [%]"), use_container_width=True)
 
 statistics_tab.subheader(_("No-show statistics"))
 
@@ -345,18 +360,28 @@ col1, col2 = statistics_tab.columns(2)
 col1.metric(
     label=_("No-shows percentage"),
     value=analytic_data["NoShowsPercentage"],
-    delta=analytic_data["NoShowsPercentageDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["NoShowsPercentageDifference"] == "No previous day"
+        else analytic_data["NoShowsPercentageDifference"]
+    ),
     border=True,
 )
 col2.metric(
     label=_("Average no-shows percentage"),
     value=analytic_data["AverageNoShowsPercentage"],
-    delta=analytic_data["AverageNoShowsPercentageDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageNoShowsPercentageDifference"] == "No previous day"
+        else analytic_data["AverageNoShowsPercentageDifference"]
+    ),
     border=True,
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-statistics_tab.line_chart(no_shows_df, x="Date", y_label=_("No-shows percentage [%]"), use_container_width=True)
+statistics_tab.line_chart(
+    no_shows_df, x="Date", x_label=_("Date"), y_label=_("No-shows percentage [%]"), use_container_width=True
+)
 
 
 statistics_tab.subheader(_("Phone calls statistics"))
@@ -364,19 +389,35 @@ statistics_tab.subheader(_("Phone calls statistics"))
 col1, col2 = statistics_tab.columns(2)
 col1.metric(
     label=_("Percentage of calls resulting in rescheduling"),
-    value=analytic_data["ConsentsPercentage"],
-    delta=analytic_data["ConsentsPercentageDifference"],
+    value=(
+        _("No calls made") if analytic_data["ConsentsPercentage"] == "No calls made" else analytic_data["ConsentsPercentage"]
+    ),
+    delta=(
+        _("No calls made")
+        if analytic_data["ConsentsPercentageDifference"] == "No calls made"
+        else analytic_data["ConsentsPercentageDifference"]
+    ),
     border=True,
 )
 col2.metric(
     label=_("Average percentage of calls resulting in rescheduling"),
-    value=analytic_data["AverageConstentsPercentage"],
-    delta=analytic_data["AverageConstentsPercentageDifference"],
+    value=(
+        _("No calls made")
+        if analytic_data["AverageConstentsPercentage"] == "No calls made"
+        else analytic_data["AverageConstentsPercentage"]
+    ),
+    delta=(
+        _("No calls made")
+        if analytic_data["AverageConstentsPercentageDifference"] == "No calls made"
+        else analytic_data["AverageConstentsPercentageDifference"]
+    ),
     border=True,
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-statistics_tab.bar_chart(calls_df, x="Date", y_label=_("Number of phone calls completed"), use_container_width=True)
+statistics_tab.bar_chart(
+    calls_df, x="Date", x_label=_("Date"), y_label=_("Number of phone calls completed"), use_container_width=True
+)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
