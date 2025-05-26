@@ -1,3 +1,4 @@
+import gettext
 from typing import Dict, Optional
 
 import pandas as pd
@@ -7,9 +8,11 @@ from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
-st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
+_ = gettext.gettext
+
+st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 main_tab, statistics_tab = st.tabs(["Current state", "Data analysis"])
-main_tab.title("Bed Assignments")
+main_tab.title(_("Bed Assignments"))
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -129,7 +132,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     # Get data for this box
                     data_row = df.iloc[box_index]
 
-                    box_title = f"Bed {box_index + 1}"
+                    box_title = f"{_('Bed')} {box_index + 1}"
 
                     # Format tooltip information with row data
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
@@ -147,7 +150,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(
-                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">This bed is empty!</span></div>""",
+                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
                             unsafe_allow_html=True,
                         )
                     else:
@@ -202,19 +205,19 @@ def agent_call(queue_df: pd.DataFrame) -> None:
             st.session_state.consent = True
             requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
             requests.get("http://backend:8000/increase-calls-number")
-            main_tab.success(f"{name} {surname} agreed to reschedule.")
+            main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
             return
         elif consent is None:
-            st.info(f"{name} {surname}'s consent is unknown, calling one more time.")
+            st.info(f"{name} {surname}{_("'s consent is unknown, calling one more time.")}")
             continue
         else:
             queue_id += 1
-            st.error(f"{name} {surname} did not agree to reschedule.")
+            st.error(f"{name} {surname} {_('did not agree to reschedule.')}")
             requests.get("http://backend:8000/increase-calls-number")
 
     st.session_state.button_pressed = True
 
-    main_tab.warning("No patient agreed to reschedule.")
+    main_tab.warning(_("No patient agreed to reschedule."))
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -223,10 +226,10 @@ def get_list_of_tables_and_statistics() -> Optional[Dict]:
         if response.status_code == 200:
             return response.json()
         else:
-            main_tab.error("Failed to fetch data from the server.")
+            main_tab.error(_("Failed to fetch data from the server."))
             return None
     except Exception as e:
-        main_tab.error(f"Failed to connect to the server: {e}")
+        main_tab.error(f"{_('Failed to connect to the server')}: {e}")
         return None
 
 
@@ -235,7 +238,7 @@ def update_day(delta: int) -> None:
         response = requests.get("http://backend:8000/update-day", params={"delta": delta})
         st.session_state.day_for_simulation = response.json()["day"]
     except Exception as e:
-        st.session_state.error_message = f"Failed to connect to the server: {e}"
+        st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
 def toggle_auto_day_change() -> None:
@@ -262,101 +265,103 @@ if tables:
     queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
-main_tab.header(f"Day {st.session_state.day_for_simulation}")
+main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.consent = False
     st.session_state.auto_day_change = False
-    st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+    st.sidebar.button(_("Call next patient in queue 📞"), on_click=lambda: agent_call(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
     create_box_grid(bed_df)
 else:
-    main_tab.info("No bed assignments found.")
+    main_tab.info(_("No bed assignments found."))
 
-st.sidebar.subheader("Patients in queue")
+st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:
     st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
 else:
-    st.sidebar.info("No patients found in the queue.")
+    st.sidebar.info(_("No patients found in the queue."))
 
-st.sidebar.subheader("Patients absent on a given day")
+st.sidebar.subheader(_("Patients absent on a given day"))
 if not no_shows_df.empty:
     st.sidebar.dataframe(no_shows_df, use_container_width=True, hide_index=True)
 else:
-    st.sidebar.info("No no-shows found.")
+    st.sidebar.info(_("No no-shows found."))
 
-st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
+st.sidebar.toggle(label=_("Activate automatic day change"), value=st.session_state.auto_day_change, key="auto_day_change")
 
 
-statistics_tab.subheader("Bed occupancy statistics")
+statistics_tab.subheader(_("Bed occupancy statistics"))
 
 analytic_data = tables["Statistics"]
 
 col1, col2, col3 = statistics_tab.columns(3)
-col1.metric(label="Beds occupancy", value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True)
+col1.metric(
+    label=_("Beds occupancy"), value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True
+)
 col2.metric(
-    label="Average beds occupancy",
+    label=_("Average beds occupancy"),
     value=analytic_data["AverageOccupancy"],
     delta=analytic_data["AverageOccupancyDifference"],
     border=True,
 )
 col3.metric(
-    label="Average length of stay",
+    label=_("Average length of stay"),
     value=analytic_data["AverageStayLength"],
     delta=analytic_data["AverageStayLengthDifference"],
     border=True,
 )
 
 occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
-statistics_tab.line_chart(occupancy_df, x="Date", y_label="Occupancy [%]", use_container_width=True)
+statistics_tab.line_chart(occupancy_df, x=_("Date"), y_label=_("Occupancy [%]"), use_container_width=True)
 
-statistics_tab.subheader("No-show statistics")
+statistics_tab.subheader(_("No-show statistics"))
 
 col1, col2 = statistics_tab.columns(2)
 col1.metric(
-    label="No-shows percentage",
+    label=_("No-shows percentage"),
     value=analytic_data["NoShowsPercentage"],
     delta=analytic_data["NoShowsPercentageDifference"],
     border=True,
 )
 col2.metric(
-    label="Average no-shows percentage",
+    label=_("Average no-shows percentage"),
     value=analytic_data["AverageNoShowsPercentage"],
     delta=analytic_data["AverageNoShowsPercentageDifference"],
     border=True,
 )
 
 no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
-statistics_tab.line_chart(no_shows_df, x="Date", y_label="No-shows percentage [%]", use_container_width=True)
+statistics_tab.line_chart(no_shows_df, x=_("Date"), y_label=_("No-shows percentage [%]"), use_container_width=True)
 
 
-statistics_tab.subheader("Phone calls statistics")
+statistics_tab.subheader(_("Phone calls statistics"))
 
 col1, col2 = statistics_tab.columns(2)
 col1.metric(
-    label="Percentage of calls resulting in rescheduling",
+    label=_("Percentage of calls resulting in rescheduling"),
     value=analytic_data["ConsentsPercentage"],
     delta=analytic_data["ConsentsPercentageDifference"],
     border=True,
 )
 col2.metric(
-    label="Average percentage of calls resulting in rescheduling",
+    label=_("Average percentage of calls resulting in rescheduling"),
     value=analytic_data["AverageConstentsPercentage"],
     delta=analytic_data["AverageConstentsPercentageDifference"],
     border=True,
 )
 
 calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
-statistics_tab.bar_chart(calls_df, x="Date", y_label="Number of phone calls completed", use_container_width=True)
+statistics_tab.bar_chart(calls_df, x=_("Date"), y_label=_("Number of phone calls completed"), use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
-    st.button("➡️ Simulate Next Day", on_click=lambda: update_day(delta=1))
+    st.button(_("➡️ Simulate Next Day"), on_click=lambda: update_day(delta=1))
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
-    st.button("⬅️ Simulate Previous Day", on_click=lambda: update_day(delta=-1))
+    st.button(_("⬅️ Simulate Previous Day"), on_click=lambda: update_day(delta=-1))
 
 if "error_message" in st.session_state and st.session_state.error_message:
     st.error(st.session_state.error_message)
