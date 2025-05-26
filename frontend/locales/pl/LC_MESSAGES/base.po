@@ -17,11 +17,19 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
 
-#: main.py:13
+#: main.py:21
 msgid "Hospital bed management"
 msgstr "Zarządzanie łóżkami szpitalnymi"
 
-#: main.py:15
+#: main.py:22
+msgid "Current state"
+msgstr "Stan obecny"
+
+#: main.py:22
+msgid "Data analysis"
+msgstr "Analiza danych"
+
+#: main.py:23
 msgid "Bed Assignments"
 msgstr "Łóżka szpitalne"
 
@@ -29,122 +37,146 @@ msgstr "Łóżka szpitalne"
 msgid "Bed"
 msgstr "Łóżko"
 
-#: main.py:161
+#: main.py:151 main.py:302 main.py:310
+msgid "Patient's number"
+msgstr "Numer pacjenta"
+
+#: main.py:152 main.py:302 main.py:310
+msgid "Patient's name"
+msgstr "Imię i nazwisko pacjenta"
+
+#: main.py:153
+msgid "Sickness"
+msgstr "Choroba"
+
+#: main.py:154 main.py:302
+msgid "Personal number"
+msgstr "PESEL"
+
+#: main.py:155
+msgid "Days left"
+msgstr "Ilość dni do końca wizyty"
+
+#: main.py:170
 msgid "This bed is empty!"
 msgstr "To łóżko jest wolne!"
 
-#: main.py:216
+#: main.py:225
 msgid "agreed to reschedule"
 msgstr "zgodził/a się na zmianę terminu"
 
-#: main.py:219
+#: main.py:228
 msgid "'s consent is unknown, calling one more time."
 msgstr " nie odpowiedział/a na pytanie, dzwonię jeszcze raz"
 
-#: main.py:223
+#: main.py:232
 msgid "did not agree to reschedule."
 msgstr "nie wyraził/a zgody na zmianę terminu"
 
-#: main.py:228
+#: main.py:237
 msgid "No patient agreed to reschedule."
 msgstr "Żaden pacjent nie zgodził się na zmianę terminu"
 
-#: main.py:237
+#: main.py:246
 msgid "Failed to fetch data from the server."
 msgstr "Nieudany odczyt danych z serwera"
 
-#: main.py:240 main.py:249
+#: main.py:249 main.py:258
 msgid "Failed to connect to the server"
 msgstr "Nieudane połączenie z serwerem"
 
-#: main.py:276
+#: main.py:285
 msgid "Day"
 msgstr "Dzień"
 
-#: main.py:281
+#: main.py:290
 msgid "Call next patient in queue"
 msgstr "Zadzwoń do następnego pacjenta z kolejki"
 
-#: main.py:288
+#: main.py:297
 msgid "No bed assignments found."
 msgstr "Nie znaleziono żadnych pacjentów na łóżkach"
 
-#: main.py:290
+#: main.py:299
 msgid "Patients in queue"
 msgstr "Kolejka pacjentów"
 
-#: main.py:294
+#: main.py:302
+msgid "Place in queue"
+msgstr "Miejsce w kolejce"
+
+#: main.py:305
 msgid "No patients found in the queue."
 msgstr "W kolejce nie ma żadnych pacjentów"
 
-#: main.py:296
+#: main.py:307
 msgid "Patients absent on a given day"
 msgstr "Pacjenci, którzy nie przyszli danego dnia"
 
-#: main.py:300
+#: main.py:313
 msgid "No no-shows found."
 msgstr "Nie ma żadnych nieobecnych pacjentów"
 
-#: main.py:302
+#: main.py:315
 msgid "Activate automatic day change"
 msgstr "Aktywuj automatyczną zmianę dnia"
 
-#: main.py:305
+#: main.py:318
 msgid "Bed occupancy statistics"
 msgstr "Statystyki zajętości łóżek"
 
-#: main.py:311
+#: main.py:324
 msgid "Beds occupancy"
 msgstr "Zajętość łóżek"
 
-#: main.py:314
+#: main.py:327
 msgid "Average beds occupancy"
 msgstr "Średnia zajętość łóżek"
 
-#: main.py:320
+#: main.py:333
 msgid "Average length of stay"
 msgstr "Średnia długość pobytu w szpitalu"
 
-#: main.py:327
+#: main.py:340
 msgid "Occupancy [%]"
 msgstr "Zajętość łóżek [%]"
 
-#: main.py:329
+#: main.py:342
 msgid "No-show statistics"
 msgstr "Statystyki nieobecności pacjentów"
 
-#: main.py:333
+#: main.py:346
 msgid "No-shows percentage"
 msgstr "Procent nieobecności"
 
-#: main.py:339
+#: main.py:352
 msgid "Average no-shows percentage"
 msgstr "Średni procent nieobecności"
 
-#: main.py:346
+#: main.py:359
 msgid "No-shows percentage [%]"
 msgstr "Procent nieobecności [%]"
 
-#: main.py:349
+#: main.py:362
 msgid "Phone calls statistics"
 msgstr "Statystyki rozmów telefonicznych z pacjentami"
 
-#: main.py:353
+#: main.py:366
 msgid "Percentage of calls resulting in rescheduling"
 msgstr "Rozmowy, które doprowadziły do zmiany terminu w procentach"
 
-#: main.py:359
+#: main.py:372
 msgid "Average percentage of calls resulting in rescheduling"
 msgstr "Średni procent rozmów, które doprowadziły do zmiany terminu"
 
-#: main.py:366
+#: main.py:379
 msgid "Number of phone calls completed"
 msgstr "Ilość udanych połączeń telefonicznych"
 
-#: main.py:370
+#: main.py:383
 msgid "Simulate Next Day"
 msgstr "Symuluj następny dzień"
 
-#: main.py:372
+#: main.py:385
 msgid "Simulate Previous Day"
 msgstr "Symuluj poprzedni dzień"
