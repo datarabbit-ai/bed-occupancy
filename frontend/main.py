@@ -18,7 +18,7 @@ try:
 except:
     pass
 
-st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
+st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
 

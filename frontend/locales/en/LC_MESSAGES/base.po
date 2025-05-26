@@ -16,10 +16,6 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: main.py:21
-msgid "Hospital bed management"
-msgstr "Hospital bed management"
-
 #: main.py:22
 msgid "Current state"
 msgstr "Current state"
