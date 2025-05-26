@@ -146,6 +146,15 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
                     table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
 
+                    if table_headers != []:
+                        table_headers = [
+                            _("Patient's number"),
+                            _("Patient's name"),
+                            _("Sickness"),
+                            _("Personal number"),
+                            _("Days left"),
+                        ]
+
                     tooltip_info = "<table style='border-collapse: collapse;'>"
                     tooltip_info += "<tr>"
                     for header in table_headers:
