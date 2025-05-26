@@ -56,6 +56,17 @@ def update_day(delta: int = Query(...)) -> Dict[str, int]:
     return {"day": day_for_simulation}
 
 
+@app.get("/reset-simulation", response_model=Dict[str, int])
+def reset_simulation() -> Dict[str, int]:
+    global patients_consent_dictionary, day_for_simulation, last_change, calls_in_time
+    day_for_simulation = 1
+    last_change = 1
+    patients_consent_dictionary = {1: []}
+    calls_in_time = {"Date": [1], "CallsNumber": [0]}
+    logger.info("Resetting the simulation")
+    return {"day": day_for_simulation}
+
+
 @app.get("/get-tables-and-statistics", response_model=ListOfTables)
 def get_tables_and_statistics() -> ListOfTables:
     """

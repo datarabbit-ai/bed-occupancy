@@ -250,6 +250,14 @@ def sort_values_for_charts_by_dates(data) -> pd.DataFrame:
     return data_copy
 
 
+def reset_day_for_simulation() -> None:
+    try:
+        response = requests.get("http://backend:8000/reset-simulation")
+        st.session_state.day_for_simulation = response.json()["day"]
+    except Exception as e:
+        st.session_state.error_message = f"Failed to connect to the server: {e}"
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -290,6 +298,8 @@ else:
 
 st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
 
+if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
+    st.sidebar.button("Reset simulation", on_click=reset_day_for_simulation)
 
 statistics_tab.subheader("Bed occupancy statistics")
 
