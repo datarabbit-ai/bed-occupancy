@@ -1,3 +1,4 @@
+import gettext
 from typing import Dict, Optional
 
 import altair as alt
@@ -9,8 +10,18 @@ from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
-main_tab, statistics_tab = st.tabs(["Current state", "Data analysis"])
-main_tab.title("Bed Assignments")
+
+_ = gettext.gettext
+language = st.sidebar.selectbox("Choose language", ["en", "pl"], label_visibility="collapsed")
+try:
+    localizator = gettext.translation("base", localedir="locales", languages=[language])
+    localizator.install()
+    _ = localizator.gettext
+except:
+    pass
+
+main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
+main_tab.title(_("Bed Assignments"))
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -68,6 +79,16 @@ st.html(
             margin: 0;
             padding: 1px 2px;
             font-weight: 200;
+        }
+        .left-side{
+            left: 0 !important;
+            right: auto !important;
+            transform: none !important;
+        }
+        .right-side{
+            left: auto !important;
+            right: 0 !important;
+            transform: none !important;
         }
 
 
@@ -132,11 +153,20 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     # Get data for this box
                     data_row = df.iloc[box_index]
 
-                    box_title = f"Bed {box_index + 1}"
+                    box_title = f"{_('Bed')} {box_index + 1}"
 
                     # Format tooltip information with row data
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
                     table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
+
+                    if table_headers != []:
+                        table_headers = [
+                            _("Patient's number"),
+                            _("Patient's name"),
+                            _("Sickness"),
+                            _("Personal number"),
+                            _("Days left"),
+                        ]
 
                     tooltip_info = "<table style='border-collapse: collapse;'>"
                     tooltip_info += "<tr>"
@@ -147,15 +177,22 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
                     tooltip_info += "</tr></table>"
 
+                    if col == 0:
+                        side_class = "left-side"
+                    elif col == 3:
+                        side_class = "right-side"
+                    else:
+                        side_class = ""
+
                     # Create a box with HTML
                     if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(
-                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">This bed is empty!</span></div>""",
+                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
                             unsafe_allow_html=True,
                         )
                     else:
                         st.markdown(
-                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext  {side_class}">{tooltip_info}</span></div>""",
                             unsafe_allow_html=True,
                         )
 
@@ -210,16 +247,16 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         st.session_state.patient_id = patient_id
         requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
         requests.get("http://backend:8000/increase-calls-number")
-        main_tab.success(f"{name} {surname} agreed to reschedule.")
+        main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
         st.session_state.current_patient_index = 0
         st.session_state.button_pressed = True
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
-        main_tab.error(f"{name} {surname} did not agree to reschedule.")
+        main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
         st.session_state.current_patient_index += 1
         st.session_state.button_pressed = True
     else:
-        main_tab.info(f"{name} {surname}'s consent is unknown.")
+        main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
 def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
@@ -233,10 +270,10 @@ def get_list_of_tables_and_statistics() -> Optional[Dict]:
         if response.status_code == 200:
             return response.json()
         else:
-            main_tab.error("Failed to fetch data from the server.")
+            main_tab.error(_("Failed to fetch data from the server."))
             return None
     except Exception as e:
-        main_tab.error(f"Failed to connect to the server: {e}")
+        main_tab.error(f"{_('Failed to connect to the server')}: {e}")
         return None
 
 
@@ -246,7 +283,7 @@ def update_day(delta: int) -> None:
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.current_patient_index = 0
     except Exception as e:
-        st.session_state.error_message = f"Failed to connect to the server: {e}"
+        st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
 def toggle_auto_day_change() -> None:
@@ -267,7 +304,7 @@ def reset_day_for_simulation() -> None:
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.current_patient_index = 0
     except Exception as e:
-        st.session_state.error_message = f"Failed to connect to the server: {e}"
+        st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
@@ -282,25 +319,25 @@ if tables:
     queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
-main_tab.header(f"Day {st.session_state.day_for_simulation}")
+main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
     if st.session_state.consent is not None:
-        st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+        st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
     else:
-        st.sidebar.button("Call patient again 🔁", on_click=lambda: agent_call(queue_df))
+        st.sidebar.button(f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df))
         if st.session_state.current_patient_index < len(queue_df) - 1:
-            st.sidebar.button("Call next patient in queue 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
+            st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
     create_box_grid(bed_df)
 else:
-    main_tab.info("No bed assignments found.")
+    main_tab.info(_("No bed assignments found."))
 
-st.sidebar.subheader("Patients in queue")
+st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:
 
     def highlight_current_row(row):
@@ -308,41 +345,63 @@ if not queue_df.empty:
             return ["background-color: #fddb3a"] * len(row)
         return [""] * len(row)
 
+    styled_df = queue_df.copy()
+    styled_df.columns = [_("Place in queue"), _("Patient's number"), _("Patient's name"), _("Personal number")]
+
     if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
-        styled_df = queue_df.style.apply(highlight_current_row, axis=1)
+        styled_df = styled_df.style.apply(highlight_current_row, axis=1)
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:
-        st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
+        st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
 else:
-    st.sidebar.info("No patients found in the queue.")
+    st.sidebar.info(_("No patients found in the queue."))
 
-st.sidebar.subheader("Patients absent on a given day")
+st.sidebar.subheader(_("Patients absent on a given day"))
 if not no_shows_df.empty:
-    st.sidebar.dataframe(no_shows_df, use_container_width=True, hide_index=True)
+    no_shows_df_display = no_shows_df.copy()
+    no_shows_df_display.columns = [_("Patient's number"), _("Patient's name")]
+    st.sidebar.dataframe(no_shows_df_display, use_container_width=True, hide_index=True)
 else:
-    st.sidebar.info("No no-shows found.")
+    st.sidebar.info(_("No no-shows found."))
 
-st.sidebar.toggle(label="Activate automatic day change", value=st.session_state.auto_day_change, key="auto_day_change")
+st.sidebar.toggle(label=_("Activate automatic day change"), value=st.session_state.auto_day_change, key="auto_day_change")
 
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
-    st.sidebar.button("Reset simulation", on_click=reset_day_for_simulation)
+    st.sidebar.button(_("Reset simulation"), on_click=reset_day_for_simulation)
 
-statistics_tab.subheader("Bed occupancy statistics")
+statistics_tab.subheader(_("Bed occupancy statistics"))
 
 analytic_data = tables["Statistics"]
 
 col1, col2, col3 = statistics_tab.columns(3)
-col1.metric(label="Beds occupancy", value=analytic_data["Occupancy"], delta=analytic_data["OccupancyDifference"], border=True)
+col1.metric(
+    label=_("Beds occupancy"),
+    value=analytic_data["Occupancy"],
+    delta=(
+        _("No previous day")
+        if analytic_data["OccupancyDifference"] == "No previous day"
+        else analytic_data["OccupancyDifference"]
+    ),
+    border=True,
+)
 col2.metric(
-    label="Average beds occupancy",
+    label=_("Average beds occupancy"),
     value=analytic_data["AverageOccupancy"],
-    delta=analytic_data["AverageOccupancyDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageOccupancyDifference"] == "No previous day"
+        else analytic_data["AverageOccupancyDifference"]
+    ),
     border=True,
 )
 col3.metric(
-    label="Average length of stay",
+    label=_("Average length of stay"),
     value=analytic_data["AverageStayLength"],
-    delta=analytic_data["AverageStayLengthDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageStayLengthDifference"] == "No previous day"
+        else analytic_data["AverageStayLengthDifference"]
+    ),
     border=True,
 )
 
@@ -350,23 +409,34 @@ occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["Occup
 chart = (
     alt.Chart(occupancy_df)
     .mark_line(point=True)
-    .encode(x="Date", y=alt.Y("Occupancy", axis=alt.Axis(title="Occupancy [%]", format="d"), scale=alt.Scale(domain=[0, 100])))
+    .encode(
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
+        y=alt.Y("Occupancy", axis=alt.Axis(title=_("Occupancy [%]"), format="d"), scale=alt.Scale(domain=[0, 100])),
+    )
 )
 statistics_tab.altair_chart(chart, use_container_width=True)
 
-statistics_tab.subheader("No-show statistics")
+statistics_tab.subheader(_("No-show statistics"))
 
 col1, col2 = statistics_tab.columns(2)
 col1.metric(
-    label="No-shows percentage",
+    label=_("No-shows percentage"),
     value=analytic_data["NoShowsPercentage"],
-    delta=analytic_data["NoShowsPercentageDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["NoShowsPercentageDifference"] == "No previous day"
+        else analytic_data["NoShowsPercentageDifference"]
+    ),
     border=True,
 )
 col2.metric(
-    label="Average no-shows percentage",
+    label=_("Average no-shows percentage"),
     value=analytic_data["AverageNoShowsPercentage"],
-    delta=analytic_data["AverageNoShowsPercentageDifference"],
+    delta=(
+        _("No previous day")
+        if analytic_data["AverageNoShowsPercentageDifference"] == "No previous day"
+        else analytic_data["AverageNoShowsPercentageDifference"]
+    ),
     border=True,
 )
 
@@ -375,11 +445,11 @@ chart = (
     alt.Chart(no_shows_df)
     .mark_bar()
     .encode(
-        x="Date",
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
         y=alt.Y(
             "NoShowsNumber",
             axis=alt.Axis(
-                title="Number of no-shows", values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
+                title=_("Number of no-shows"), values=list(range(0, max(no_shows_df["NoShowsNumber"]) + 1)), format="d"
             ),
         ),
     )
@@ -387,19 +457,33 @@ chart = (
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 
-statistics_tab.subheader("Phone calls statistics")
+statistics_tab.subheader(_("Phone calls statistics"))
 
 col1, col2 = statistics_tab.columns(2)
 col1.metric(
-    label="Percentage of calls resulting in rescheduling",
-    value=analytic_data["ConsentsPercentage"],
-    delta=analytic_data["ConsentsPercentageDifference"],
+    label=_("Percentage of calls resulting in rescheduling"),
+    value=(
+        _("No calls made") if analytic_data["ConsentsPercentage"] == "No calls made" else analytic_data["ConsentsPercentage"]
+    ),
+    delta=(
+        _("No calls made")
+        if analytic_data["ConsentsPercentageDifference"] == "No calls made"
+        else analytic_data["ConsentsPercentageDifference"]
+    ),
     border=True,
 )
 col2.metric(
-    label="Average percentage of calls resulting in rescheduling",
-    value=analytic_data["AverageConstentsPercentage"],
-    delta=analytic_data["AverageConstentsPercentageDifference"],
+    label=_("Average percentage of calls resulting in rescheduling"),
+    value=(
+        _("No calls made")
+        if analytic_data["AverageConstentsPercentage"] == "No calls made"
+        else analytic_data["AverageConstentsPercentage"]
+    ),
+    delta=(
+        _("No calls made")
+        if analytic_data["AverageConstentsPercentageDifference"] == "No calls made"
+        else analytic_data["AverageConstentsPercentageDifference"]
+    ),
     border=True,
 )
 
@@ -408,11 +492,11 @@ chart = (
     alt.Chart(calls_df)
     .mark_bar()
     .encode(
-        x="Date",
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
         y=alt.Y(
             "CallsNumber",
             axis=alt.Axis(
-                title="Number of phone calls completed", values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
+                title=_("Number of phone calls completed"), values=list(range(0, max(calls_df["CallsNumber"]) + 1)), format="d"
             ),
         ),
     )
@@ -421,9 +505,9 @@ statistics_tab.altair_chart(chart, use_container_width=True)
 
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
-    st.button("➡️ Simulate Next Day", on_click=lambda: update_day(delta=1))
+    st.button(f"➡️ {_('Simulate Next Day')}", on_click=lambda: update_day(delta=1))
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
-    st.button("⬅️ Simulate Previous Day", on_click=lambda: update_day(delta=-1))
+    st.button(f"⬅️ {_('Simulate Previous Day')}", on_click=lambda: update_day(delta=-1))
 
 if "error_message" in st.session_state and st.session_state.error_message:
     st.error(st.session_state.error_message)
