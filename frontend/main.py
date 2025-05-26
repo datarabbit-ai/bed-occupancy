@@ -13,15 +13,18 @@ main_tab.title("Bed Assignments")
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
-
 if "refreshes_number" not in st.session_state:
     st.session_state.refreshes_number = 0
-
 if "auto_day_change" not in st.session_state:
     st.session_state.auto_day_change = False
-
 if "button_pressed" not in st.session_state:
     st.session_state.button_pressed = False
+if "current_patient_index" not in st.session_state:
+    st.session_state.current_patient_index = 0
+if "consent" not in st.session_state:
+    st.session_state.consent = False
+
+st.session_state.consent = False
 
 st.html(
     """
@@ -179,42 +182,44 @@ def handle_patient_rescheduling(
 
 
 def agent_call(queue_df: pd.DataFrame) -> None:
-    queue_id = 0
+    idx = st.session_state.current_patient_index
 
-    while queue_id < len(queue_df):
-        patient_id = queue_df["patient_id"][queue_id]
-        name, surname = queue_df["patient_name"][queue_id].split()
-        pesel = queue_df["pesel"][queue_id][-3:]
+    if idx >= len(queue_df):
+        main_tab.warning("No more patients in queue.")
+        st.session_state.button_pressed = True
+        return
 
-        response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
-        consent = handle_patient_rescheduling(
-            name=name,
-            surname=surname,
-            gender=response["gender"],
-            pesel=pesel,
-            sickness=response["sickness"],
-            old_day=response["old_day"],
-            new_day=response["new_day"],
-        )
+    patient_id = queue_df["patient_id"][idx]
+    name, surname = queue_df["patient_name"][idx].split()
+    pesel = queue_df["pesel"][idx][-3:]
 
-        if consent:
-            st.session_state.patient_id = patient_id
-            st.session_state.consent = True
-            requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
-            requests.get("http://backend:8000/increase-calls-number")
-            main_tab.success(f"{name} {surname} agreed to reschedule.")
-            return
-        elif consent is None:
-            st.info(f"{name} {surname}'s consent is unknown, calling one more time.")
-            continue
-        else:
-            queue_id += 1
-            st.error(f"{name} {surname} did not agree to reschedule.")
-            requests.get("http://backend:8000/increase-calls-number")
+    response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
+    consent = handle_patient_rescheduling(
+        name=name,
+        surname=surname,
+        gender=response["gender"],
+        pesel=pesel,
+        sickness=response["sickness"],
+        old_day=response["old_day"],
+        new_day=response["new_day"],
+    )
 
-    st.session_state.button_pressed = True
+    st.session_state.consent = consent
 
-    main_tab.warning("No patient agreed to reschedule.")
+    if consent is True:
+        st.session_state.patient_id = patient_id
+        requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
+        requests.get("http://backend:8000/increase-calls-number")
+        main_tab.success(f"{name} {surname} agreed to reschedule.")
+        st.session_state.current_patient_index = 0
+        st.session_state.button_pressed = True
+    elif consent is False:
+        requests.get("http://backend:8000/increase-calls-number")
+        main_tab.error(f"{name} {surname} did not agree to reschedule.")
+        st.session_state.current_patient_index += 1
+        st.session_state.button_pressed = True
+    else:
+        main_tab.info(f"{name} {surname}'s consent is unknown.")
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -265,9 +270,11 @@ if tables:
 main_tab.header(f"Day {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
-    st.session_state.consent = False
     st.session_state.auto_day_change = False
-    st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+    if st.session_state.consent is False:
+        st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
+    elif st.session_state.consent is None:
+        st.sidebar.button("Call patient again 🔁", on_click=lambda: agent_call(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
@@ -278,7 +285,14 @@ else:
 
 st.sidebar.subheader("Patients in queue")
 if not queue_df.empty:
-    st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
+
+    def highlight_current_row(row):
+        if row.name == st.session_state.current_patient_index:
+            return ["background-color: #fddb3a"] * len(row)
+        return [""] * len(row)
+
+    styled_df = queue_df.style.apply(highlight_current_row, axis=1)
+    st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
 else:
     st.sidebar.info("No patients found in the queue.")
 
