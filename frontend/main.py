@@ -393,7 +393,7 @@ chart = (
     alt.Chart(occupancy_df)
     .mark_line(point=True)
     .encode(
-        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
         y=alt.Y("Occupancy", axis=alt.Axis(title=_("Occupancy [%]"), format="d"), scale=alt.Scale(domain=[0, 100])),
     )
 )
@@ -428,7 +428,7 @@ chart = (
     alt.Chart(no_shows_df)
     .mark_bar()
     .encode(
-        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
         y=alt.Y(
             "NoShowsNumber",
             axis=alt.Axis(
@@ -475,7 +475,7 @@ chart = (
     alt.Chart(calls_df)
     .mark_bar()
     .encode(
-        x=alt.X("Date", axis=alt.Axis(title=_("Date"), format="%Y-%m-%d")),
+        x=alt.X("Date", axis=alt.Axis(title=_("Date"))),
         y=alt.Y(
             "CallsNumber",
             axis=alt.Axis(
