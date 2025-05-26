@@ -25,7 +25,6 @@ if "current_patient_index" not in st.session_state:
 if "consent" not in st.session_state:
     st.session_state.consent = False
 
-st.session_state.consent = False
 
 st.html(
     """
@@ -280,9 +279,9 @@ main_tab.header(f"Day {st.session_state.day_for_simulation}")
 
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
-    if st.session_state.consent is False:
+    if st.session_state.consent is not None:
         st.sidebar.button("Call next patient in queue 📞", on_click=lambda: agent_call(queue_df))
-    elif st.session_state.consent is None:
+    else:
         st.sidebar.button("Call patient again 🔁", on_click=lambda: agent_call(queue_df))
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
@@ -300,8 +299,11 @@ if not queue_df.empty:
             return ["background-color: #fddb3a"] * len(row)
         return [""] * len(row)
 
-    styled_df = queue_df.style.apply(highlight_current_row, axis=1)
-    st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
+    if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
+        styled_df = queue_df.style.apply(highlight_current_row, axis=1)
+        st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
+    else:
+        st.sidebar.dataframe(queue_df, use_container_width=True, hide_index=True)
 else:
     st.sidebar.info("No patients found in the queue.")
 
