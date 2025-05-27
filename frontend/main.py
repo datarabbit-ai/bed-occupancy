@@ -31,9 +31,23 @@ st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
 
+ui_languages = ["en", "pl"]
+voice_languages = ["pl", "ua"]
+
 col1, col2 = st.sidebar.columns(2)
-col1.selectbox(_("Interface language"), ["pl", "en"], key="interface_language")
-col2.selectbox(_("Voice agent language"), ["pl", "ua"], key="voice_language")
+# These indexes are crucial to avoid bugs of changing languages unexpectedly
+col1.selectbox(
+    _("Interface language"),
+    ui_languages,
+    index=ui_languages.index(st.session_state.interface_language),
+    key="interface_language",
+)
+col2.selectbox(
+    _("Voice agent language"),
+    voice_languages,
+    index=voice_languages.index(st.session_state.voice_language),
+    key="voice_language",
+)
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
