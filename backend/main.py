@@ -274,6 +274,8 @@ def get_tables_and_statistics() -> ListOfTables:
 
         no_shows_list: List[NoShow] = []
 
+        days_of_stay_for_replacement: List[int] = []
+
         for iteration in range(day - 1):
             should_log = iteration == day - 2 and rollback_flag == 1
             should_give_no_shows = iteration == day - 2
@@ -295,7 +297,8 @@ def get_tables_and_statistics() -> ListOfTables:
                 .all()
             )
             bed_iterator = 0
-            days_of_stay_for_replacement: List[int] = []
+
+            days_of_stay_for_replacement = []
 
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
@@ -431,7 +434,13 @@ def get_patient_data(patient_id: int):
     patient = session.query(Patient).filter_by(patient_id=patient_id).first()
     sickness = patient.sickness
     gender = patient.gender
-    old_day, new_day = day_for_simulation + random.randint(2, 4), day_for_simulation
+    entry = (
+        session.query(PatientQueue)
+        .filter(PatientQueue.patient_id == patient_id)
+        .order_by(PatientQueue.queue_id.desc())
+        .first()
+    )
+    old_day, new_day = entry.admission_day, day_for_simulation
     session.rollback()
     session.close()
     return {"sickness": sickness, "gender": gender, "old_day": old_day, "new_day": new_day}

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base, relationship
@@ -53,7 +55,7 @@ class ListOfTables(BaseModel):
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
     Statistics: Statistics
-    DaysOfStayForReplacement: list[int]
+    DaysOfStayForReplacement: Optional[list[int]]
 
 
 class Patient(Base):
