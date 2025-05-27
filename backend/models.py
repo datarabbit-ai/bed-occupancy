@@ -19,6 +19,8 @@ class PatientQueueResponse(BaseModel):
     patient_id: int
     patient_name: str
     pesel: str
+    admission_day: int
+    days_of_stay: int
 
 
 class NoShow(BaseModel):
@@ -89,5 +91,7 @@ class PatientQueue(Base):
     __tablename__ = "patient_queue"
     queue_id = Column(Integer, primary_key=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
+    days_of_stay = Column(Integer)
+    admission_day = Column(Integer)
 
     patient = relationship("Patient", back_populates="queue_entry")

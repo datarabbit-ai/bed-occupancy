@@ -348,7 +348,14 @@ if not queue_df.empty:
         return [""] * len(row)
 
     styled_df = queue_df.copy()
-    styled_df.columns = [_("Place in queue"), _("Patient's number"), _("Patient's name"), _("Personal number")]
+    styled_df.columns = [
+        _("Place in queue"),
+        _("Patient's number"),
+        _("Patient's name"),
+        _("Personal number"),
+        "admission_day",
+        "days_of_stay",
+    ]
 
     if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
         styled_df = styled_df.style.apply(highlight_current_row, axis=1)

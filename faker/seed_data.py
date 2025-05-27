@@ -45,7 +45,7 @@ def add_beds(session):
     logger.info(f"Added {new_beds_number} generated beds to db")
 
 
-def add_patients_to_queue(session):
+def add_patients_to_queue(session, free_beds_numbers):
     all_patient_ids = [p.patient_id for p in session.query(Patient).all()]
     cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
 
@@ -58,12 +58,34 @@ def add_patients_to_queue(session):
     available_ids = list(set(all_patient_ids) - set(cooldown_ids))
     queue = []
 
+    admission_day = 0
+
     for _ in range(new_patients_in_queue_number):
         if not available_ids:
             break
+
+        if admission_day >= len(free_beds_numbers):
+            break
+        while free_beds_numbers[admission_day] == 0 and admission_day < len(free_beds_numbers):
+            admission_day += 1
+
         selected = random.choice(available_ids)
         max_queue_position += 1
-        queue.append(PatientQueue(patient_id=selected, queue_id=max_queue_position))
+
+        days_of_stay = random.randint(1, 7)
+        if admission_day + days_of_stay >= len(free_beds_numbers):
+            exit_day = len(free_beds_numbers) - 1
+        else:
+            exit_day = admission_day + days_of_stay
+
+        for i in range(admission_day, exit_day):
+            free_beds_numbers[i] -= 1
+
+        queue.append(
+            PatientQueue(
+                patient_id=selected, queue_id=max_queue_position, days_of_stay=days_of_stay, admission_day=admission_day + 1
+            )
+        )
         available_ids.remove(selected)
         cooldown_ids.append(selected)
         if len(cooldown_ids) >= 60:
@@ -77,6 +99,7 @@ def add_patients_to_queue(session):
 def add_patient_assignment_to_bed(session):
     bed_ids = [b.bed_id for b in session.query(Bed).all()]
     patient_ids = [p.patient_id for p in session.query(Patient).all()]
+    free_beds_numbers = [len(bed_ids) for _ in range(20)]
 
     assignments = []
     for bed_id in bed_ids:
@@ -84,11 +107,14 @@ def add_patient_assignment_to_bed(session):
             break
         patient_id = random.choice(patient_ids)
         days_of_stay = random.randint(1, 7)
+        for i in range(0, days_of_stay):
+            free_beds_numbers[i] -= 1
         assignments.append(BedAssignment(bed_id=bed_id, patient_id=patient_id, days_of_stay=days_of_stay))
         patient_ids.remove(patient_id)
 
     session.add_all(assignments)
     logger.info(f"Assigned {len(assignments)} patients to beds in db")
+    return free_beds_numbers
 
 
 def main():
@@ -99,8 +125,8 @@ def main():
             clear_database(session)
             add_patients(session)
             add_beds(session)
-            add_patient_assignment_to_bed(session)
-            add_patients_to_queue(session)
+            free_beds_numbers = add_patient_assignment_to_bed(session)
+            add_patients_to_queue(session, free_beds_numbers)
             session.commit()
         else:
             logger.info("Skipping data generation")

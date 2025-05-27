@@ -380,6 +380,8 @@ def get_tables_and_statistics() -> ListOfTables:
                     "patient_id": patient.patient_id,
                     "patient_name": f"{patient.first_name} {patient.last_name}",
                     "pesel": f"...{patient.pesel[-3:]}",
+                    "days_of_stay": entry.days_of_stay,
+                    "admission_day": entry.admission_day,
                 }
             )
 
