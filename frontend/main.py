@@ -353,18 +353,21 @@ main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
     if st.session_state.consent is not None:
-        col1, col2 = st.sidebar.columns(2)
-        col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: agent_call(queue_df))
-        col2.button(f"{_('Call next patient in queue')} [UA] 📞", on_click=lambda: agent_call(queue_df, True))
+        label = "PL" if st.session_state.voice_language == "pl" else "UA"
+        use_ua_agent = st.session_state.voice_language == "ua"
+        st.sidebar.button(
+            f"{_('Call next patient in queue')} [{label}] 📞", on_click=lambda: agent_call(queue_df, use_ua_agent)
+        )
     else:
-        col1, col2 = st.sidebar.columns(2)
-        col1.button(f"{_('Call patient again')} [PL] 🔁", on_click=lambda: agent_call(queue_df))
-        col2.button(f"{_('Call patient again')} [UA] 🔁", on_click=lambda: agent_call(queue_df, True))
+        label = "PL" if st.session_state.voice_language == "pl" else "UA"
+        use_ua_agent = st.session_state.voice_language == "ua"
+        st.sidebar.button(f"{_('Call patient again')} [{label}] 🔁", on_click=lambda: agent_call(queue_df, use_ua_agent))
         if st.session_state.current_patient_index < len(queue_df) - 1:
-            col1, col2 = st.sidebar.columns(2)
-            col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
-            col2.button(
-                f"{_('Call next patient in queue')} [UA] 📞", on_click=lambda: call_next_patient_in_queue(queue_df, True)
+            label = "PL" if st.session_state.voice_language == "pl" else "UA"
+            use_ua_agent = st.session_state.voice_language == "ua"
+            st.sidebar.button(
+                f"{_('Call next patient in queue')} [{label}] 📞",
+                on_click=lambda: call_next_patient_in_queue(queue_df, use_ua_agent),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
