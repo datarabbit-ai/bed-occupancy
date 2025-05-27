@@ -309,6 +309,13 @@ def reset_day_for_simulation() -> None:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
+def find_next_patient_to_call(days_of_stay, queue_df) -> None:
+    queue_df = queue_df[
+        (queue_df["days_of_stay"] <= days_of_stay) & (queue_df["queue_id"] < st.session_state.current_patient_index + 1)
+    ]
+    return queue_df.sort_values(by="queue_id", ascending=False).head(1)["queue_id"][0] - 1
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -323,7 +330,7 @@ if tables:
 
 main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 
-if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
+if len(no_shows_df["patient_id"]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
     if st.session_state.consent is not None:
         st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
@@ -357,7 +364,7 @@ if not queue_df.empty:
         "days_of_stay",
     ]
 
-    if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
+    if len(no_shows_df["patient_id"]) > 0 and len(queue_df) > 0:
         styled_df = styled_df.style.apply(highlight_current_row, axis=1)
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:

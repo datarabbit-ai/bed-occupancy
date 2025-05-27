@@ -53,6 +53,7 @@ class ListOfTables(BaseModel):
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
     Statistics: Statistics
+    DaysOfStayForReplacement: list[int]
 
 
 class Patient(Base):

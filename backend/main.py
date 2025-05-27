@@ -288,8 +288,14 @@ def get_tables_and_statistics() -> ListOfTables:
             occupied_beds_number = beds_number - len(bed_ids)
             no_shows_number = 0
 
-            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
+            queue = (
+                session.query(PatientQueue)
+                .filter(PatientQueue.admission_day == iteration + 2)
+                .order_by(PatientQueue.queue_id)
+                .all()
+            )
             bed_iterator = 0
+            days_of_stay_for_replacement: List[int] = []
 
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
@@ -297,6 +303,8 @@ def get_tables_and_statistics() -> ListOfTables:
                 will_come = rnd.choice([True] * 4 + [False])
                 if not will_come:
                     no_shows_number += 1
+
+                    days_of_stay_for_replacement.append(entry.days_of_stay)
 
                     delete_patient_by_id_from_queue(patient_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
@@ -308,30 +316,35 @@ def get_tables_and_statistics() -> ListOfTables:
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = rnd.randint(1, 7)
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
-                    stay_lengths[iteration + 2].append(days)
+                    stay_lengths[iteration + 2].append(entry.days_of_stay)
 
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, entry.days_of_stay, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     occupied_beds_number += 1
                     bed_iterator += 1
+
+            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
 
             for patient_id in consent_dict[iteration + 2]:
                 if check_if_patient_has_bed(patient_id):
                     if should_log:
                         logger.info(f"Patient {patient_id} already has a bed")
                 else:
-                    days = rnd.randint(1, 7)
+                    entry = (
+                        session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
+                    )
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
-                    stay_lengths[iteration + 2].append(days)
+                    stay_lengths[iteration + 2].append(entry.days_of_stay)
 
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, days, should_log)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, entry.days_of_stay, should_log)
                     delete_patient_by_id_from_queue(patient_id)
                     occupied_beds_number += 1
                     bed_iterator += 1
+
+            days_of_stay_for_replacement = days_of_stay_for_replacement[len(consent_dict[iteration + 2]) :]
 
             occupancy_in_time["Date"].append(iteration + 2)
             occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
@@ -393,6 +406,7 @@ def get_tables_and_statistics() -> ListOfTables:
             PatientQueue=queue_data,
             NoShows=[n.model_dump() for n in no_shows_list],
             Statistics=calculate_statistics(),
+            DaysOfStayForReplacement=days_of_stay_for_replacement,
         )
 
     except Exception as e:
