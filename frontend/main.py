@@ -198,7 +198,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
 
 def handle_patient_rescheduling(
-    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int
+    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int, use_ua_agent: bool
 ) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
@@ -214,11 +214,11 @@ def handle_patient_rescheduling(
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day)
+    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent)
     return check_patient_consent_to_reschedule(conversation_id)
 
 
-def agent_call(queue_df: pd.DataFrame) -> None:
+def agent_call(queue_df: pd.DataFrame, use_ua_agent: bool = False) -> None:
     idx = st.session_state.current_patient_index
 
     if idx >= len(queue_df):
@@ -239,6 +239,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         sickness=response["sickness"],
         old_day=response["old_day"],
         new_day=response["new_day"],
+        use_ua_agent=use_ua_agent,
     )
 
     st.session_state.consent = consent
@@ -261,9 +262,9 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
-def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
+def call_next_patient_in_queue(queue_df: pd.DataFrame, use_ua_agent: bool = False) -> None:
     st.session_state.current_patient_index += 1
-    agent_call(queue_df)
+    agent_call(queue_df, use_ua_agent)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -326,11 +327,17 @@ main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
     if st.session_state.consent is not None:
-        st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
+        col1, col2 = st.sidebar.columns(2)
+        col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: agent_call(queue_df))
+        col2.button(f"{_('Call next patient in queue')} [UA] 📞", on_click=lambda: agent_call(queue_df, True))
     else:
         st.sidebar.button(f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df))
         if st.session_state.current_patient_index < len(queue_df) - 1:
-            st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
+            col1, col2 = st.sidebar.columns(2)
+            col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
+            col2.button(
+                f"{_('Call next patient in queue')} [UA] 📞", on_click=lambda: call_next_patient_in_queue(queue_df, True)
+            )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
