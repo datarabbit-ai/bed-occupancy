@@ -331,7 +331,9 @@ if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
         col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: agent_call(queue_df))
         col2.button(f"{_('Call next patient in queue')} [UA] 📞", on_click=lambda: agent_call(queue_df, True))
     else:
-        st.sidebar.button(f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df))
+        col1, col2 = st.sidebar.columns(2)
+        col1.button(f"{_('Call patient again')} [PL] 🔁", on_click=lambda: agent_call(queue_df))
+        col2.button(f"{_('Call patient again')} [UA] 🔁", on_click=lambda: agent_call(queue_df, True))
         if st.session_state.current_patient_index < len(queue_df) - 1:
             col1, col2 = st.sidebar.columns(2)
             col1.button(f"{_('Call next patient in queue')} [PL] 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
