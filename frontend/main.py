@@ -9,8 +9,6 @@ from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
-st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
-
 if "interface_language" not in st.session_state:
     st.session_state.interface_language = "en"
 if "voice_language" not in st.session_state:
@@ -27,6 +25,8 @@ def translate_page(language: str) -> Callable:
 
 
 _ = translate_page(st.session_state.interface_language)
+
+st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
