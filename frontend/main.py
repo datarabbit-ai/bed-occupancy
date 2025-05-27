@@ -1,5 +1,5 @@
 import gettext
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 import altair as alt
 import pandas as pd
@@ -11,17 +11,29 @@ from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
 
-_ = gettext.gettext
-language = st.sidebar.selectbox("Choose language", ["en", "pl"], label_visibility="collapsed")
-try:
-    localizator = gettext.translation("base", localedir="locales", languages=[language])
-    localizator.install()
-    _ = localizator.gettext
-except:
-    pass
+if "interface_language" not in st.session_state:
+    st.session_state.interface_language = "en"
+if "voice_language" not in st.session_state:
+    st.session_state.voice_language = "pl"
+
+
+def translate_page(language: str) -> Callable:
+    try:
+        localizator = gettext.translation("base", localedir="locales", languages=[language])
+        localizator.install()
+        return localizator.gettext
+    except:
+        return gettext.gettext
+
+
+_ = translate_page(st.session_state.interface_language)
 
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
+
+col1, col2 = st.sidebar.columns(2)
+col1.selectbox(_("Interface language"), ["pl", "en"], key="interface_language")
+col2.selectbox(_("Voice agent language"), ["pl", "ua"], key="voice_language")
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
