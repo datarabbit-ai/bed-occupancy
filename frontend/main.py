@@ -219,7 +219,7 @@ def handle_patient_rescheduling(
     return check_patient_consent_to_reschedule(conversation_id)
 
 
-def agent_call(queue_df: pd.DataFrame, searched_days_of_stay) -> None:
+def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int) -> None:
     idx = st.session_state.current_patient_index
 
     if idx < 0:
@@ -254,15 +254,15 @@ def agent_call(queue_df: pd.DataFrame, searched_days_of_stay) -> None:
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
         main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
-        st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df)
+        st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df, bed_df)
         st.session_state.button_pressed = True
     else:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
-def call_next_patient_in_queue(queue_df: pd.DataFrame, searched_days_of_stay) -> None:
-    st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df)
-    agent_call(queue_df, searched_days_of_stay)
+def call_next_patient_in_queue(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int) -> None:
+    st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df, bed_df)
+    agent_call(queue_df, bed_df, searched_days_of_stay)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -310,10 +310,16 @@ def reset_day_for_simulation() -> None:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
-def find_next_patient_to_call(days_of_stay, queue_df) -> None:
+def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df: pd.DataFrame) -> int:
     queue_df = queue_df[
-        (queue_df["days_of_stay"] <= days_of_stay) & (queue_df["place_in_queue"] < st.session_state.current_patient_index + 1)
+        (queue_df["days_of_stay"] <= days_of_stay)
+        & (queue_df["place_in_queue"] < st.session_state.current_patient_index + 1)
+        & (~queue_df["patient_id"].isin(bed_df["patient_id"]))
     ]
+
+    if queue_df.empty:
+        return -1
+
     return int(queue_df.sort_values(by="place_in_queue", ascending=False).iloc[0]["place_in_queue"]) - 1
 
 
@@ -332,7 +338,9 @@ if tables:
 if "current_patient_index" not in st.session_state:
     if tables["DaysOfStayForReplacement"] != []:
         st.session_state.current_patient_index = len(queue_df)
-        st.session_state.current_patient_index = find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df)
+        st.session_state.current_patient_index = find_next_patient_to_call(
+            tables["DaysOfStayForReplacement"][0], queue_df, bed_df
+        )
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
 
@@ -343,16 +351,17 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and len(queue_df) > 0:
     if st.session_state.consent is not None:
         st.sidebar.button(
             f"{_('Call next patient in queue')} 📞",
-            on_click=lambda: agent_call(queue_df, tables["DaysOfStayForReplacement"][0]),
+            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0]),
         )
     else:
         st.sidebar.button(
-            f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df, tables["DaysOfStayForReplacement"][0])
+            f"{_('Call patient again')} 🔁",
+            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0]),
         )
         if st.session_state.current_patient_index > 0:
             st.sidebar.button(
                 f"{_('Call next patient in queue')} 📞",
-                on_click=lambda: call_next_patient_in_queue(queue_df, tables["DaysOfStayForReplacement"][0]),
+                on_click=lambda: call_next_patient_in_queue(queue_df, bed_df, tables["DaysOfStayForReplacement"][0]),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)

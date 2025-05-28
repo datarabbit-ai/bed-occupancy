@@ -331,18 +331,17 @@ def get_tables_and_statistics() -> ListOfTables:
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
 
             for queue_id in consent_dict[iteration + 2]:
-                if check_if_patient_has_bed(patient_id):
+                queue_entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
+                patient = queue_entry.patient
+                if check_if_patient_has_bed(patient.patient_id):
                     if should_log:
-                        logger.info(f"Patient with number {queue_id} place in the queue already has a bed")
+                        logger.info(f"Patient {patient.patient_id} already has a bed")
                 else:
-                    entry = (
-                        session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
-                    )
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
-                    stay_lengths[iteration + 2].append(entry.days_of_stay)
+                    stay_lengths[iteration + 2].append(queue_entry.days_of_stay)
 
-                    assign_bed_to_patient(bed_ids[bed_iterator], patient_id, entry.days_of_stay, should_log)
+                    assign_bed_to_patient(bed_ids[bed_iterator], patient.patient_id, queue_entry.days_of_stay, should_log)
                     delete_patient_by_queue_id_from_queue(queue_id)
                     occupied_beds_number += 1
                     bed_iterator += 1
