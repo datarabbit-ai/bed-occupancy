@@ -128,15 +128,21 @@ st.html(
 )
 
 
-def transform_patient_queue_data(raw_queue, simulation_day):
+def calculate_simulation_date(sim_day: int) -> date:
+    today = datetime.today().date()
+    result_date = today + timedelta(days=sim_day - 1)
+    return result_date
+
+
+def transform_patient_queue_data(raw_queue):
     today = datetime.today().date()
     transformed = []
 
     for entry in raw_queue:
-        admission_day_offset = entry.get("admission_day", 0)
+        admission_day = entry.get("admission_day", 0)
         days_of_stay = entry.get("days_of_stay", 0)
 
-        admission_date = today + timedelta(days=(admission_day_offset - simulation_day))
+        admission_date = today + timedelta(days=(admission_day - 1))
         discharge_date = admission_date + timedelta(days=days_of_stay)
 
         transformed.append(
@@ -145,6 +151,7 @@ def transform_patient_queue_data(raw_queue, simulation_day):
                 "patient_id": entry["patient_id"],
                 "patient_name": entry["patient_name"],
                 "pesel": entry["pesel"],
+                "days_of_stay": days_of_stay,
                 "Admission Date": admission_date.strftime("%Y-%m-%d"),
                 "Discharge Date": discharge_date.strftime("%Y-%m-%d"),
             }
@@ -361,7 +368,7 @@ tables = get_list_of_tables_and_statistics()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
-    queue_df = pd.DataFrame(transform_patient_queue_data(tables["PatientQueue"], st.session_state.day_for_simulation))
+    queue_df = pd.DataFrame(transform_patient_queue_data(tables["PatientQueue"]))
 
 
 if "current_patient_index" not in st.session_state:
@@ -373,7 +380,9 @@ if "current_patient_index" not in st.session_state:
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
 
-main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
+main_tab.header(
+    f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
+)
 
 if len(tables["DaysOfStayForReplacement"]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
@@ -408,7 +417,7 @@ if not queue_df.empty:
             return ["background-color: #fddb3a"] * len(row)
         return [""] * len(row)
 
-    styled_df = queue_df.copy()
+    styled_df = queue_df.drop(columns=["days_of_stay"], errors="ignore").copy()
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),
