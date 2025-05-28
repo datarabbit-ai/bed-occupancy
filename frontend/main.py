@@ -1,5 +1,5 @@
 import gettext
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 import altair as alt
 import pandas as pd
@@ -9,19 +9,45 @@ from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 
-st.set_page_config(page_title="Hospital bed management", page_icon="🏥")
+if "interface_language" not in st.session_state:
+    st.session_state.interface_language = "en"
+if "voice_language" not in st.session_state:
+    st.session_state.voice_language = "pl"
 
-_ = gettext.gettext
-language = st.sidebar.selectbox("Choose language", ["en", "pl"], label_visibility="collapsed")
-try:
-    localizator = gettext.translation("base", localedir="locales", languages=[language])
-    localizator.install()
-    _ = localizator.gettext
-except:
-    pass
+
+def translate_page(language: str) -> Callable:
+    try:
+        localizator = gettext.translation("base", localedir="locales", languages=[language])
+        localizator.install()
+        return localizator.gettext
+    except:
+        return gettext.gettext
+
+
+_ = translate_page(st.session_state.interface_language)
+
+st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
+
+ui_languages = ["en", "pl"]
+voice_languages = ["pl", "ua"]
+
+col1, col2 = st.sidebar.columns(2)
+# These indexes are crucial to avoid bugs of changing languages unexpectedly
+col1.selectbox(
+    _("Interface language"),
+    ui_languages,
+    index=ui_languages.index(st.session_state.interface_language),
+    key="interface_language",
+)
+col2.selectbox(
+    _("Voice agent language"),
+    voice_languages,
+    index=voice_languages.index(st.session_state.voice_language),
+    key="voice_language",
+)
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -198,7 +224,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
 
 
 def handle_patient_rescheduling(
-    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int
+    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int, use_ua_agent: bool
 ) -> bool:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
@@ -214,11 +240,11 @@ def handle_patient_rescheduling(
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day)
+    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent)
     return check_patient_consent_to_reschedule(conversation_id)
 
 
-def agent_call(queue_df: pd.DataFrame) -> None:
+def agent_call(queue_df: pd.DataFrame, use_ua_agent: bool = False) -> None:
     idx = st.session_state.current_patient_index
 
     if idx >= len(queue_df):
@@ -239,6 +265,7 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         sickness=response["sickness"],
         old_day=response["old_day"],
         new_day=response["new_day"],
+        use_ua_agent=use_ua_agent,
     )
 
     st.session_state.consent = consent
@@ -261,9 +288,9 @@ def agent_call(queue_df: pd.DataFrame) -> None:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
-def call_next_patient_in_queue(queue_df: pd.DataFrame) -> None:
+def call_next_patient_in_queue(queue_df: pd.DataFrame, use_ua_agent: bool = False) -> None:
     st.session_state.current_patient_index += 1
-    agent_call(queue_df)
+    agent_call(queue_df, use_ua_agent)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -326,11 +353,22 @@ main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
 if len(bed_df[bed_df["patient_id"] == 0]) > 0 and len(queue_df) > 0:
     st.session_state.auto_day_change = False
     if st.session_state.consent is not None:
-        st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: agent_call(queue_df))
+        label = "PL" if st.session_state.voice_language == "pl" else "UA"
+        use_ua_agent = st.session_state.voice_language == "ua"
+        st.sidebar.button(
+            f"{_('Call next patient in queue')} [{label}] 📞", on_click=lambda: agent_call(queue_df, use_ua_agent)
+        )
     else:
-        st.sidebar.button(f"{_('Call patient again')} 🔁", on_click=lambda: agent_call(queue_df))
+        label = "PL" if st.session_state.voice_language == "pl" else "UA"
+        use_ua_agent = st.session_state.voice_language == "ua"
+        st.sidebar.button(f"{_('Call patient again')} [{label}] 🔁", on_click=lambda: agent_call(queue_df, use_ua_agent))
         if st.session_state.current_patient_index < len(queue_df) - 1:
-            st.sidebar.button(f"{_('Call next patient in queue')} 📞", on_click=lambda: call_next_patient_in_queue(queue_df))
+            label = "PL" if st.session_state.voice_language == "pl" else "UA"
+            use_ua_agent = st.session_state.voice_language == "ua"
+            st.sidebar.button(
+                f"{_('Call next patient in queue')} [{label}] 📞",
+                on_click=lambda: call_next_patient_in_queue(queue_df, use_ua_agent),
+            )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
