@@ -1,4 +1,5 @@
 import gettext
+from datetime import datetime
 from typing import Dict, Optional
 
 import altair as alt
@@ -33,6 +34,8 @@ if "button_pressed" not in st.session_state:
     st.session_state.button_pressed = False
 if "consent" not in st.session_state:
     st.session_state.consent = False
+
+today = pd.Timestamp(datetime.today().date())
 
 
 st.html(
@@ -224,11 +227,10 @@ def agent_call(queue_df: pd.DataFrame, searched_days_of_stay) -> None:
         st.session_state.button_pressed = True
         return
 
-    patient_id = queue_df["patient_id"][idx]
     name, surname = queue_df["patient_name"][idx].split()
     pesel = queue_df["pesel"][idx][-3:]
 
-    response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": patient_id}).json()
+    response = requests.get("http://backend:8000/get-patient-data", params={"queue_id": idx + 1}).json()
     consent = handle_patient_rescheduling(
         name=name,
         surname=surname,
@@ -242,8 +244,7 @@ def agent_call(queue_df: pd.DataFrame, searched_days_of_stay) -> None:
     st.session_state.consent = consent
 
     if consent is True:
-        st.session_state.patient_id = patient_id
-        requests.get("http://backend:8000/add-patient-to-approvers", params={"patient_id": patient_id})
+        requests.get("http://backend:8000/add-patient-to-approvers", params={"queue_id": idx + 1})
         requests.get("http://backend:8000/increase-calls-number")
 
         main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
@@ -313,7 +314,7 @@ def find_next_patient_to_call(days_of_stay, queue_df) -> None:
     queue_df = queue_df[
         (queue_df["days_of_stay"] <= days_of_stay) & (queue_df["place_in_queue"] < st.session_state.current_patient_index + 1)
     ]
-    return queue_df.sort_values(by="place_in_queue", ascending=False).head(1)["place_in_queue"][0] - 1
+    return int(queue_df.sort_values(by="place_in_queue", ascending=False).iloc[0]["place_in_queue"]) - 1
 
 
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
@@ -370,6 +371,7 @@ if not queue_df.empty:
         return [""] * len(row)
 
     styled_df = queue_df.copy()
+    styled_df["admission_day"] = today + pd.to_timedelta(styled_df["admission_day"], unit="D")
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),

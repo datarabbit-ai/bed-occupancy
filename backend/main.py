@@ -110,8 +110,8 @@ def get_tables_and_statistics() -> ListOfTables:
     def check_if_patient_has_bed(patient_id: int) -> bool:
         return session.query(BedAssignment).filter_by(patient_id=patient_id).first() is not None
 
-    def delete_patient_by_id_from_queue(patient_id: int):
-        entry = session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
+    def delete_patient_by_queue_id_from_queue(queue_id: int):
+        entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
         if entry:
             session.delete(entry)
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
@@ -309,7 +309,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
                     days_of_stay_for_replacement.append(entry.days_of_stay)
 
-                    delete_patient_by_id_from_queue(patient_id)
+                    delete_patient_by_queue_id_from_queue(entry.queue_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
                     if should_give_no_shows:
                         no_shows_list.append(no_show)
@@ -324,16 +324,16 @@ def get_tables_and_statistics() -> ListOfTables:
                     stay_lengths[iteration + 2].append(entry.days_of_stay)
 
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, entry.days_of_stay, should_log)
-                    delete_patient_by_id_from_queue(patient_id)
+                    delete_patient_by_queue_id_from_queue(entry.queue_id)
                     occupied_beds_number += 1
                     bed_iterator += 1
 
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
 
-            for patient_id in consent_dict[iteration + 2]:
+            for queue_id in consent_dict[iteration + 2]:
                 if check_if_patient_has_bed(patient_id):
                     if should_log:
-                        logger.info(f"Patient {patient_id} already has a bed")
+                        logger.info(f"Patient with number {queue_id} place in the queue already has a bed")
                 else:
                     entry = (
                         session.query(PatientQueue).filter_by(patient_id=patient_id).order_by(PatientQueue.queue_id).first()
@@ -343,7 +343,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     stay_lengths[iteration + 2].append(entry.days_of_stay)
 
                     assign_bed_to_patient(bed_ids[bed_iterator], patient_id, entry.days_of_stay, should_log)
-                    delete_patient_by_id_from_queue(patient_id)
+                    delete_patient_by_queue_id_from_queue(queue_id)
                     occupied_beds_number += 1
                     bed_iterator += 1
 
@@ -419,8 +419,8 @@ def get_tables_and_statistics() -> ListOfTables:
 
 
 @app.get("/add-patient-to-approvers")
-def add_patient_to_approvers(patient_id: int) -> None:
-    patients_consent_dictionary[day_for_simulation].append(patient_id)
+def add_patient_to_approvers(queue_id: int) -> None:
+    patients_consent_dictionary[day_for_simulation].append(queue_id)
 
 
 @app.get("/increase-calls-number")
@@ -429,18 +429,13 @@ def increase_calls_number() -> None:
 
 
 @app.get("/get-patient-data")
-def get_patient_data(patient_id: int):
+def get_patient_data(queue_id: int):
     session = get_session()
-    patient = session.query(Patient).filter_by(patient_id=patient_id).first()
+    queue_entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
+    patient = queue_entry.patient
     sickness = patient.sickness
     gender = patient.gender
-    entry = (
-        session.query(PatientQueue)
-        .filter(PatientQueue.patient_id == patient_id)
-        .order_by(PatientQueue.queue_id.desc())
-        .first()
-    )
-    old_day, new_day = entry.admission_day, day_for_simulation
+    old_day, new_day = queue_entry.admission_day, day_for_simulation
     session.rollback()
     session.close()
     return {"sickness": sickness, "gender": gender, "old_day": old_day, "new_day": new_day}
