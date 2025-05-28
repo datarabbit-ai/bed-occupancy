@@ -18,7 +18,7 @@ try:
     localizator = gettext.translation("base", localedir="locales", languages=[language])
     localizator.install()
     _ = localizator.gettext
-except:
+except Exception:
     pass
 
 main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
@@ -160,7 +160,7 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                     filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
                     table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
 
-                    if table_headers != []:
+                    if table_headers:
                         table_headers = [
                             _("Patient's number"),
                             _("Patient's name"),
@@ -336,7 +336,7 @@ if tables:
     no_shows_df = pd.DataFrame(tables["NoShows"])
 
 if "current_patient_index" not in st.session_state:
-    if tables["DaysOfStayForReplacement"] != []:
+    if tables["DaysOfStayForReplacement"]:
         st.session_state.current_patient_index = len(queue_df)
         st.session_state.current_patient_index = find_next_patient_to_call(
             tables["DaysOfStayForReplacement"][0], queue_df, bed_df
