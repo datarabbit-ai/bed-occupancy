@@ -195,6 +195,3 @@ msgstr "Symuluj poprzedni dzień"
 
 msgid "Admission date"
 msgstr "Data przyjęcia"
-
-msgid "Discharge date"
-msgstr "Data wypisu"

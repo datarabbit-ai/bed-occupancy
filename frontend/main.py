@@ -151,9 +151,8 @@ def transform_patient_queue_data(raw_queue):
                 "patient_id": entry["patient_id"],
                 "patient_name": entry["patient_name"],
                 "pesel": entry["pesel"],
-                "days_of_stay": days_of_stay,
                 "Admission Date": admission_date.strftime("%Y-%m-%d"),
-                "Discharge Date": discharge_date.strftime("%Y-%m-%d"),
+                "days_of_stay": days_of_stay,
             }
         )
 
@@ -417,14 +416,14 @@ if not queue_df.empty:
             return ["background-color: #fddb3a"] * len(row)
         return [""] * len(row)
 
-    styled_df = queue_df.drop(columns=["days_of_stay"], errors="ignore").copy()
+    styled_df = queue_df.copy()
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),
         _("Patient's name"),
         _("Personal number"),
         _("Admission date"),
-        _("Discharge date"),
+        _("Days of stay"),
     ]
 
     if len(tables["DaysOfStayForReplacement"]) > 0 and len(queue_df) > 0:
