@@ -1,5 +1,5 @@
 import gettext
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Dict, Optional
 
 import altair as alt
@@ -35,8 +35,7 @@ if "button_pressed" not in st.session_state:
 if "consent" not in st.session_state:
     st.session_state.consent = False
 
-today = pd.Timestamp(datetime.today().date())
-
+today = datetime.today().date()
 
 st.html(
     """
@@ -126,6 +125,31 @@ st.html(
     </style>
     """
 )
+
+
+def transform_patient_queue_data(raw_queue, simulation_day):
+    today = datetime.today().date()
+    transformed = []
+
+    for entry in raw_queue:
+        admission_day_offset = entry.get("admission_day", 0)
+        days_of_stay = entry.get("days_of_stay", 0)
+
+        admission_date = today + timedelta(days=(admission_day_offset - simulation_day))
+        discharge_date = admission_date + timedelta(days=days_of_stay)
+
+        transformed.append(
+            {
+                "place_in_queue": entry["place_in_queue"],
+                "patient_id": entry["patient_id"],
+                "patient_name": entry["patient_name"],
+                "pesel": entry["pesel"],
+                "Admission Date": admission_date.strftime("%Y-%m-%d"),
+                "Discharge Date": discharge_date.strftime("%Y-%m-%d"),
+            }
+        )
+
+    return transformed
 
 
 def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
@@ -332,8 +356,9 @@ bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables_and_statistics()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
-    queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
+    queue_df = pd.DataFrame(transform_patient_queue_data(tables["PatientQueue"], st.session_state.day_for_simulation))
+
 
 if "current_patient_index" not in st.session_state:
     if tables["DaysOfStayForReplacement"]:
@@ -380,14 +405,13 @@ if not queue_df.empty:
         return [""] * len(row)
 
     styled_df = queue_df.copy()
-    styled_df["admission_day"] = today + pd.to_timedelta(styled_df["admission_day"], unit="D")
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),
         _("Patient's name"),
         _("Personal number"),
-        "admission_day",
-        "days_of_stay",
+        _("Admission date"),
+        _("Discharge date"),
     ]
 
     if len(tables["DaysOfStayForReplacement"]) > 0 and len(queue_df) > 0:
