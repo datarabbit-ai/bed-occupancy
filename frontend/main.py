@@ -37,6 +37,7 @@ if "consent" not in st.session_state:
 
 today = datetime.today().date()
 
+# region Functions and CSS
 st.html(
     """
     <style>
@@ -347,6 +348,9 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
     return int(queue_df.sort_values(by="place_in_queue", ascending=False).iloc[0]["place_in_queue"]) - 1
 
 
+# endregion
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -439,6 +443,7 @@ statistics_tab.subheader(_("Bed occupancy statistics"))
 
 analytic_data = tables["Statistics"]
 
+# region Metrics
 col1, col2, col3 = statistics_tab.columns(3)
 col1.metric(
     label=_("Beds occupancy"),
@@ -569,6 +574,7 @@ chart = (
 )
 statistics_tab.altair_chart(chart, use_container_width=True)
 
+# endregion
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
     st.button(f"➡️ {_('Simulate Next Day')}", on_click=lambda: update_day(delta=1))
