@@ -128,6 +128,11 @@ st.html(
 )
 
 
+def convert_df_sim_days_to_dates(df: pd.DataFrame, day_column: str = "Date") -> pd.DataFrame:
+    df[day_column] = df[day_column].apply(lambda day: calculate_simulation_date(day).strftime("%Y-%m-%d"))
+    return df
+
+
 def calculate_simulation_date(sim_day: int) -> date:
     today = datetime.today().date()
     result_date = today + timedelta(days=sim_day - 1)
@@ -483,7 +488,9 @@ col3.metric(
     border=True,
 )
 
-occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
+occupancy_df = pd.DataFrame(analytic_data["OccupancyInTime"])
+occupancy_df = convert_df_sim_days_to_dates(occupancy_df)
+occupancy_df = sort_values_for_charts_by_dates(occupancy_df)
 chart = (
     alt.Chart(occupancy_df)
     .mark_line(point=True)
@@ -492,6 +499,7 @@ chart = (
         y=alt.Y("Occupancy", axis=alt.Axis(title=_("Occupancy [%]"), format="d"), scale=alt.Scale(domain=[0, 100])),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 statistics_tab.subheader(_("No-show statistics"))
@@ -518,7 +526,9 @@ col2.metric(
     border=True,
 )
 
-no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
+no_shows_df = pd.DataFrame(analytic_data["NoShowsInTime"])
+no_shows_df = convert_df_sim_days_to_dates(no_shows_df)
+no_shows_df = sort_values_for_charts_by_dates(no_shows_df)
 chart = (
     alt.Chart(no_shows_df)
     .mark_bar()
@@ -532,6 +542,7 @@ chart = (
         ),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 
@@ -565,7 +576,9 @@ col2.metric(
     border=True,
 )
 
-calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
+calls_df = pd.DataFrame(analytic_data["CallsInTime"])
+calls_df = convert_df_sim_days_to_dates(calls_df)
+calls_df = sort_values_for_charts_by_dates(calls_df)
 chart = (
     alt.Chart(calls_df)
     .mark_bar()
@@ -579,6 +592,7 @@ chart = (
         ),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 # endregion
