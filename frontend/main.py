@@ -114,13 +114,19 @@ st.html(
             &:hover {
                 background-color: oklch(90% 0.23 140);
             }
-
         }
-        .box-occupied {
+        .box-requiring-action {
             background-color: oklch(80% 0.25 25);
 
             &:hover {
                 background-color: oklch(90% 0.25 25);
+            }
+        }
+        .box-occupied {
+            background-color: oklch(63.24% 0.1776 226.59);
+
+            &:hover {
+                background-color: oklch(69.12% 0.1209 226.59);
             }
         }
     </style>
@@ -128,7 +134,7 @@ st.html(
 )
 
 
-def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
+def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_row=4) -> None:
     """
     Creates a scrollable grid of boxes with tooltips on hover
 
@@ -186,7 +192,13 @@ def create_box_grid(df: pd.DataFrame, boxes_per_row=4) -> None:
                         side_class = ""
 
                     # Create a box with HTML
-                    if data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
+                    if (data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"])) and actions_required_number > 0:
+                        st.markdown(
+                            f"""<div class="tooltip box box-requiring-action">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
+                            unsafe_allow_html=True,
+                        )
+                        actions_required_number -= 1
+                    elif data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
                         st.markdown(
                             f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
                             unsafe_allow_html=True,
@@ -391,7 +403,7 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
-    create_box_grid(bed_df)
+    create_box_grid(bed_df, len(tables["DaysOfStayForReplacement"]))
 else:
     main_tab.info(_("No bed assignments found."))
 
