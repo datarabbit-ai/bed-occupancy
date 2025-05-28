@@ -143,7 +143,6 @@ def transform_patient_queue_data(raw_queue):
         days_of_stay = entry.get("days_of_stay", 0)
 
         admission_date = today + timedelta(days=(admission_day - 1))
-        discharge_date = admission_date + timedelta(days=days_of_stay)
 
         transformed.append(
             {
