@@ -192,3 +192,9 @@ msgstr "Symuluj następny dzień"
 #: main.py:493
 msgid "Simulate Previous Day"
 msgstr "Symuluj poprzedni dzień"
+
+msgid "Admission date"
+msgstr "Data przyjęcia"
+
+msgid "Discharge date"
+msgstr "Data wypisu"
