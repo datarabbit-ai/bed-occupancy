@@ -1,6 +1,6 @@
 import gettext
-from typing import Callable, Dict, Optional
 from datetime import date, datetime, timedelta
+from typing import Callable, Dict, Optional
 
 import altair as alt
 import pandas as pd
@@ -334,7 +334,9 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
 
-def call_next_patient_in_queue(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False) -> None:
+def call_next_patient_in_queue(
+    queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False
+) -> None:
     st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df, bed_df)
     agent_call(queue_df, bed_df, searched_days_of_stay, use_ua_agent)
 
@@ -456,18 +458,24 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_pati
         label = "PL" if st.session_state.voice_language == "pl" else "UA"
         use_ua_agent = st.session_state.voice_language == "ua"
         st.sidebar.button(
-            f"{_('Call next patient in queue')} [{label}] 📞", on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent)
+            f"{_('Call next patient in queue')} [{label}] 📞",
+            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
         )
     else:
         label = "PL" if st.session_state.voice_language == "pl" else "UA"
         use_ua_agent = st.session_state.voice_language == "ua"
-        st.sidebar.button(f"{_('Call patient again')} [{label}] 🔁", on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent))
+        st.sidebar.button(
+            f"{_('Call patient again')} [{label}] 🔁",
+            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
+        )
         if find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df) > 0:
             label = "PL" if st.session_state.voice_language == "pl" else "UA"
             use_ua_agent = st.session_state.voice_language == "ua"
             st.sidebar.button(
                 f"{_('Call next patient in queue')} [{label}] 📞",
-                on_click=lambda: call_next_patient_in_queue(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
+                on_click=lambda: call_next_patient_in_queue(
+                    queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent
+                ),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
