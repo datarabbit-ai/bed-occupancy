@@ -168,6 +168,7 @@ def transform_patient_queue_data(raw_queue):
 
     return transformed
 
+
 def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_row=4) -> None:
     """
     Creates a scrollable grid of boxes with tooltips on hover
