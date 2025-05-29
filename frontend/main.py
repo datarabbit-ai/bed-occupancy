@@ -1,5 +1,5 @@
 import gettext
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Dict, Optional
 
 import altair as alt
@@ -35,9 +35,9 @@ if "button_pressed" not in st.session_state:
 if "consent" not in st.session_state:
     st.session_state.consent = False
 
-today = pd.Timestamp(datetime.today().date())
+today = datetime.today().date()
 
-
+# region Functions and CSS
 st.html(
     """
     <style>
@@ -132,6 +132,41 @@ st.html(
     </style>
     """
 )
+
+
+def convert_df_sim_days_to_dates(df: pd.DataFrame, day_column: str = "Date") -> pd.DataFrame:
+    df[day_column] = df[day_column].apply(lambda day: calculate_simulation_date(day).strftime("%Y-%m-%d"))
+    return df
+
+
+def calculate_simulation_date(sim_day: int) -> date:
+    today = datetime.today().date()
+    result_date = today + timedelta(days=sim_day - 1)
+    return result_date
+
+
+def transform_patient_queue_data(raw_queue):
+    today = datetime.today().date()
+    transformed = []
+
+    for entry in raw_queue:
+        admission_day = entry.get("admission_day", 0)
+        days_of_stay = entry.get("days_of_stay", 0)
+
+        admission_date = today + timedelta(days=(admission_day - 1))
+
+        transformed.append(
+            {
+                "place_in_queue": entry["place_in_queue"],
+                "patient_id": entry["patient_id"],
+                "patient_name": entry["patient_name"],
+                "pesel": entry["pesel"],
+                "Admission Date": admission_date.strftime("%Y-%m-%d"),
+                "days_of_stay": days_of_stay,
+            }
+        )
+
+    return transformed
 
 
 def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_row=4) -> None:
@@ -359,6 +394,9 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
     return int(queue_df.sort_values(by="place_in_queue", ascending=False).iloc[0]["place_in_queue"]) - 1
 
 
+# endregion
+
+
 if st.session_state.auto_day_change and not st.session_state.button_pressed:
     update_day(delta=1)
 elif st.session_state.button_pressed:
@@ -368,8 +406,9 @@ bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables_and_statistics()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
-    queue_df = pd.DataFrame(tables["PatientQueue"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
+    queue_df = pd.DataFrame(transform_patient_queue_data(tables["PatientQueue"]))
+
 
 if "current_patient_index" not in st.session_state:
     if tables["DaysOfStayForReplacement"]:
@@ -380,7 +419,9 @@ if "current_patient_index" not in st.session_state:
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
 
-main_tab.header(f"{_('Day')} {st.session_state.day_for_simulation}")
+main_tab.header(
+    f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
+)
 
 if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
     st.session_state.auto_day_change = False
@@ -423,14 +464,13 @@ if not queue_df.empty:
         return [""] * len(row)
 
     styled_df = queue_df.copy()
-    styled_df["admission_day"] = today + pd.to_timedelta(styled_df["admission_day"], unit="D")
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),
         _("Patient's name"),
         _("Personal number"),
-        "admission_day",
-        "days_of_stay",
+        _("Admission date"),
+        _("Days of stay"),
     ]
 
     if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
@@ -458,6 +498,7 @@ statistics_tab.subheader(_("Bed occupancy statistics"))
 
 analytic_data = tables["Statistics"]
 
+# region Metrics
 col1, col2, col3 = statistics_tab.columns(3)
 col1.metric(
     label=_("Beds occupancy"),
@@ -490,7 +531,9 @@ col3.metric(
     border=True,
 )
 
-occupancy_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["OccupancyInTime"]))
+occupancy_df = pd.DataFrame(analytic_data["OccupancyInTime"])
+occupancy_df = convert_df_sim_days_to_dates(occupancy_df)
+occupancy_df = sort_values_for_charts_by_dates(occupancy_df)
 chart = (
     alt.Chart(occupancy_df)
     .mark_line(point=True)
@@ -499,6 +542,7 @@ chart = (
         y=alt.Y("Occupancy", axis=alt.Axis(title=_("Occupancy [%]"), format="d"), scale=alt.Scale(domain=[0, 100])),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 statistics_tab.subheader(_("No-show statistics"))
@@ -525,7 +569,9 @@ col2.metric(
     border=True,
 )
 
-no_shows_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["NoShowsInTime"]))
+no_shows_df = pd.DataFrame(analytic_data["NoShowsInTime"])
+no_shows_df = convert_df_sim_days_to_dates(no_shows_df)
+no_shows_df = sort_values_for_charts_by_dates(no_shows_df)
 chart = (
     alt.Chart(no_shows_df)
     .mark_bar()
@@ -539,6 +585,7 @@ chart = (
         ),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
 
@@ -572,7 +619,9 @@ col2.metric(
     border=True,
 )
 
-calls_df = sort_values_for_charts_by_dates(pd.DataFrame(analytic_data["CallsInTime"]))
+calls_df = pd.DataFrame(analytic_data["CallsInTime"])
+calls_df = convert_df_sim_days_to_dates(calls_df)
+calls_df = sort_values_for_charts_by_dates(calls_df)
 chart = (
     alt.Chart(calls_df)
     .mark_bar()
@@ -586,8 +635,10 @@ chart = (
         ),
     )
 )
+
 statistics_tab.altair_chart(chart, use_container_width=True)
 
+# endregion
 
 if st.session_state.day_for_simulation < 20 and not st.session_state.auto_day_change:
     st.button(f"➡️ {_('Simulate Next Day')}", on_click=lambda: update_day(delta=1))
