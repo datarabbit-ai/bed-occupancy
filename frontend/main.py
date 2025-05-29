@@ -299,7 +299,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         gender=response["gender"],
         pesel=pesel,
         sickness=response["sickness"],
-        old_day=calculate_simulation_date(queue_df["admission_day"][idx]).strftime("%Y-%m-%d"),
+        old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
         new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
         use_ua_agent=use_ua_agent,
     )
