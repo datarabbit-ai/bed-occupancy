@@ -1,14 +1,14 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR ORGANIZATION
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Polish translations for PACKAGE package.
+# Copyright (C) 2025 ORGANIZATION
+# U-DESKTOP-6RAEH9E\wikto <wikto@desktop-6raeh9e>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-05-26 11:20+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"POT-Creation-Date: 2025-05-27 13:52+0200\n"
+"PO-Revision-Date: 2025-05-27 13:53+0200\n"
+"Last-Translator: U-DESKTOP-6RAEH9E\\wikto <wikto@desktop-6raeh9e>\n"
+"Language-Team: Polish\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -17,179 +17,191 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
 
-#: main.py:23
+#: main.py:29
+msgid "Hospital bed management"
+msgstr "Zarządzanie łóżkami szpitalnymi"
+
+#: main.py:31
 msgid "Current state"
 msgstr "Stan obecny"
 
-#: main.py:23
+#: main.py:31
 msgid "Data analysis"
 msgstr "Analiza danych"
 
-#: main.py:24
+#: main.py:32
 msgid "Bed Assignments"
 msgstr "Łóżka szpitalne"
 
-#: main.py:146
+#: main.py:35
+msgid "Interface language"
+msgstr "Język interfejsu"
+
+#: main.py:36
+msgid "Voice agent language"
+msgstr "Język agenta głosowego"
+
+#: main.py:168
 msgid "Bed"
 msgstr "Łóżko"
 
-#: main.py:154 main.py:332 main.py:345
+#: main.py:176 main.py:372 main.py:385
 msgid "Patient's number"
 msgstr "Numer pacjenta"
 
-#: main.py:155 main.py:332 main.py:345
+#: main.py:177 main.py:372 main.py:385
 msgid "Patient's name"
 msgstr "Imię i nazwisko pacjenta"
 
-#: main.py:156
+#: main.py:178
 msgid "Sickness"
 msgstr "Choroba"
 
-#: main.py:157 main.py:332
+#: main.py:179 main.py:372
 msgid "Personal number"
 msgstr "PESEL"
 
-#: main.py:158
+#: main.py:180
 msgid "Days left"
 msgstr "Dni do wypisu"
 
-#: main.py:173
+#: main.py:202
 msgid "This bed is empty!"
 msgstr "To łóżko jest wolne!"
 
-#: main.py:233
+#: main.py:264
 msgid "agreed to reschedule"
 msgstr "zgodził/a się na zmianę terminu"
 
-#: main.py:238
+#: main.py:270
 msgid "did not agree to reschedule"
 msgstr "nie wyraził/a zgody na zmianę terminu"
 
-#: main.py:242
+#: main.py:274
 msgid "'s consent is unknown."
 msgstr " nie odpowiedział/a na pytanie."
 
-#: main.py:256
+#: main.py:288
 msgid "Failed to fetch data from the server."
 msgstr "Nieudany odczyt danych z serwera"
 
-#: main.py:259 main.py:269 main.py:290
+#: main.py:291 main.py:301 main.py:322
 msgid "Failed to connect to the server"
 msgstr "Nieudane połączenie z serwerem"
 
-#: main.py:305
+#: main.py:337
 msgid "Day"
 msgstr "Dzień"
 
-#: main.py:310 main.py:314
+#: main.py:343 main.py:344 main.py:351 main.py:353
 msgid "Call next patient in queue"
 msgstr "Zadzwoń do następnego pacjenta z kolejki"
 
-#: main.py:312
+#: main.py:347 main.py:348
 msgid "Call patient again"
 msgstr "Zadzwoń do pacjenta ponownie"
 
-#: main.py:321
+#: main.py:361
 msgid "No bed assignments found."
 msgstr "Nie znaleziono żadnych pacjentów na łóżkach"
 
-#: main.py:323
+#: main.py:363
 msgid "Patients in queue"
 msgstr "Kolejka pacjentów"
 
-#: main.py:332
+#: main.py:372
 msgid "Place in queue"
 msgstr "Miejsce w kolejce"
 
-#: main.py:340
+#: main.py:380
 msgid "No patients found in the queue."
 msgstr "W kolejce nie ma żadnych pacjentów"
 
-#: main.py:342
+#: main.py:382
 msgid "Patients absent on a given day"
 msgstr "Pacjenci, którzy nie przyszli danego dnia"
 
-#: main.py:348
+#: main.py:388
 msgid "No no-shows found."
 msgstr "Nie ma żadnych nieobecnych pacjentów"
 
-#: main.py:350
+#: main.py:390
 msgid "Activate automatic day change"
 msgstr "Aktywuj automatyczną zmianę dnia"
 
-#: main.py:353
+#: main.py:393
 msgid "Reset simulation"
 msgstr "Zresetuj symulację"
 
-#: main.py:355
+#: main.py:395
 msgid "Bed occupancy statistics"
 msgstr "Statystyki zajętości łóżek"
 
-#: main.py:361
+#: main.py:401
 msgid "Beds occupancy"
 msgstr "Zajętość łóżek"
 
-#: main.py:364 main.py:374 main.py:384 main.py:409 main.py:419
+#: main.py:404 main.py:414 main.py:424 main.py:449 main.py:459
 msgid "No previous day"
 msgstr "Brak danych do analizy"
 
-#: main.py:371
+#: main.py:411
 msgid "Average beds occupancy"
 msgstr "Średnia zajętość łóżek"
 
-#: main.py:381
+#: main.py:421
 msgid "Average length of stay"
 msgstr "Średnia długość pobytu w szpitalu"
 
-#: main.py:396 main.py:431 main.py:478
+#: main.py:436 main.py:471 main.py:518
 msgid "Date"
 msgstr "Data"
 
-#: main.py:397
+#: main.py:437
 msgid "Occupancy [%]"
 msgstr "Zajętość łóżek [%]"
 
-#: main.py:402
+#: main.py:442
 msgid "No-show statistics"
 msgstr "Statystyki nieobecności pacjentów"
 
-#: main.py:406
+#: main.py:446
 msgid "No-shows percentage"
 msgstr "Procent nieobecności"
 
-#: main.py:416
+#: main.py:456
 msgid "Average no-shows percentage"
 msgstr "Średni procent nieobecności"
 
-#: main.py:435
+#: main.py:475
 msgid "Number of no-shows"
 msgstr "Ilość nieobecnych pacjentów"
 
-#: main.py:443
+#: main.py:483
 msgid "Phone calls statistics"
 msgstr "Statystyki rozmów telefonicznych z pacjentami"
 
-#: main.py:447
+#: main.py:487
 msgid "Percentage of calls resulting in rescheduling"
 msgstr "Rozmowy, które doprowadziły do zmiany terminu w procentach"
 
-#: main.py:449 main.py:452 main.py:461 main.py:466
+#: main.py:489 main.py:492 main.py:501 main.py:506
 msgid "No calls made"
 msgstr "Brak danych do analizy"
 
-#: main.py:459
+#: main.py:499
 msgid "Average percentage of calls resulting in rescheduling"
 msgstr "Średni procent rozmów, które doprowadziły do zmiany terminu"
 
-#: main.py:482
+#: main.py:522
 msgid "Number of phone calls completed"
 msgstr "Ilość udanych połączeń telefonicznych"
 
-#: main.py:491
+#: main.py:531
 msgid "Simulate Next Day"
 msgstr "Symuluj następny dzień"
 
-#: main.py:493
+#: main.py:533
 msgid "Simulate Previous Day"
 msgstr "Symuluj poprzedni dzień"
 

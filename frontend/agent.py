@@ -17,6 +17,7 @@ from elevenlabs.conversational_ai.conversation import (
 load_dotenv()
 
 agent_id = os.getenv("AGENT_ID")
+ua_agent_id = os.getenv("AGENT_UA_ID")
 api_key = os.getenv("ELEVENLABS_API_KEY")
 phone_to_call = os.getenv("PHONE_TO_CALL")
 agent_phone_number_id = os.getenv("AGENT_PHONE_NUMBER_ID")
@@ -54,41 +55,44 @@ def call_patient(
     patient_sickness: str,
     current_visit_day: int,
     suggested_appointment_day: int,
+    use_ua_agent: bool,
 ) -> str | None:
     """
     Calls a patient using the ElevenLabs API and initiates a conversation.
 
     :param patient_name: The first name of the patient.
     :param patient_surname: The last name of the patient.
+    :param gender: The gender of the patient.
     :param pesel: The pesel of the patient.
     :param patient_sickness: The sickness or condition of the patient.
     :param current_visit_day: The current day of the patient's visit.
     :param suggested_appointment_day: The suggested day for the next appointment.
+    :param use_ua_agent: Whether to use the UA agent for the call.
     :return: The conversation ID if the call was successful, or `None` if an error occurred.
     """
-    # conversation_initiation_client_data = ConversationInitiationData(
-    #     dynamic_variables={
-    #         "patient_name": patient_name,
-    #         "patient_surname": patient_surname,
-    #         "gender": gender,
-    #         "personal_number": pesel,
-    #         "patient_sickness": patient_sickness,
-    #         "current_visit_day": current_visit_day,
-    #         "suggested_appointment_day": suggested_appointment_day,
-    #     }
-    # )
-    # try:
-    #     response = client.conversational_ai.twilio_outbound_call(
-    #         agent_id=agent_id,
-    #         agent_phone_number_id=agent_phone_number_id,
-    #         to_number=phone_to_call,
-    #         conversation_initiation_client_data=conversation_initiation_client_data,
-    #     )
-    #     logger.info(f"Conversation ID: {response.conversation_id}")
-    #     return response.conversation_id
-    # except Exception as e:
-    #     logger.error(f"Error: {e}")
-    #     return None
+    conversation_initiation_client_data = ConversationInitiationData(
+        dynamic_variables={
+            "patient_name": patient_name,
+            "patient_surname": patient_surname,
+            "gender": gender,
+            "personal_number": pesel,
+            "patient_sickness": patient_sickness,
+            "current_visit_day": current_visit_day,
+            "suggested_appointment_day": suggested_appointment_day,
+        }
+    )
+    try:
+        response = client.conversational_ai.twilio_outbound_call(
+            agent_id=(agent_id if not use_ua_agent else ua_agent_id),
+            agent_phone_number_id=agent_phone_number_id,
+            to_number=phone_to_call,
+            conversation_initiation_client_data=conversation_initiation_client_data,
+        )
+        logger.info(f"Conversation ID: {response.conversation_id}")
+        return response.conversation_id
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return None
 
 
 def establish_voice_conversation(conversation: Conversation) -> str | None:
