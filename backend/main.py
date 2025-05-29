@@ -428,13 +428,11 @@ def increase_calls_number() -> None:
 
 
 @app.get("/get-patient-data")
-def get_patient_data(queue_id: int):
+def get_patient_data(patient_id: int):
     session = get_session()
-    queue_entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
-    patient = queue_entry.patient
+    patient = session.query(Patient).filter_by(patient_id=patient_id).first()
     sickness = patient.sickness
     gender = patient.gender
-    old_day, new_day = queue_entry.admission_day, day_for_simulation
     session.rollback()
     session.close()
-    return {"sickness": sickness, "gender": gender, "old_day": old_day, "new_day": new_day}
+    return {"sickness": sickness, "gender": gender}

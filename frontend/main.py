@@ -171,28 +171,17 @@ def calculate_simulation_date(sim_day: int) -> date:
     return result_date
 
 
-def transform_patient_queue_data(raw_queue):
+def transform_patient_queue_data(df):
     today = datetime.today().date()
-    transformed = []
 
-    for entry in raw_queue:
-        admission_day = entry.get("admission_day", 0)
-        days_of_stay = entry.get("days_of_stay", 0)
+    df = df.copy()
+    df["Admission Date"] = (
+        df["admission_day"].fillna(0).astype(int).apply(lambda x: (today + timedelta(days=(x - 1))).strftime("%Y-%m-%d"))
+    )
 
-        admission_date = today + timedelta(days=(admission_day - 1))
+    transformed_df = df[["place_in_queue", "patient_id", "patient_name", "pesel", "Admission Date", "days_of_stay"]]
 
-        transformed.append(
-            {
-                "place_in_queue": entry["place_in_queue"],
-                "patient_id": entry["patient_id"],
-                "patient_name": entry["patient_name"],
-                "pesel": entry["pesel"],
-                "Admission Date": admission_date.strftime("%Y-%m-%d"),
-                "days_of_stay": days_of_stay,
-            }
-        )
-
-    return transformed
+    return transformed_df
 
 
 def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_row=4) -> None:
@@ -303,15 +292,15 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     name, surname = queue_df["patient_name"][idx].split()
     pesel = queue_df["pesel"][idx][-3:]
 
-    response = requests.get("http://backend:8000/get-patient-data", params={"queue_id": idx + 1}).json()
+    response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
     consent = handle_patient_rescheduling(
         name=name,
         surname=surname,
         gender=response["gender"],
         pesel=pesel,
         sickness=response["sickness"],
-        old_day=response["old_day"],
-        new_day=response["new_day"],
+        old_day=calculate_simulation_date(queue_df["admission_day"][idx]).strftime("%Y-%m-%d"),
+        new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
         use_ua_agent=use_ua_agent,
     )
 
@@ -436,7 +425,7 @@ tables = get_list_of_tables_and_statistics()
 if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
-    queue_df = pd.DataFrame(transform_patient_queue_data(tables["PatientQueue"]))
+    queue_df = pd.DataFrame(tables["PatientQueue"])
 
 
 if "current_patient_index" not in st.session_state:
@@ -468,7 +457,7 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_pati
             f"{_('Call patient again')} [{label}] 🔁",
             on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
         )
-        if find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df) > 0:
+        if find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df) >= 0:
             label = "PL" if st.session_state.voice_language == "pl" else "UA"
             use_ua_agent = st.session_state.voice_language == "ua"
             st.sidebar.button(
@@ -500,7 +489,7 @@ if not queue_df.empty:
 
         return [""] * len(row)
 
-    styled_df = queue_df.copy()
+    styled_df = transform_patient_queue_data(queue_df.copy())
     styled_df.columns = [
         _("Place in queue"),
         _("Patient's number"),
