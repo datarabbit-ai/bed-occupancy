@@ -44,8 +44,9 @@ class BedAssignment(Base):
 
 class PatientQueue(Base):
     __tablename__ = "patient_queue"
-    id = Column(Integer, primary_key=True)
+    queue_id = Column(Integer, primary_key=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
-    queue_id = Column(Integer, unique=True)
+    days_of_stay = Column(Integer)
+    admission_day = Column(Integer)
 
     patient = relationship("Patient", back_populates="queue_entry")
