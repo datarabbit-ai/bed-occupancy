@@ -63,7 +63,7 @@ msgstr "PESEL"
 
 #: main.py:180
 msgid "Days left"
-msgstr "Ilość dni do końca wizyty"
+msgstr "Dni do wypisu"
 
 #: main.py:202
 msgid "This bed is empty!"
@@ -204,3 +204,9 @@ msgstr "Symuluj następny dzień"
 #: main.py:533
 msgid "Simulate Previous Day"
 msgstr "Symuluj poprzedni dzień"
+
+msgid "Admission date"
+msgstr "Data przyjęcia"
+
+msgid "Days of stay"
+msgstr "Dni pobytu"
