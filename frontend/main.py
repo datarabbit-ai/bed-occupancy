@@ -14,6 +14,8 @@ if "interface_language" not in st.session_state:
     st.session_state.interface_language = "en"
 if "voice_language" not in st.session_state:
     st.session_state.voice_language = "pl"
+if "phone_number" not in st.session_state:
+    st.session_state.phone_number = "undefined"
 
 
 def translate_page(language: str) -> Callable:
@@ -277,7 +279,9 @@ def handle_patient_rescheduling(
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent)
+    conversation_id = call_patient(
+        name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, st.session_state.phone_number
+    )
     return check_patient_consent_to_reschedule(conversation_id)
 
 
@@ -519,6 +523,11 @@ st.sidebar.toggle(label=_("Activate automatic day change"), value=st.session_sta
 
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
     st.sidebar.button(_("Reset simulation"), on_click=reset_day_for_simulation)
+
+with st.sidebar.expander("More settings"):
+    st.session_state.phone_number = st.number_input(
+        "Phone number to call", min_value=100000000, max_value=999999999, step=1, format="%d", placeholder="123456789"
+    )
 
 statistics_tab.subheader(_("Bed occupancy statistics"))
 

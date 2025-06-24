@@ -18,7 +18,6 @@ load_dotenv()
 agent_id = os.getenv("AGENT_ID")
 ua_agent_id = os.getenv("AGENT_UA_ID")
 api_key = os.getenv("ELEVENLABS_API_KEY")
-phone_to_call = os.getenv("PHONE_TO_CALL")
 agent_phone_number_id = os.getenv("AGENT_PHONE_NUMBER_ID")
 
 logger = logging.getLogger("hospital_logger")
@@ -33,10 +32,6 @@ if not api_key:
 
 if not agent_id:
     logger.error("Error: AGENT_ID environment variable is not set")
-    sys.exit(1)
-
-if not phone_to_call:
-    logger.error("Error: PHONE_TO_CALL environment variable is not set")
     sys.exit(1)
 
 if not agent_phone_number_id:
@@ -55,6 +50,7 @@ def call_patient(
     current_visit_day: int,
     suggested_appointment_day: int,
     use_ua_agent: bool,
+    phone_to_call: str,
 ) -> str | None:
     """
     Calls a patient using the ElevenLabs API and initiates a conversation.
@@ -84,7 +80,7 @@ def call_patient(
         response = client.conversational_ai.twilio_outbound_call(
             agent_id=(agent_id if not use_ua_agent else ua_agent_id),
             agent_phone_number_id=agent_phone_number_id,
-            to_number=phone_to_call,
+            to_number="+48" + phone_to_call,
             conversation_initiation_client_data=conversation_initiation_client_data,
         )
         logger.info(f"Conversation ID: {response.conversation_id}")
