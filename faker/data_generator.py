@@ -12,6 +12,12 @@ class Urgency(str, Enum):
     STABLE = "stabilny"
 
 
+class Nationality(str, Enum):
+    POLISH = "polska"
+    ENGLISH = "angielska"
+    UKRAINIAN = "ukraińska"
+
+
 class Patient(BaseModel):
     first_name: str
     last_name: str
@@ -20,6 +26,7 @@ class Patient(BaseModel):
     sickness: str
     pesel: str
     gender: str
+    nationality: str
 
 
 Faker.seed(42)
@@ -89,6 +96,7 @@ def generate_fake_patient_data() -> Patient:
         random_sickness = fake.random_element(male_sicknesses)
         gender = "mężczyzna"
     random_urgency = fake.enum(Urgency)
+    random_nationality = fake.enum(Nationality)
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
     return Patient(
         first_name=name,
@@ -98,4 +106,5 @@ def generate_fake_patient_data() -> Patient:
         sickness=random_sickness,
         pesel=pesel,
         gender=gender,
+        nationality=random_nationality,
     )
