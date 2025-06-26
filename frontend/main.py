@@ -280,7 +280,7 @@ def handle_patient_rescheduling(
     """
 
     conversation_id = call_patient(
-        name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, st.session_state.phone_number
+        name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
     )
     return check_patient_consent_to_reschedule(conversation_id)
 
@@ -526,7 +526,7 @@ if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_cha
 
 with st.sidebar.expander("More settings"):
     st.session_state.phone_number = st.number_input(
-        "Phone number to call", min_value=100000000, max_value=999999999, step=1, format="%d", placeholder="123456789"
+        "Phone number to call", min_value=100000000, max_value=999999999, step=1, format="%d"
     )
 
 statistics_tab.subheader(_("Bed occupancy statistics"))
