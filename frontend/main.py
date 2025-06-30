@@ -35,22 +35,7 @@ main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
-voice_languages = ["pl", "ua"]
-
-col1, col2 = st.sidebar.columns(2)
-# These indexes are crucial to avoid bugs of changing languages unexpectedly
-col1.selectbox(
-    _("Interface language"),
-    ui_languages,
-    index=ui_languages.index(st.session_state.interface_language),
-    key="interface_language",
-)
-col2.selectbox(
-    _("Voice agent language"),
-    voice_languages,
-    index=voice_languages.index(st.session_state.voice_language),
-    key="voice_language",
-)
+voice_languages = ["pl", "ua", "nationality"]
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -181,7 +166,9 @@ def transform_patient_queue_data(df):
         df["admission_day"].fillna(0).astype(int).apply(lambda x: (today + timedelta(days=(x - 1))).strftime("%Y-%m-%d"))
     )
 
-    transformed_df = df[["place_in_queue", "patient_id", "patient_name", "pesel", "Admission Date", "days_of_stay"]]
+    transformed_df = df[
+        ["place_in_queue", "patient_id", "patient_name", "pesel", "nationality", "Admission Date", "days_of_stay"]
+    ]
 
     return transformed_df
 
@@ -224,6 +211,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                             _("Patient's name"),
                             _("Sickness"),
                             _("Personal number"),
+                            "Nationality",
                             _("Days left"),
                         ]
 
@@ -285,7 +273,7 @@ def handle_patient_rescheduling(
         )
         return check_patient_consent_to_reschedule(conversation_id)
     else:
-        return {{"consent": None, "verified": None, "called": False}}
+        return {"consent": None, "verified": None, "called": False}
 
 
 def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False) -> None:
@@ -455,23 +443,33 @@ main_tab.header(
 
 if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
     st.session_state.auto_day_change = False
-    if st.session_state.consent is not None:
+
+    if st.session_state.voice_language == "nationality":
+        label = "PL" if queue_df["nationality"][st.session_state.current_patient_index] == "polska" else "UA"
+        use_ua_agent = queue_df["nationality"][st.session_state.current_patient_index] == "ukraińska"
+    else:
         label = "PL" if st.session_state.voice_language == "pl" else "UA"
         use_ua_agent = st.session_state.voice_language == "ua"
+
+    if st.session_state.consent is not None:
         st.sidebar.button(
             f"{_('Call next patient in queue')} [{label}] 📞",
             on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
         )
     else:
-        label = "PL" if st.session_state.voice_language == "pl" else "UA"
-        use_ua_agent = st.session_state.voice_language == "ua"
         st.sidebar.button(
             f"{_('Call patient again')} [{label}] 🔁",
             on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
         )
-        if find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df) >= 0:
-            label = "PL" if st.session_state.voice_language == "pl" else "UA"
-            use_ua_agent = st.session_state.voice_language == "ua"
+
+        next_patient = find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df)
+        if next_patient >= 0:
+            if st.session_state.voice_language == "nationality":
+                label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
+                use_ua_agent = queue_df["nationality"][next_patient] == "ukraińska"
+            else:
+                label = "PL" if st.session_state.voice_language == "pl" else "UA"
+                use_ua_agent = st.session_state.voice_language == "ua"
             st.sidebar.button(
                 f"{_('Call next patient in queue')} [{label}] 📞",
                 on_click=lambda: call_next_patient_in_queue(
@@ -507,6 +505,7 @@ if not queue_df.empty:
         _("Patient's number"),
         _("Patient's name"),
         _("Personal number"),
+        "Nationality",
         _("Admission date"),
         _("Days of stay"),
     ]
@@ -541,6 +540,21 @@ with st.sidebar.expander("More settings"):
         step=1,
         format="%d",
         placeholder="123456789",
+    )
+
+    col1, col2 = st.columns(2)
+    # These indexes are crucial to avoid bugs of changing languages unexpectedly
+    col1.selectbox(
+        _("Interface language"),
+        ui_languages,
+        index=ui_languages.index(st.session_state.interface_language),
+        key="interface_language",
+    )
+    col2.selectbox(
+        _("Voice agent language"),
+        voice_languages,
+        index=voice_languages.index(st.session_state.voice_language),
+        key="voice_language",
     )
 
 statistics_tab.subheader(_("Bed occupancy statistics"))
