@@ -15,7 +15,7 @@ if "interface_language" not in st.session_state:
 if "voice_language" not in st.session_state:
     st.session_state.voice_language = "pl"
 if "phone_number" not in st.session_state:
-    st.session_state.phone_number = "undefined"
+    st.session_state.phone_number = None
 
 
 def translate_page(language: str) -> Callable:
@@ -279,10 +279,13 @@ def handle_patient_rescheduling(
     :return: A boolean indicating whether the patient consented to the rescheduling.
     """
 
-    conversation_id = call_patient(
-        name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
-    )
-    return check_patient_consent_to_reschedule(conversation_id)
+    if st.session_state.phone_number is not None:
+        conversation_id = call_patient(
+            name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
+        )
+        return check_patient_consent_to_reschedule(conversation_id)
+    else:
+        return {{"consent": None, "verified": None, "called": False}}
 
 
 def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False) -> None:
@@ -309,10 +312,11 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     )
 
     consent = call_results["consent"]
-    verified = call_results["verified"]
     st.session_state.consent = consent
 
-    if consent is True:
+    if call_results["called"] is False:
+        main_tab.warning("It is necessary to fill in the field with the phone number in the settings section!", icon="⚠️")
+    elif consent is True:
         requests.get("http://backend:8000/add-patient-to-approvers", params={"queue_id": idx + 1})
         requests.get("http://backend:8000/increase-calls-number")
 
@@ -320,7 +324,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
 
         st.session_state.pop("current_patient_index", None)
         st.session_state.button_pressed = True
-    elif verified is False:
+    elif call_results["verified"] is False:
         main_tab.info(f"{name} {surname}'s verification is unsuccessful.")
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
@@ -530,7 +534,13 @@ if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_cha
 
 with st.sidebar.expander("More settings"):
     st.session_state.phone_number = st.number_input(
-        "Phone number to call", min_value=100000000, max_value=999999999, step=1, format="%d"
+        "Phone number to call",
+        min_value=100000000,
+        max_value=999999999,
+        value=st.session_state.phone_number,
+        step=1,
+        format="%d",
+        placeholder="123456789",
     )
 
 statistics_tab.subheader(_("Bed occupancy statistics"))

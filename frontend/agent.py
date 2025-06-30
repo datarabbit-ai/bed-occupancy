@@ -151,4 +151,4 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
 
     logger.info(f"Patient's verification status: {success_of_veryfication}")
     logger.info(f"Patient agreed: {result}")
-    return {"consent": result, "verified": success_of_veryfication}
+    return {"consent": result, "verified": success_of_veryfication, "called": True}
