@@ -14,7 +14,6 @@ class Urgency(str, Enum):
 
 class Nationality(str, Enum):
     POLISH = "polska"
-    ENGLISH = "angielska"
     UKRAINIAN = "ukraińska"
 
 
