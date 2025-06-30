@@ -297,7 +297,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     pesel = queue_df["pesel"][idx][-3:]
 
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
-    consent = handle_patient_rescheduling(
+    call_results = handle_patient_rescheduling(
         name=name,
         surname=surname,
         gender=response["gender"],
@@ -308,6 +308,8 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         use_ua_agent=use_ua_agent,
     )
 
+    consent = call_results["consent"]
+    verified = call_results["verified"]
     st.session_state.consent = consent
 
     if consent is True:
@@ -318,6 +320,8 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
 
         st.session_state.pop("current_patient_index", None)
         st.session_state.button_pressed = True
+    elif verified is False:
+        main_tab.info(f"{name} {surname}'s verification is unsuccessful.")
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
         main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
