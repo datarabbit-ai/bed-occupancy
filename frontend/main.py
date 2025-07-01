@@ -35,7 +35,10 @@ main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
-voice_languages = ["pl", "ua", "nationality"]
+voice_languages = ["pl", "ua", _("nationality")]
+
+if st.session_state.voice_language not in voice_languages:
+    st.session_state.voice_language = _("nationality")
 
 if "day_for_simulation" not in st.session_state:
     st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
@@ -211,7 +214,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                             _("Patient's name"),
                             _("Sickness"),
                             _("Personal number"),
-                            "Nationality",
+                            _("Nationality"),
                             _("Days left"),
                         ]
 
@@ -280,7 +283,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     idx = st.session_state.current_patient_index
 
     if idx < 0:
-        main_tab.warning("No more patients in queue.")
+        main_tab.warning(_("No more patients in queue."))
         st.session_state.button_pressed = True
         return
 
@@ -303,7 +306,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     st.session_state.consent = consent
 
     if call_results["called"] is False:
-        main_tab.warning("It is necessary to fill in the field with the phone number in the settings section!", icon="⚠️")
+        main_tab.warning(_("It is necessary to fill in the field with the phone number in the settings section!"), icon="⚠️")
     elif consent is True:
         requests.get("http://backend:8000/add-patient-to-approvers", params={"queue_id": idx + 1})
         requests.get("http://backend:8000/increase-calls-number")
@@ -313,7 +316,8 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         st.session_state.pop("current_patient_index", None)
         st.session_state.button_pressed = True
     elif call_results["verified"] is False:
-        main_tab.info(f"{name} {surname}'s verification is unsuccessful.")
+        main_tab.info(f"{name} {surname}{_("'s verification is unsuccessful")}.")
+        st.session_state.consent = None
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
         main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
@@ -444,7 +448,7 @@ main_tab.header(
 if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
     st.session_state.auto_day_change = False
 
-    if st.session_state.voice_language == "nationality":
+    if st.session_state.voice_language == _("nationality"):
         label = "PL" if queue_df["nationality"][st.session_state.current_patient_index] == "polska" else "UA"
         use_ua_agent = queue_df["nationality"][st.session_state.current_patient_index] == "ukraińska"
     else:
@@ -464,16 +468,16 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_pati
 
         next_patient = find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df)
         if next_patient >= 0:
-            if st.session_state.voice_language == "nationality":
-                label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
-                use_ua_agent = queue_df["nationality"][next_patient] == "ukraińska"
+            if st.session_state.voice_language == _("nationality"):
+                next_label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
+                use_next_ua_agent = queue_df["nationality"][next_patient] == "ukraińska"
             else:
-                label = "PL" if st.session_state.voice_language == "pl" else "UA"
-                use_ua_agent = st.session_state.voice_language == "ua"
+                next_label = "PL" if st.session_state.voice_language == "pl" else "UA"
+                use_next_ua_agent = st.session_state.voice_language == "ua"
             st.sidebar.button(
-                f"{_('Call next patient in queue')} [{label}] 📞",
+                f"{_('Call next patient in queue')} [{next_label}] 📞",
                 on_click=lambda: call_next_patient_in_queue(
-                    queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent
+                    queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_next_ua_agent
                 ),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
@@ -505,7 +509,7 @@ if not queue_df.empty:
         _("Patient's number"),
         _("Patient's name"),
         _("Personal number"),
-        "Nationality",
+        _("Nationality"),
         _("Admission date"),
         _("Days of stay"),
     ]
@@ -531,9 +535,9 @@ st.sidebar.toggle(label=_("Activate automatic day change"), value=st.session_sta
 if st.session_state.day_for_simulation > 1 and not st.session_state.auto_day_change:
     st.sidebar.button(_("Reset simulation"), on_click=reset_day_for_simulation)
 
-with st.sidebar.expander("More settings"):
+with st.sidebar.expander(_("More settings")):
     st.session_state.phone_number = st.number_input(
-        "Phone number to call",
+        _("Phone number to call"),
         min_value=100000000,
         max_value=999999999,
         value=st.session_state.phone_number,
@@ -553,7 +557,6 @@ with st.sidebar.expander("More settings"):
     col2.selectbox(
         _("Voice agent language"),
         voice_languages,
-        index=voice_languages.index(st.session_state.voice_language),
         key="voice_language",
     )
 

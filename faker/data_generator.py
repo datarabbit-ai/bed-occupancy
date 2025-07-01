@@ -68,6 +68,8 @@ female_sicknesses = common_sicknesses + [
 
 
 fake = Faker("pl_PL")
+nationality_generator = random.Random()
+nationality_generator.seed(45)
 
 
 def generate_random_date_between_ages(min_age, max_age):
@@ -95,7 +97,10 @@ def generate_fake_patient_data() -> Patient:
         random_sickness = fake.random_element(male_sicknesses)
         gender = "mężczyzna"
     random_urgency = fake.enum(Urgency).value
-    random_nationality = fake.enum(Nationality).value
+    if nationality_generator.randint(1, 10) < 9:
+        random_nationality = Nationality.POLISH.value
+    else:
+        random_nationality = Nationality.UKRAINIAN.value
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
     return Patient(
         first_name=name,
