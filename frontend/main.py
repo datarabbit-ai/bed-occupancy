@@ -295,6 +295,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     pesel = queue_df["pesel"][idx][-3:]
 
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
+
     call_results = handle_patient_rescheduling(
         name=name,
         surname=surname,
