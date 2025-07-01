@@ -13,7 +13,7 @@ from streamlit_autorefresh import st_autorefresh
 if "interface_language" not in st.session_state:
     st.session_state.interface_language = "en"
 if "voice_language" not in st.session_state:
-    st.session_state.voice_language = "pl"
+    st.session_state.voice_language = "nationality"
 if "phone_number" not in st.session_state:
     st.session_state.phone_number = None
 
@@ -315,7 +315,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
 
         st.session_state.pop("current_patient_index", None)
         st.session_state.button_pressed = True
-    elif call_results["verified"] is False:
+    elif call_results["verified"] is not True:
         main_tab.info(f"{name} {surname}{_("'s verification is unsuccessful")}.")
         st.session_state.consent = None
     elif consent is False:
