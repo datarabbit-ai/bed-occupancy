@@ -161,7 +161,7 @@ def calculate_simulation_date(sim_day: int) -> date:
     return result_date
 
 
-def transform_patient_queue_data(df):
+def transform_patient_queue_data(df: pd.DataFrame):
     today = datetime.today().date()
 
     df = df.copy()
@@ -171,7 +171,9 @@ def transform_patient_queue_data(df):
 
     transformed_df = df[
         ["place_in_queue", "patient_id", "patient_name", "pesel", "nationality", "Admission Date", "days_of_stay"]
-    ]
+    ].copy()
+
+    transformed_df["nationality"] = transformed_df["nationality"].apply(_)
 
     return transformed_df
 
@@ -186,6 +188,8 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
     """
     # Calculate number of boxes from DataFrame
     num_boxes = len(df)
+    df["nationality"] = df["nationality"].apply(_)
+    df["sickness"] = df["sickness"].apply(_)
 
     # Calculate number of rows needed
     num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
