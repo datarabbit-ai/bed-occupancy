@@ -142,13 +142,13 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
         .get("value", None)
     )
 
-    success_of_veryfication: bool = (
+    success_of_verification: bool = (
         json.loads(new_conversation_data.analysis.json())
         .get("data_collection_results", {})
         .get("verification_success", {})
         .get("value", None)
     )
 
-    logger.info(f"Patient's verification status: {success_of_veryfication}")
+    logger.info(f"Patient's verification status: {success_of_verification}")
     logger.info(f"Patient agreed: {result}")
-    return {"consent": result, "verified": success_of_veryfication, "called": True}
+    return {"consent": result, "verified": success_of_verification, "called": True}
