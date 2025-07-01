@@ -12,14 +12,20 @@ class Urgency(str, Enum):
     STABLE = "stabilny"
 
 
+class Nationality(str, Enum):
+    POLISH = "polska"
+    UKRAINIAN = "ukraińska"
+
+
 class Patient(BaseModel):
     first_name: str
     last_name: str
-    urgency: Urgency
+    urgency: str
     contact_phone: str
     sickness: str
     pesel: str
     gender: str
+    nationality: str
 
 
 Faker.seed(42)
@@ -62,6 +68,8 @@ female_sicknesses = common_sicknesses + [
 
 
 fake = Faker("pl_PL")
+nationality_generator = random.Random()
+nationality_generator.seed(45)
 
 
 def generate_random_date_between_ages(min_age, max_age):
@@ -88,7 +96,11 @@ def generate_fake_patient_data() -> Patient:
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
         random_sickness = fake.random_element(male_sicknesses)
         gender = "mężczyzna"
-    random_urgency = fake.enum(Urgency)
+    random_urgency = fake.enum(Urgency).value
+    if nationality_generator.randint(1, 10) < 9:
+        random_nationality = Nationality.POLISH.value
+    else:
+        random_nationality = Nationality.UKRAINIAN.value
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
     return Patient(
         first_name=name,
@@ -98,4 +110,5 @@ def generate_fake_patient_data() -> Patient:
         sickness=random_sickness,
         pesel=pesel,
         gender=gender,
+        nationality=random_nationality,
     )
