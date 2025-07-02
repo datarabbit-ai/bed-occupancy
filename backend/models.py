@@ -63,17 +63,18 @@ class ListOfTables(BaseModel):
 class Patient(Base):
     __tablename__ = "patients"
     patient_id = Column(Integer, primary_key=True)
+    procedure_id = Column(Integer, ForeignKey("medical_procedures.procedure_id"))
     first_name = Column(String)
     last_name = Column(String)
     urgency = Column(String)
     contact_phone = Column(String)
-    sickness = Column(String)
     pesel = Column(String, unique=True)
     gender = Column(String)
     nationality = Column(String)
 
     bed_assignments = relationship("BedAssignment", back_populates="patient")
     queue_entry = relationship("PatientQueue", back_populates="patient")
+    medical_procedure = relationship("MedicalProcedure", back_populates="patient")
 
 
 class Bed(Base):
@@ -101,3 +102,22 @@ class PatientQueue(Base):
     admission_day = Column(Integer)
 
     patient = relationship("Patient", back_populates="queue_entry")
+
+
+class MedicalProcedure(Base):
+    __tablename__ = "medical_procedures"
+    procedure_id = Column(Integer, primary_key=True, autoincrement=True)
+    doctor_id = Column(Integer, ForeignKey("doctors.doctor_id"))
+    name = Column(String)
+
+    doctor = relationship("Doctor", back_populates="medical_procedure")
+    patient = relationship("Patient", back_populates="medical_procedure")
+
+
+class Doctor(Base):
+    __tablename__ = "doctors"
+    doctor_id = Column(Integer, primary_key=True, autoincrement=True)
+    first_name = Column(String)
+    last_name = Column(String)
+
+    medical_procedure = relationship("MedicalProcedure", back_populates="doctor")
