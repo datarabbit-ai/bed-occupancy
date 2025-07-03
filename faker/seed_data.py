@@ -4,10 +4,10 @@ import os
 import pathlib
 import random
 
-from data_generator import generate_fake_patient_data
+from data_generator import generate_fake_doctor_data, generate_fake_patient_data
 from database_structure_manager import check_data_existence, clear_database
 from dotenv import load_dotenv
-from models import Bed, BedAssignment, Patient, PatientQueue
+from models import Bed, BedAssignment, Doctor, MedicalProcedure, Patient, PatientQueue
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 
@@ -30,6 +30,73 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
 
+# common_sicknesses = [
+#     "Endoprotezoplastyka stawu biodrowego",
+#     "Endoprotezoplastyka stawu kolanowego",
+#     "Operacja zaćmy",
+#     "Artroskopia stawu kolanowego",
+#     "Usunięcie migdałków podniebiennych",
+#     "Plastyka przegrody nosowej",
+#     "Cholecystektomia",
+#     "Operacja przepukliny pachwinowej",
+#     "Operacja żylaków kończyn dolnych",
+#     "Operacja kręgosłupa lędźwiowego",
+#     "Laparoskopia diagnostyczna",
+#     "Zabieg usunięcia brodawczaka krtani",
+#     "Adenotomia",
+#     "Irydektomia",
+#     "Kraniektomia",
+#     "Splenektomia",
+#     "Gastrektomia",
+# ]
+
+# male_sicknesses = common_sicknesses + [
+#     "Prostatektomia",
+#     "Leczenie raka prostaty",
+#     "Korekcja wodniaka jądra",
+#     "Operacja żylaków powrózka nasiennego",
+#     "Rekonstrukcja cewki moczowej",
+# ]
+
+# female_sicknesses = common_sicknesses + [
+#     "Histerektomia",
+#     "Zabieg usunięcia torbieli jajnika",
+#     "Zabieg usunięcia mięśniaków macicy",
+#     "Zabieg usunięcia guzka piersi",
+#     "Leczenie endometriozy",
+#     "Zabieg łyżeczkowania jamy macicy",
+# ]
+
+
+common_medical_procedures = [
+    "Usunięcie migdałków podniebiennych",
+    "Operacja kręgosłupa lędźwiowego",
+    "Operacja zaćmy",
+    "Operacja przepukliny pachwinowej",
+    "Operacja żylaków kończyn dolnych",
+]
+
+
+def add_doctors(session):
+    new_doctors_number = 5
+    for _ in range(new_doctors_number):
+        doctor = generate_fake_doctor_data()
+        session.add(Doctor(**doctor.model_dump()))
+    logger.info(f"Added {new_doctors_number} generated doctors to db")
+
+
+def add_medical_procedures(session):
+    all_doctor_ids = [doctor.doctor_id for doctor in session.query(Doctor).all()]
+    assigned_doctors_number = 0
+    for procedure in common_medical_procedures:
+        session.add(MedicalProcedure(doctor_id=all_doctor_ids[assigned_doctors_number], name=procedure))
+        if assigned_doctors_number >= len(all_doctor_ids):
+            assigned_doctors_number = 0
+        else:
+            assigned_doctors_number += 1
+    logger.info(f"Added {len(common_medical_procedures)} generated medical procedures to db")
+
+
 def add_patients(session):
     new_patients_number = random.randint(100, 150)
     for _ in range(new_patients_number):
@@ -48,6 +115,7 @@ def add_beds(session):
 def add_patients_to_queue(session, free_beds_numbers):
     all_patient_ids = [p.patient_id for p in session.query(Patient).all()]
     cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
+    medical_procedure_ids = [procedure.procedure_id for procedure in session.query(MedicalProcedure).all()]
 
     if not all_patient_ids:
         return
@@ -73,6 +141,7 @@ def add_patients_to_queue(session, free_beds_numbers):
         max_queue_position += 1
 
         days_of_stay = random.randint(1, 7)
+        medical_procedure_id = random.choice(medical_procedure_ids)
         if admission_day + days_of_stay >= len(free_beds_numbers):
             exit_day = len(free_beds_numbers) - 1
         else:
@@ -83,7 +152,11 @@ def add_patients_to_queue(session, free_beds_numbers):
 
         queue.append(
             PatientQueue(
-                patient_id=selected, queue_id=max_queue_position, days_of_stay=days_of_stay, admission_day=admission_day + 1
+                patient_id=selected,
+                queue_id=max_queue_position,
+                procedure_id=medical_procedure_id,
+                days_of_stay=days_of_stay,
+                admission_day=admission_day + 1,
             )
         )
         available_ids.remove(selected)
@@ -100,16 +173,20 @@ def add_patient_assignment_to_bed(session):
     bed_ids = [b.bed_id for b in session.query(Bed).all()]
     patient_ids = [p.patient_id for p in session.query(Patient).all()]
     free_beds_numbers = [len(bed_ids) for _ in range(20)]
+    medical_procedure_ids = [procedure.procedure_id for procedure in session.query(MedicalProcedure).all()]
 
     assignments = []
     for bed_id in bed_ids:
         if not patient_ids:
             break
         patient_id = random.choice(patient_ids)
+        medical_procedure_id = random.choice(medical_procedure_ids)
         days_of_stay = random.randint(1, 7)
         for i in range(0, days_of_stay):
             free_beds_numbers[i] -= 1
-        assignments.append(BedAssignment(bed_id=bed_id, patient_id=patient_id, days_of_stay=days_of_stay))
+        assignments.append(
+            BedAssignment(bed_id=bed_id, patient_id=patient_id, procedure_id=medical_procedure_id, days_of_stay=days_of_stay)
+        )
         patient_ids.remove(patient_id)
 
     session.add_all(assignments)
@@ -123,6 +200,8 @@ def main():
     try:
         if not check_data_existence(session):
             clear_database(session)
+            add_doctors(session)
+            add_medical_procedures(session)
             add_patients(session)
             add_beds(session)
             free_beds_numbers = add_patient_assignment_to_bed(session)

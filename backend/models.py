@@ -63,7 +63,6 @@ class ListOfTables(BaseModel):
 class Patient(Base):
     __tablename__ = "patients"
     patient_id = Column(Integer, primary_key=True)
-    procedure_id = Column(Integer, ForeignKey("medical_procedures.procedure_id"))
     first_name = Column(String)
     last_name = Column(String)
     urgency = Column(String)
@@ -74,7 +73,6 @@ class Patient(Base):
 
     bed_assignments = relationship("BedAssignment", back_populates="patient")
     queue_entry = relationship("PatientQueue", back_populates="patient")
-    medical_procedure = relationship("MedicalProcedure", back_populates="patient")
 
 
 class Bed(Base):
@@ -88,20 +86,24 @@ class BedAssignment(Base):
     __tablename__ = "bed_assignments"
     bed_id = Column(Integer, ForeignKey("beds.bed_id"), primary_key=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
+    procedure_id = Column(Integer, ForeignKey("medical_procedures.procedure_id"))
     days_of_stay = Column(Integer)
 
     bed = relationship("Bed", back_populates="assignments")
     patient = relationship("Patient", back_populates="bed_assignments")
+    medical_procedure = relationship("MedicalProcedure", back_populates="assignments")
 
 
 class PatientQueue(Base):
     __tablename__ = "patient_queue"
     queue_id = Column(Integer, primary_key=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
+    procedure_id = Column(Integer, ForeignKey("medical_procedures.procedure_id"))
     days_of_stay = Column(Integer)
     admission_day = Column(Integer)
 
     patient = relationship("Patient", back_populates="queue_entry")
+    medical_procedure = relationship("MedicalProcedure", back_populates="queue_entry")
 
 
 class MedicalProcedure(Base):
@@ -111,7 +113,8 @@ class MedicalProcedure(Base):
     name = Column(String)
 
     doctor = relationship("Doctor", back_populates="medical_procedure")
-    patient = relationship("Patient", back_populates="medical_procedure")
+    queue_entry = relationship("PatientQueue", back_populates="medical_procedure")
+    assignments = relationship("BedAssignment", back_populates="medical_procedure")
 
 
 class Doctor(Base):
