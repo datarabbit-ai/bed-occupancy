@@ -15,6 +15,7 @@ class BedAssignmentResponse(BaseModel):
     pesel: str
     nationality: str
     days_of_stay: int
+    doctor: str
 
 
 class PatientQueueResponse(BaseModel):
@@ -55,7 +56,7 @@ class Statistics(BaseModel):
 
 class DataForReplacement(BaseModel):
     DaysOfStay: Optional[list[int]]
-    MedicalProcedure: Optional[list[str]]
+    MedicalProcedures: Optional[list[str]]
 
 
 class ListOfTables(BaseModel):

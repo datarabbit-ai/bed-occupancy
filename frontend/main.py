@@ -183,6 +183,7 @@ def transform_patient_queue_data(df: pd.DataFrame):
     ].copy()
 
     transformed_df["nationality"] = transformed_df["nationality"].apply(_)
+    transformed_df["medical_procedure"] = transformed_df["medical_procedure"].apply(_)
 
     return transformed_df
 
@@ -229,6 +230,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                             _("Personal number"),
                             _("Nationality"),
                             _("Days left"),
+                            _("Doctor"),
                         ]
 
                     tooltip_info = "<table style='border-collapse: collapse;'>"
@@ -438,7 +440,9 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
         & (~queue_df["patient_id"].isin(conflicting_patients))
         & (queue_df["medical_procedure"] == medical_procedure)
     ]
-
+    logger.info(conflicting_patients)
+    logger.info(f"{medical_procedure} {days_of_stay}")
+    logger.info(st.session_state.current_patient_index)
     if queue_df.empty:
         return -1
 
@@ -459,13 +463,15 @@ if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
     queue_df = pd.DataFrame(tables["PatientQueue"])
+    replacement_days_of_stay = tables["ReplacementData"]["DaysOfStay"]
+    replacement_medical_procedures = tables["ReplacementData"]["MedicalProcedures"]
 
 
 if "current_patient_index" not in st.session_state:
-    if tables["ReplacementData"]:
+    if replacement_days_of_stay and replacement_medical_procedures and not queue_df.empty:
         st.session_state.current_patient_index = len(queue_df)
         st.session_state.current_patient_index = find_next_patient_to_call(
-            tables["ReplacementData"].DaysOfStay[0], queue_df, bed_df, tables["ReplacementData"].MedicalProcedure[0]
+            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
         )
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
@@ -474,7 +480,7 @@ main_tab.header(
     f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
 )
 
-if len(tables["ReplacementData"].DaysOfStay) > 0 and st.session_state.current_patient_index > 0:
+if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index > 0:
     st.session_state.auto_day_change = False
 
     if st.session_state.voice_language == _("nationality"):
@@ -490,8 +496,8 @@ if len(tables["ReplacementData"].DaysOfStay) > 0 and st.session_state.current_pa
             on_click=lambda: agent_call(
                 queue_df,
                 bed_df,
-                tables["ReplacementData"].DaysOfStay[0],
-                tables["ReplacementData"].MedicalProcedure[0],
+                replacement_days_of_stay[0],
+                replacement_medical_procedures[0],
                 use_ua_agent,
             ),
         )
@@ -501,14 +507,14 @@ if len(tables["ReplacementData"].DaysOfStay) > 0 and st.session_state.current_pa
             on_click=lambda: agent_call(
                 queue_df,
                 bed_df,
-                tables["ReplacementData"].DaysOfStay[0],
-                tables["ReplacementData"].MedicalProcedure[0],
+                replacement_days_of_stay[0],
+                replacement_medical_procedures[0],
                 use_ua_agent,
             ),
         )
 
         next_patient = find_next_patient_to_call(
-            tables["ReplacementData"].DaysOfStay[0], queue_df, bed_df, tables["ReplacementData"].MedicalProcedure[0]
+            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
         )
         if next_patient >= 0:
             if st.session_state.voice_language == _("nationality"):
@@ -522,8 +528,8 @@ if len(tables["ReplacementData"].DaysOfStay) > 0 and st.session_state.current_pa
                 on_click=lambda: call_next_patient_in_queue(
                     queue_df,
                     bed_df,
-                    tables["ReplacementData"].DaysOfStay[0],
-                    tables["ReplacementData"].MedicalProcedure[0],
+                    replacement_days_of_stay[0],
+                    replacement_medical_procedures[0],
                     use_next_ua_agent,
                 ),
             )
@@ -531,23 +537,21 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
-    create_box_grid(bed_df, len(tables["ReplacementData"].DaysOfStay))
+    create_box_grid(bed_df, len(replacement_days_of_stay))
 else:
     main_tab.info(_("No bed assignments found."))
 
 st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:
 
-    def highlight_current_row(row):
+    def highlight_current_row(row, next_row_to_be_highlighted):
         if st.session_state.consent is not None:
             if row.name == st.session_state.current_patient_index:
                 return ["background-color: #FF4248"] * len(row)
         else:
             if row.name == st.session_state.current_patient_index:
                 return ["background-color: #24C3FF"] * len(row)
-            elif row.name == find_next_patient_to_call(
-                tables["ReplacementData"].DaysOfStay[0], queue_df, bed_df, tables["ReplacementData"].MedicalProcedure[0]
-            ):
+            elif row.name == next_row_to_be_highlighted:
                 return ["background-color: #FF4248"] * len(row)
 
         return [""] * len(row)
@@ -564,8 +568,13 @@ if not queue_df.empty:
         _("Medical procedure"),
     ]
 
-    if len(tables["ReplacementData"].DaysOfStay) > 0 and st.session_state.current_patient_index > 0:
-        styled_df = styled_df.style.apply(highlight_current_row, axis=1)
+    if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index > 0:
+        next_row_to_be_highlighted = find_next_patient_to_call(
+            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
+        )
+        styled_df = styled_df.style.apply(
+            highlight_current_row, axis=1, kwargs={"next_row_to_be_highlighted": next_row_to_be_highlighted}
+        )
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)

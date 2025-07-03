@@ -175,7 +175,7 @@ def get_tables_and_statistics() -> ListOfTables:
             no_shows_perc = no_shows_data[-1]
             no_shows_perc_diff = (
                 no_shows_data[-1] - no_shows_data[-2]
-                if no_shows_data[-1] != "No incoming patients" and no_shows_data[-1] != "No incoming patients"
+                if no_shows_data[-1] != "No incoming patients" and no_shows_data[-2] != "No incoming patients"
                 else "No incoming patients"
             )
 
@@ -397,6 +397,9 @@ def get_tables_and_statistics() -> ListOfTables:
             medical_procedure = ba.medical_procedure.name if ba else "Unoccupied"
             pesel = patient.pesel if patient else "Unoccupied"
             nationality = patient.nationality if patient else "Unoccupied"
+            doctor_name = (
+                ba.medical_procedure.doctor.first_name + " " + ba.medical_procedure.doctor.last_name if ba else "Unoccupied"
+            )
             days_of_stay = ba.days_of_stay if ba else 0
 
             bed_assignments.append(
@@ -408,6 +411,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     "pesel": pesel,
                     "nationality": nationality,
                     "days_of_stay": days_of_stay,
+                    "doctor": doctor_name,
                 }
             )
 
@@ -437,7 +441,7 @@ def get_tables_and_statistics() -> ListOfTables:
             Statistics=calculate_statistics(),
             ReplacementData={
                 "DaysOfStay": days_of_stay_for_replacement,
-                "MedicalProcedure": procedures_for_replacement,
+                "MedicalProcedures": procedures_for_replacement,
             },
         )
 

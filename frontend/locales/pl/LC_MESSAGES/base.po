@@ -231,3 +231,6 @@ msgstr "Więcej ustawień"
 
 msgid "Phone number to call"
 msgstr "Numer telefonu, na który zostaną wykonane połączenia"
+
+msgid "Doctor"
+msgstr "Lekarz"
