@@ -20,6 +20,7 @@ class Patient(Base):
     sickness = Column(String)
     pesel = Column(String, unique=True)
     gender = Column(String)
+    nationality = Column(String)
 
     bed_assignments = relationship("BedAssignment", back_populates="patient")
     queue_entry = relationship("PatientQueue", back_populates="patient")

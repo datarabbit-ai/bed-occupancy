@@ -13,6 +13,7 @@ class BedAssignmentResponse(BaseModel):
     patient_name: str
     sickness: str
     pesel: str
+    nationality: str
     days_of_stay: int
 
 
@@ -21,6 +22,7 @@ class PatientQueueResponse(BaseModel):
     patient_id: int
     patient_name: str
     pesel: str
+    nationality: str
     admission_day: int
     days_of_stay: int
 
@@ -68,6 +70,7 @@ class Patient(Base):
     sickness = Column(String)
     pesel = Column(String, unique=True)
     gender = Column(String)
+    nationality = Column(String)
 
     bed_assignments = relationship("BedAssignment", back_populates="patient")
     queue_entry = relationship("PatientQueue", back_populates="patient")

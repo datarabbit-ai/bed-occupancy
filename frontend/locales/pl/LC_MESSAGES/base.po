@@ -210,3 +210,24 @@ msgstr "Data przyjęcia"
 
 msgid "Days of stay"
 msgstr "Dni pobytu"
+
+msgid "Nationality"
+msgstr "Narodowość"
+
+msgid "nationality"
+msgstr "narodowość"
+
+msgid "No more patients in queue."
+msgstr "Nie ma więcej pacjentów w kolejce."
+
+msgid "It is necessary to fill in the field with the phone number in the settings section!"
+msgstr "Konieczne jest wypełnienie pola z numerem telefonu w sekcji ustawień!"
+
+msgid "'s verification is unsuccessful"
+msgstr " nie potwierdził/a tożsamości"
+
+msgid "More settings"
+msgstr "Więcej ustawień"
+
+msgid "Phone number to call"
+msgstr "Numer telefonu, na który zostaną wykonane połączenia"

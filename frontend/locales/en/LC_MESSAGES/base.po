@@ -203,3 +203,93 @@ msgstr "Simulate Next Day"
 #: main.py:533
 msgid "Simulate Previous Day"
 msgstr "Simulate Previous Day"
+
+msgid "polska"
+msgstr "polish"
+
+msgid "ukraińska"
+msgstr "ukrainian"
+
+msgid "Endoprotezoplastyka stawu biodrowego"
+msgstr "Hip joint endoprosthesis"
+
+msgid "Endoprotezoplastyka stawu kolanowego"
+msgstr "Knee joint endoprosthesis"
+
+msgid "Operacja zaćmy"
+msgstr "Cataract surgery"
+
+msgid "Artroskopia stawu kolanowego"
+msgstr "Knee arthroscopy"
+
+msgid "Usunięcie migdałków podniebiennych"
+msgstr "Tonsillectomy"
+
+msgid "Plastyka przegrody nosowej"
+msgstr "Nasal septum surgery"
+
+msgid "Cholecystektomia"
+msgstr "Cholecystectomy"
+
+msgid "Operacja przepukliny pachwinowej"
+msgstr "Inguinal hernia surgery"
+
+msgid "Operacja żylaków kończyn dolnych"
+msgstr "Varicose veins surgery"
+
+msgid "Operacja kręgosłupa lędźwiowego"
+msgstr "Lumbar spine surgery"
+
+msgid "Laparoskopia diagnostyczna"
+msgstr "Diagnostic laparoscopy"
+
+msgid "Zabieg usunięcia brodawczaka krtani"
+msgstr "Laryngeal papilloma removal"
+
+msgid "Adenotomia"
+msgstr "Adenoidectomy"
+
+msgid "Irydektomia"
+msgstr "Iridectomy"
+
+msgid "Kraniektomia"
+msgstr "Craniectomy"
+
+msgid "Splenektomia"
+msgstr "Splenectomy"
+
+msgid "Gastrektomia"
+msgstr "Gastrectomy"
+
+msgid "Prostatektomia"
+msgstr "Prostatectomy"
+
+msgid "Leczenie raka prostaty"
+msgstr "Prostate cancer treatment"
+
+msgid "Korekcja wodniaka jądra"
+msgstr "Hydrocele correction"
+
+msgid "Operacja żylaków powrózka nasiennego"
+msgstr "Varicocele surgery"
+
+msgid "Rekonstrukcja cewki moczowej"
+msgstr "Urethral reconstruction"
+
+msgid "Histerektomia"
+msgstr "Hysterectomy"
+
+msgid "Zabieg usunięcia torbieli jajnika"
+msgstr "Ovarian cyst removal"
+
+msgid "Zabieg usunięcia mięśniaków macicy"
+msgstr "Uterine fibroid removal"
+
+msgid "Zabieg usunięcia guzka piersi"
+msgstr "Breast lump removal"
+
+msgid "Leczenie endometriozy"
+msgstr "Endometriosis treatment"
+
+msgid "Zabieg łyżeczkowania jamy macicy"
+msgstr "Uterine curettage"
