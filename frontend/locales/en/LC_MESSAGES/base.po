@@ -53,8 +53,8 @@ msgid "Patient's name"
 msgstr "Patient's name"
 
 #: main.py:178
-msgid "Sickness"
-msgstr "Sickness"
+msgid "Medical procedure"
+msgstr "Medical procedure"
 
 #: main.py:179 main.py:372
 msgid "Personal number"

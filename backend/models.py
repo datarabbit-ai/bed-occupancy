@@ -11,7 +11,7 @@ class BedAssignmentResponse(BaseModel):
     bed_id: int
     patient_id: int
     patient_name: str
-    sickness: str
+    medical_procedure: str
     pesel: str
     nationality: str
     days_of_stay: int
@@ -25,6 +25,7 @@ class PatientQueueResponse(BaseModel):
     nationality: str
     admission_day: int
     days_of_stay: int
+    medical_procedure: str
 
 
 class NoShow(BaseModel):
@@ -52,12 +53,17 @@ class Statistics(BaseModel):
     AverageConstentsPercentageDifference: str
 
 
+class DataForReplacement(BaseModel):
+    DaysOfStay: Optional[list[int]]
+    MedicalProcedure: Optional[list[str]]
+
+
 class ListOfTables(BaseModel):
     BedAssignment: list[BedAssignmentResponse]
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
     Statistics: Statistics
-    DaysOfStayForReplacement: Optional[list[int]]
+    ReplacementData: DataForReplacement
 
 
 class Patient(Base):
