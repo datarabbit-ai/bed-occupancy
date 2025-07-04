@@ -22,50 +22,17 @@ class Patient(BaseModel):
     last_name: str
     urgency: str
     contact_phone: str
-    sickness: str
     pesel: str
     gender: str
     nationality: str
 
 
+class Doctor(BaseModel):
+    first_name: str
+    last_name: str
+
+
 Faker.seed(42)
-common_sicknesses = [
-    "Endoprotezoplastyka stawu biodrowego",
-    "Endoprotezoplastyka stawu kolanowego",
-    "Operacja zaćmy",
-    "Artroskopia stawu kolanowego",
-    "Usunięcie migdałków podniebiennych",
-    "Plastyka przegrody nosowej",
-    "Cholecystektomia",
-    "Operacja przepukliny pachwinowej",
-    "Operacja żylaków kończyn dolnych",
-    "Operacja kręgosłupa lędźwiowego",
-    "Laparoskopia diagnostyczna",
-    "Zabieg usunięcia brodawczaka krtani",
-    "Adenotomia",
-    "Irydektomia",
-    "Kraniektomia",
-    "Splenektomia",
-    "Gastrektomia",
-]
-
-male_sicknesses = common_sicknesses + [
-    "Prostatektomia",
-    "Leczenie raka prostaty",
-    "Korekcja wodniaka jądra",
-    "Operacja żylaków powrózka nasiennego",
-    "Rekonstrukcja cewki moczowej",
-]
-
-female_sicknesses = common_sicknesses + [
-    "Histerektomia",
-    "Zabieg usunięcia torbieli jajnika",
-    "Zabieg usunięcia mięśniaków macicy",
-    "Zabieg usunięcia guzka piersi",
-    "Leczenie endometriozy",
-    "Zabieg łyżeczkowania jamy macicy",
-]
-
 
 fake = Faker("pl_PL")
 nationality_generator = random.Random()
@@ -88,13 +55,11 @@ def generate_fake_patient_data() -> Patient:
         name = fake.first_name_female().split()[0]
         surname = fake.last_name_female()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
-        random_sickness = fake.random_element(female_sicknesses)
         gender = "kobieta"
     else:
         name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
-        random_sickness = fake.random_element(male_sicknesses)
         gender = "mężczyzna"
     random_urgency = fake.enum(Urgency).value
     if nationality_generator.randint(1, 10) < 9:
@@ -107,8 +72,11 @@ def generate_fake_patient_data() -> Patient:
         last_name=surname,
         urgency=random_urgency,
         contact_phone=phone_number,
-        sickness=random_sickness,
         pesel=pesel,
         gender=gender,
         nationality=random_nationality,
     )
+
+
+def generate_fake_doctor_data() -> Doctor:
+    return Doctor(first_name=fake.first_name().split()[0], last_name=fake.last_name())
