@@ -50,6 +50,8 @@ if "button_pressed" not in st.session_state:
     st.session_state.button_pressed = False
 if "consent" not in st.session_state:
     st.session_state.consent = False
+if "replacement_start_index" not in st.session_state:
+    st.session_state.replacement_start_index = 0
 
 today = datetime.today().date()
 
@@ -336,6 +338,7 @@ def agent_call(
         main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
 
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.button_pressed = True
     elif call_results["verified"] is not True:
         main_tab.info(f"{name} {surname}{_("'s verification is unsuccessful")}.")
@@ -347,6 +350,9 @@ def agent_call(
             searched_days_of_stay, queue_df, bed_df, medical_procedure
         )
         st.session_state.button_pressed = True
+        if st.session_state.current_patient_index == -1:
+            st.session_state.replacement_start_index += 1
+            st.session_state.pop("current_patient_index", None)
     else:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
@@ -382,6 +388,7 @@ def update_day(delta: int) -> None:
         response = requests.get("http://backend:8000/update-day", params={"delta": delta})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
@@ -404,6 +411,7 @@ def reset_day_for_simulation() -> None:
         response = requests.get("http://backend:8000/reset-simulation")
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
@@ -421,7 +429,7 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
                     inclusive="both",
                 )
             )
-        ]
+        ].copy()
 
         return conflicts_df.empty
 
@@ -440,9 +448,7 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
         & (~queue_df["patient_id"].isin(conflicting_patients))
         & (queue_df["medical_procedure"] == medical_procedure)
     ]
-    logger.info(conflicting_patients)
-    logger.info(f"{medical_procedure} {days_of_stay}")
-    logger.info(st.session_state.current_patient_index)
+
     if queue_df.empty:
         return -1
 
@@ -467,12 +473,21 @@ if tables:
     replacement_medical_procedures = tables["ReplacementData"]["MedicalProcedures"]
 
 
+replacement_index = st.session_state.replacement_start_index
 if "current_patient_index" not in st.session_state:
     if replacement_days_of_stay and replacement_medical_procedures and not queue_df.empty:
-        st.session_state.current_patient_index = len(queue_df)
-        st.session_state.current_patient_index = find_next_patient_to_call(
-            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
-        )
+        while replacement_index < len(replacement_days_of_stay):
+            st.session_state.current_patient_index = len(queue_df)
+            st.session_state.current_patient_index = find_next_patient_to_call(
+                replacement_days_of_stay[replacement_index],
+                queue_df,
+                bed_df,
+                replacement_medical_procedures[replacement_index],
+            )
+            if st.session_state.current_patient_index == -1:
+                replacement_index += 1
+            else:
+                break
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
 
@@ -480,7 +495,7 @@ main_tab.header(
     f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
 )
 
-if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index > 0:
+if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
     st.session_state.auto_day_change = False
 
     if st.session_state.voice_language == _("nationality"):
@@ -496,8 +511,8 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
             on_click=lambda: agent_call(
                 queue_df,
                 bed_df,
-                replacement_days_of_stay[0],
-                replacement_medical_procedures[0],
+                replacement_days_of_stay[replacement_index],
+                replacement_medical_procedures[replacement_index],
                 use_ua_agent,
             ),
         )
@@ -507,15 +522,16 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
             on_click=lambda: agent_call(
                 queue_df,
                 bed_df,
-                replacement_days_of_stay[0],
-                replacement_medical_procedures[0],
+                replacement_days_of_stay[replacement_index],
+                replacement_medical_procedures[replacement_index],
                 use_ua_agent,
             ),
         )
 
         next_patient = find_next_patient_to_call(
-            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
+            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
         )
+
         if next_patient >= 0:
             if st.session_state.voice_language == _("nationality"):
                 next_label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
@@ -528,8 +544,8 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                 on_click=lambda: call_next_patient_in_queue(
                     queue_df,
                     bed_df,
-                    replacement_days_of_stay[0],
-                    replacement_medical_procedures[0],
+                    replacement_days_of_stay[replacement_index],
+                    replacement_medical_procedures[replacement_index],
                     use_next_ua_agent,
                 ),
             )
@@ -544,14 +560,14 @@ else:
 st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:
 
-    def highlight_current_row(row, next_row_to_be_highlighted):
+    def highlight_current_row(row):
         if st.session_state.consent is not None:
             if row.name == st.session_state.current_patient_index:
                 return ["background-color: #FF4248"] * len(row)
         else:
             if row.name == st.session_state.current_patient_index:
                 return ["background-color: #24C3FF"] * len(row)
-            elif row.name == next_row_to_be_highlighted:
+            elif row.name == st.session_state.next_row_to_be_highlighted:
                 return ["background-color: #FF4248"] * len(row)
 
         return [""] * len(row)
@@ -568,13 +584,11 @@ if not queue_df.empty:
         _("Medical procedure"),
     ]
 
-    if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index > 0:
-        next_row_to_be_highlighted = find_next_patient_to_call(
-            replacement_days_of_stay[0], queue_df, bed_df, replacement_medical_procedures[0]
+    if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
+        st.session_state.next_row_to_be_highlighted = find_next_patient_to_call(
+            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
         )
-        styled_df = styled_df.style.apply(
-            highlight_current_row, axis=1, kwargs={"next_row_to_be_highlighted": next_row_to_be_highlighted}
-        )
+        styled_df = styled_df.style.apply(highlight_current_row, axis=1)
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)

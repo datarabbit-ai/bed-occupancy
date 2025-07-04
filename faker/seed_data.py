@@ -120,7 +120,7 @@ def add_patients_to_queue(session, free_beds_numbers):
     if not all_patient_ids:
         return
 
-    new_patients_in_queue_number = random.randint(50, 100)
+    new_patients_in_queue_number = random.randint(62, 100)
     max_queue_position = session.query(func.max(PatientQueue.queue_id)).scalar() or 0
 
     available_ids = list(set(all_patient_ids) - set(cooldown_ids))
