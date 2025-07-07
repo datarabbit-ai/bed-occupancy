@@ -1,25 +1,25 @@
 FROM python:3.13-slim
-LABEL authors="wiktor"
 
-# Select container's working directory
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    # build-essential \
-    # curl \
-    # software-properties-common \
-    # git \
-    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install setuptools
+    gcc \
+    libportaudio2 \
+    libportaudiocpp0 \
+    portaudio19-dev \
+    gettext
 
 COPY requirements.txt .
 
-# Install python dependencies
-RUN pip3 install --upgrade pip setuptools wheel
+RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
-COPY main.py ./
+COPY locales/ ./locales/
+RUN mkdir -p locales/en/LC_MESSAGES locales/pl/LC_MESSAGES
+RUN msgfmt -o locales/pl/LC_MESSAGES/base.mo locales/pl/LC_MESSAGES/base.po
+RUN msgfmt -o locales/en/LC_MESSAGES/base.mo locales/en/LC_MESSAGES/base.po
+
+COPY main.py agent.py *.json ./
 
 EXPOSE 8501
 

@@ -1,28 +1,30 @@
-import sqlite3
+import os
+
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+load_dotenv()
 
 
-def get_connection() -> sqlite3.Connection:
+def get_session() -> Session:
     """
-    Establishes a connection to the SQLite database.
-    :return: sqlite3.Connection object
-    :raises Exception: If the connection fails.
+    Create a SQLAlchemy engine for connecting to the PostgreSQL database.
+    The connection parameters are read from environment variables.
+    If the environment variables are not set, default values are used.
+    :return:
     """
-
-    db_path = "../db/hospital.db"
-
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        DB_USER = os.getenv("POSTGRES_USERNAME", "postgres")
+        DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+        DB_NAME = os.getenv("POSTGRES_NAME", "postgres")
+        DB_HOST = os.getenv("POSTGRES_HOST", "db")
+        DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+        DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+        engine = create_engine(DATABASE_URL)
+        SessionLocal = sessionmaker(bind=engine, autoflush=True, autocommit=False, future=True)
+        return SessionLocal()
     except Exception as e:
         print(f"Failed to connect: {e}")
         raise
-
-
-def close_connection(conn: sqlite3.Connection) -> None:
-    """
-    Closes the connection to the SQLite database.
-    :param conn: The connection object to close.
-    :return: None
-    """
-    conn.close()

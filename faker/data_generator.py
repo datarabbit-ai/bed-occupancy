@@ -1,3 +1,5 @@
+import datetime
+import random
 from enum import Enum
 
 from pydantic import BaseModel
@@ -10,81 +12,71 @@ class Urgency(str, Enum):
     STABLE = "stabilny"
 
 
+class Nationality(str, Enum):
+    POLISH = "polska"
+    UKRAINIAN = "ukraińska"
+
+
 class Patient(BaseModel):
     first_name: str
     last_name: str
-    urgency: Urgency
+    urgency: str
     contact_phone: str
-    sickness: str
+    pesel: str
+    gender: str
+    nationality: str
+
+
+class Doctor(BaseModel):
+    first_name: str
+    last_name: str
 
 
 Faker.seed(42)
 
-sicknesses = [
-    "Niewydolność serca",
-    "Choroba niedokrwienna serca",
-    "Zawał mięśnia sercowego",
-    "Migotanie przedsionków",
-    "Nadciśnienie tętnicze",
-    "Udar mózgu",
-    "Krwotok śródczaszkowy",
-    "Zator płucny",
-    "Zapalenie płuc",
-    "Przewlekła obturacyjna choroba płuc (POChP)",
-    "Astma oskrzelowa",
-    "Rozedma płuc",
-    "Odma opłucnowa",
-    "Zapalenie opłucnej",
-    "Ropień płuca",
-    "Gruźlica płuc",
-    "Rak płuca",
-    "Zapalenie oskrzeli",
-    "Ostre zapalenie oskrzeli",
-    "Ostre zapalenie gardła",
-    "Ostre zapalenie migdałków",
-    "Zapalenie zatok przynosowych",
-    "Zapalenie ucha środkowego",
-    "Zapalenie wyrostka robaczkowego",
-    "Ostre zapalenie trzustki",
-    "Przewlekłe zapalenie trzustki",
-    "Kamica żółciowa",
-    "Zapalenie pęcherzyka żółciowego",
-    "Marskość wątroby",
-    "Ostre zapalenie wątroby",
-    "Rak wątroby",
-    "Choroba wrzodowa żołądka",
-    "Perforacja wrzodu żołądka",
-    "Krwawienie z przewodu pokarmowego",
-    "Zapalenie jelita grubego",
-    "Choroba Leśniowskiego-Crohna",
-    "Wrzodziejące zapalenie jelita grubego",
-    "Niedrożność jelit",
-    "Ostre zapalenie otrzewnej",
-    "Przepuklina pachwinowa",
-    "Przepuklina pępkowa",
-    "Nowotwór jelita grubego",
-    "Rak żołądka",
-    "Ostre zapalenie nerek",
-    "Przewlekła niewydolność nerek",
-    "Kamica nerkowa",
-    "Infekcja dróg moczowych",
-    "Nowotwór nerki",
-    "Zapalenie pęcherza moczowego",
-    "Przerost prostaty",
-]
+fake = Faker("pl_PL")
+nationality_generator = random.Random()
+nationality_generator.seed(45)
+
+
+def generate_random_date_between_ages(min_age, max_age):
+    today = datetime.date.today()
+    earliest_date = datetime.date(today.year - max_age, today.month, today.day)
+    latest_date = datetime.date(today.year - min_age, today.month, today.day)
+
+    earliest_days = earliest_date.toordinal()
+    latest_days = latest_date.toordinal()
+
+    return datetime.date.fromordinal(random.randint(earliest_days, latest_days))
 
 
 def generate_fake_patient_data() -> Patient:
-    fake = Faker("pl_PL")
-    name = fake.first_name()
-    surname = fake.last_name()
-    random_urgency = fake.enum(Urgency)
+    if random.randint(1, 2) == 1:
+        name = fake.first_name_female().split()[0]
+        surname = fake.last_name_female()
+        pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
+        gender = "kobieta"
+    else:
+        name = fake.first_name_male().split()[0]
+        surname = fake.last_name_male()
+        pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
+        gender = "mężczyzna"
+    random_urgency = fake.enum(Urgency).value
+    if nationality_generator.randint(1, 10) < 9:
+        random_nationality = Nationality.POLISH.value
+    else:
+        random_nationality = Nationality.UKRAINIAN.value
     phone_number = fake.phone_number().replace(" ", "").replace("+48", "")
-    random_sickness = fake.random_element(sicknesses)
     return Patient(
         first_name=name,
         last_name=surname,
         urgency=random_urgency,
         contact_phone=phone_number,
-        sickness=random_sickness,
+        pesel=pesel,
+        gender=gender,
+        nationality=random_nationality,
     )
+
+
+def generate_fake_doctor_data() -> Doctor:
+    return Doctor(first_name=fake.first_name().split()[0], last_name=fake.last_name())

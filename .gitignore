@@ -174,5 +174,8 @@ cython_debug/
 .pypirc
 
 .vscode
+/.idea
+
+# Database files
 **/hospital.db
 **/sqlite3.exe

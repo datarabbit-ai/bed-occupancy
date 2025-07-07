@@ -1,61 +1,42 @@
 services:
-  database:
-    build: ./db
+  db:
+    image: postgres:latest
+    restart: always
     volumes:
-      - ./db:/db
-      - shared-data:/db
+      - shared-data:/var/lib/postgresql/data
+    env_file: .env
     healthcheck:
-      test: ["CMD", "/db/sqlite3.exe", "/db/hospital.db", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 2s
+      retries: 5
 
   faker:
     build: ./faker
-
-    networks:
-      - hospital-net
-
     volumes:
       - shared-data:/db
-
+    env_file: .env
     depends_on:
-      database:
+      db:
         condition: service_healthy
-
 
   backend:
     build: ./backend
-
-    networks:
-      - hospital-net
-
     volumes:
       - shared-data:/db
-
+    env_file: .env
     depends_on:
       faker:
         condition: service_completed_successfully
 
-
   frontend:
     build: ./frontend
-
+    env_file: .env
     ports:
       - "127.0.0.1:8501:8501"
-
-    networks:
-      - hospital-net
-
     depends_on:
       backend:
         condition: service_started
 
-
 volumes:
   shared-data:
-
-networks:
-  hospital-net:
