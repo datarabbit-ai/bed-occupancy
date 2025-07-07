@@ -47,7 +47,11 @@ If you don't have docker installed on your computer yet, you can install it [her
 
 #### Twilio
 
+You can find out how to do that [here](https://www.google.com/search?client=firefox-b-lm&channel=entpr&q=how+to+setup+twilio+account+with+outbound+phone+number)
+
 #### Elevenlabs
+
+You can find out how to do that [here](https://www.google.com/search?q=how+to+setup+elevenlabs+account+with+conversational+ai+agent+and+twilio+phone+number&client=firefox-b-lm&sca_esv=9c54605068baa6ec&channel=entpr&sxsrf=AE3TifOo2jSdKmjgfoYNR7QXnnWndeeArg%3A1751879912994&ei=6JBraNOxPPv-wPAPwemTwAI&ved=0ahUKEwjTxZyftaqOAxV7PxAIHcH0BCgQ4dUDCBA&uact=5&oq=how+to+setup+elevenlabs+account+with+conversational+ai+agent+and+twilio+phone+number&gs_lp=Egxnd3Mtd2l6LXNlcnAiVGhvdyB0byBzZXR1cCBlbGV2ZW5sYWJzIGFjY291bnQgd2l0aCBjb252ZXJzYXRpb25hbCBhaSBhZ2VudCBhbmQgdHdpbGlvIHBob25lIG51bWJlcjIEECEYCkihiAZQ9doEWK2HBnAHeAGQAQCYAYsBoAHqKqoBBTMzLjI0uAEDyAEA-AEBmAImoAKKHsICChAAGLADGNYEGEfCAgUQABjvBcICBRAhGKABwgIEECEYFcICBxAhGKABGAqYAwCIBgGQBgiSBwUxMC4yOKAHpacBsgcENS4yOLgHkh3CBwkyLTE3LjE5LjLIB-EC&sclient=gws-wiz-serp)
 
 ### How to run?
 
@@ -56,6 +60,7 @@ Once you have docker installed, follow these guidelines:
    1. You can do it by running this command in terminal:
         ```
         git clone https://github.com/datarabbit-ai/bed-occupancy
+        cd bed-occupancy
         ```
 2. Prepare the `.env` file, it should be placed in the project's root folder
 
