@@ -94,7 +94,7 @@ Once you have docker installed, follow these guidelines:
 ## Screenshots
 
 Correctly set up and working app looks like this:
-
+![screenshot](./images/screenshot.png)
 
 ## Status
 
