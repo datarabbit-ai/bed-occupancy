@@ -101,10 +101,9 @@ Correctly set up and working app looks like this:
 The project is: _in development_
 
 ## Our team
-People and their roles:
 
-[Rumeleq](https://github.com/Rumeleq) -
+[Rumeleq](https://github.com/Rumeleq)
 
-[wiktorKycia](https://github.com/wiktorKycia) -
+[wiktorKycia](https://github.com/wiktorKycia)
 
-[JanTopolewski](https://github.com/JanTopolewski) -
+[JanTopolewski](https://github.com/JanTopolewski)
