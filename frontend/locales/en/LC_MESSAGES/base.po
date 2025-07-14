@@ -35,6 +35,9 @@ msgstr "Transcriptions"
 msgid "Bed Assignments"
 msgstr "Bed Assignments"
 
+msgid "No transcriptions avaiable, call patient in order to see transcriptions"
+msgstr "No transcriptions avaiable, call patient in order to see transcriptions"
+
 #: main.py:35
 msgid "Interface language"
 msgstr "Interface language"

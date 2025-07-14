@@ -33,6 +33,7 @@ st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 
 main_tab, statistics_tab, transcript_tab = st.tabs([_("Current state"), _("Data analysis"), _("Transcriptions")])
 main_tab.title(_("Bed Assignments"))
+transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
 
 ui_languages = ["en", "pl"]
 voice_languages = ["pl", "ua", _("nationality")]

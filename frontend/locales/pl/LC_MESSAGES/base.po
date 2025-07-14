@@ -36,6 +36,9 @@ msgstr "Transkrypcje"
 msgid "Bed Assignments"
 msgstr "Łóżka szpitalne"
 
+msgid "No transcriptions avaiable, call patient in order to see transcriptions"
+msgstr "Nie ma jeszcze żadnych transkrypcji rozmów. Zadzwoń do pacjenta, aby zobaczyć transkrypcje"
+
 #: main.py:35
 msgid "Interface language"
 msgstr "Język interfejsu"
