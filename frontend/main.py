@@ -53,6 +53,8 @@ if "consent" not in st.session_state:
     st.session_state.consent = False
 if "replacement_start_index" not in st.session_state:
     st.session_state.replacement_start_index = 0
+if "transcriptions" not in st.session_state:
+    st.session_state.transcriptions = []
 
 today = datetime.today().date()
 
