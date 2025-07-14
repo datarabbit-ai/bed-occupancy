@@ -357,7 +357,7 @@ def agent_call(
             st.session_state.pop("current_patient_index", None)
     else:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
-    
+
     if "transcript" in call_results and len(call_results["transcript"]) > 0:
         transcript_tab.empty()
         for message in call_results["transcript"]:
