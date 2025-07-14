@@ -132,7 +132,7 @@ def get_done_conversation_data(conversation_id: str, max_attempts: int = 60, att
         logger.warning("Conversation did not complete in time.")
         return False
 
-def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
+def check_patient_consent_to_reschedule(conversation_id: str) -> dict:
     """
     Waits until the conversation is completed and then checks if the patient
     has given consent to reschedule their appointment.

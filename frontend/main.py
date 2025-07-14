@@ -272,7 +272,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
 
 def handle_patient_rescheduling(
     name: str, surname: str, gender: str, pesel: str, medical_procedure: str, old_day: int, new_day: int, use_ua_agent: bool
-) -> bool:
+) -> dict:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
     with the patient and analyzing their consent.
