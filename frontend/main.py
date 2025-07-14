@@ -31,7 +31,7 @@ _ = translate_page(st.session_state.interface_language)
 
 st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 
-main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
+main_tab, statistics_tab, transcript_tab = st.tabs([_("Current state"), _("Data analysis"), _("Transcriptions")])
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]

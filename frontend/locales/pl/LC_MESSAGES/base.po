@@ -29,6 +29,9 @@ msgstr "Stan obecny"
 msgid "Data analysis"
 msgstr "Analiza danych"
 
+msgid "Transcriptions"
+msgstr "Transkrypcje"
+
 #: main.py:32
 msgid "Bed Assignments"
 msgstr "Łóżka szpitalne"

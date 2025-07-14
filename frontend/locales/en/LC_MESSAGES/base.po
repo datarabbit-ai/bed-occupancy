@@ -28,6 +28,9 @@ msgstr "Current state"
 msgid "Data analysis"
 msgstr "Data analysis"
 
+msgid "Transcriptions"
+msgstr "Transcriptions"
+
 #: main.py:32
 msgid "Bed Assignments"
 msgstr "Bed Assignments"
