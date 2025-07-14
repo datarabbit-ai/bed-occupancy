@@ -362,11 +362,15 @@ def agent_call(
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
     if "transcript" in call_results and len(call_results["transcript"]) > 0:
+        st.session_state.transcriptions.append({"patient": f"{name} {surname}", "transcript": call_results["transcript"]})
+
         transcript_tab.empty()
-        expander = transcript_tab.expander(f"Call with {name} {surname}")
-        for message in call_results["transcript"]:
-            msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
-            msg.write(message["message"])
+
+        for transcript in st.session_state.transcriptions:
+            expander = transcript_tab.expander(f"Call with {transcript['patient']}")
+            for message in transcript["transcript"]:
+                msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
+                msg.write(message["message"])
 
 
 def call_next_patient_in_queue(
