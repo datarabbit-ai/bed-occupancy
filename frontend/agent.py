@@ -153,7 +153,7 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
     logger.info(f"Patient agreed: {result}")
     return {"consent": result, "verified": success_of_verification, "called": True}
 
-def fetch_transcryption(conversation_id: str):
+def fetch_transcription(conversation_id: str) -> list[dict]:
     max_attempts = 60
 
     for attempt in range(max_attempts):
