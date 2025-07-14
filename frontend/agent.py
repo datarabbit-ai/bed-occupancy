@@ -160,11 +160,16 @@ def fetch_transcription(conversation_id: str) -> list[dict]:
         conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
         status = conversation_data.status
         if status == "done":
-            result = json.loads(conversation_data.json())
-            with open("conversation_data.json", "w+") as f:
-                json.dump(result, f)
-                logger.info("Conversation data saved")
-            break
+            # get transcript of the call
+            transcript: list[dict] = (
+                json.loads(conversation_data.json())
+                .get("transcript")
+            )
+            # filter out transcript to have only roles and messages without empty messages or situations of using an agent tool such as 'end_call'
+            transcript = [{"role": entry["role"], "message": entry["message"]} for entry in transcript]
+            transcript = list(filter(lambda data: data.message is not None, transcript))
+                
+            return transcript
         logger.info(f"Conversation status: {status} (Attempt {attempt + 1})")
         time.sleep(5)
     else:
