@@ -284,7 +284,8 @@ def handle_patient_rescheduling(
     :param medical_procedure: The medical procedure that the patient will undergo.
     :param old_day: The current day of the patient's visit.
     :param new_day: The suggested day for the new appointment.
-    :return: A boolean indicating whether the patient consented to the rescheduling.
+    :return: A dictionary containing keys: "consent", "verified", "called" and "transcript". \n
+        "consent" is a boolean indicating whether the patient consented to the rescheduling.
     """
 
     if st.session_state.phone_number is not None:

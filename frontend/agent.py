@@ -138,7 +138,10 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> dict:
     has given consent to reschedule their appointment.
 
     :param conversation_id: The ID of the conversation to analyze.
-    :return: A boolean indicating whether the patient agreed to reschedule.
+    :return: A dictionary containing:
+    - 'consent' (bool): Indicates whether the patient agreed to reschedule.
+    - 'verified' (bool): Indicates whether the verification was successful.
+    - 'called' (bool): Always True, indicating the function was executed.
     """
     conversation_data = get_done_conversation_data(conversation_id)
     result: bool = (
