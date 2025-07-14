@@ -152,3 +152,22 @@ def check_patient_consent_to_reschedule(conversation_id: str) -> bool:
     logger.info(f"Patient's verification status: {success_of_verification}")
     logger.info(f"Patient agreed: {result}")
     return {"consent": result, "verified": success_of_verification, "called": True}
+
+def fetch_transcryption(conversation_id: str):
+    max_attempts = 60
+
+    for attempt in range(max_attempts):
+        conversation_data = client.conversational_ai.get_conversation(conversation_id=conversation_id)
+        status = conversation_data.status
+        if status == "done":
+            result = json.loads(conversation_data.json())
+            with open("conversation_data.json", "w+") as f:
+                json.dump(result, f)
+                logger.info("Conversation data saved")
+            break
+        logger.info(f"Conversation status: {status} (Attempt {attempt + 1})")
+        time.sleep(5)
+    else:
+        logger.warning("Conversation did not complete in time.")
+        return False
+    
