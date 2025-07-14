@@ -361,7 +361,7 @@ def agent_call(
     if "transcript" in call_results and len(call_results["transcript"]) > 0:
         transcript_tab.empty()
         for message in call_results["transcript"]:
-            msg = transcript_tab.chat_message(message["role"])
+            msg = transcript_tab.chat_message(message["role"] if message["role"] == "user" else "ai")
             msg.write(message["message"])
 
 
