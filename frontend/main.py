@@ -292,8 +292,8 @@ def handle_patient_rescheduling(
         conversation_id = call_patient(
             name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
         )
-        fetch_transcription(conversation_id)
-        return check_patient_consent_to_reschedule(conversation_id)
+        transcript = fetch_transcription(conversation_id)
+        return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
     else:
         return {"consent": None, "verified": None, "called": False}
 
