@@ -178,6 +178,6 @@ def fetch_transcription(conversation_id: str) -> list[dict]:
     transcript: list[dict] = json.loads(conversation_data.json()).get("transcript")
     # filter out transcript to have only roles and messages without empty messages or situations of using an agent tool such as 'end_call'
     transcript = [{"role": entry["role"], "message": entry["message"]} for entry in transcript]
-    transcript = list(filter(lambda data: data.message is not None, transcript))
+    transcript = list(filter(lambda data: data["message"] is not None, transcript))
 
     return transcript
