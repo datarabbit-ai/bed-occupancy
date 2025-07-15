@@ -85,8 +85,10 @@ class Patient(Base):
 class Bed(Base):
     __tablename__ = "beds"
     bed_id = Column(Integer, primary_key=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"))
 
     assignments = relationship("BedAssignment", back_populates="bed")
+    department = relationship("Department", back_populates="bed")
 
 
 class BedAssignment(Base):
@@ -99,6 +101,7 @@ class BedAssignment(Base):
     bed = relationship("Bed", back_populates="assignments")
     patient = relationship("Patient", back_populates="bed_assignments")
     medical_procedure = relationship("MedicalProcedure", back_populates="assignments")
+    stay_personnel_assignment = relationship("StayPersonnelAssignment", back_populates="bed_assignment")
 
 
 class PatientQueue(Base):
@@ -111,23 +114,67 @@ class PatientQueue(Base):
 
     patient = relationship("Patient", back_populates="queue_entry")
     medical_procedure = relationship("MedicalProcedure", back_populates="queue_entry")
+    personnel_queue_assignment = relationship("PersonnelQueueAssignment", back_populates="queue_entry")
 
 
 class MedicalProcedure(Base):
     __tablename__ = "medical_procedures"
     procedure_id = Column(Integer, primary_key=True, autoincrement=True)
-    doctor_id = Column(Integer, ForeignKey("doctors.doctor_id"))
+    department_id = Column(Integer, ForeignKey("departments.department_id"))
     name = Column(String)
 
-    doctor = relationship("Doctor", back_populates="medical_procedure")
     queue_entry = relationship("PatientQueue", back_populates="medical_procedure")
     assignments = relationship("BedAssignment", back_populates="medical_procedure")
+    department = relationship("Department", back_populates="medical_procedure")
 
 
-class Doctor(Base):
-    __tablename__ = "doctors"
-    doctor_id = Column(Integer, primary_key=True, autoincrement=True)
+class PersonnelMember(Base):
+    __tablename__ = "personnel_members"
+    member_id = Column(Integer, primary_key=True, autoincrement=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"))
+    role_id = Column(Integer, ForeignKey("roles.role_id"))
     first_name = Column(String)
     last_name = Column(String)
 
-    medical_procedure = relationship("MedicalProcedure", back_populates="doctor")
+    department = relationship("Department", back_populates="personnel_member")
+    role = relationship("Role", back_populates="personnel_member")
+    personnel_queue_assignment = relationship("PersonnelQueueAssignment", back_populates="personnel_member")
+    stay_personnel_assignment = relationship("StayPersonnelAssignment", back_populates="personnel_member")
+
+
+class Role(Base):
+    __tablename__ = "roles"
+    role_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+
+    personnel_member = relationship("PersonnelMember", back_populates="role")
+
+
+class PersonnelQueueAssignment(Base):
+    __tablename__ = "personnel_queue_assignments"
+    assignment_id = Column(Integer, primary_key=True, autoincrement=True)
+    queue_id = Column(Integer, ForeignKey("patient_queue.queue_id"))
+    member_id = Column(Integer, ForeignKey("personnel_members.member_id"))
+
+    personnel_member = relationship("PersonnelMember", back_populates="personnel_queue_assignment")
+    queue_entry = relationship("PatientQueue", back_populates="personnel_queue_assignment")
+
+
+class StayPersonnelAssignment(Base):
+    __tablename__ = "stay_personnel_assignments"
+    assignment_id = Column(Integer, primary_key=True, autoincrement=True)
+    bed_id = Column(Integer, ForeignKey("bed_assignments.bed_id"))
+    member_id = Column(Integer, ForeignKey("personnel_members.member_id"))
+
+    personnel_member = relationship("PersonnelMember", back_populates="stay_personnel_assignment")
+    bed_assignment = relationship("BedAssignment", back_populates="stay_personnel_assignment")
+
+
+class Department(Base):
+    __tablename__ = "departments"
+    department_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+
+    personnel_member = relationship("PersonnelMember", back_populates="department")
+    medical_procedure = relationship("MedicalProcedure", back_populates="department")
+    bed = relationship("Bed", back_populates="department")
