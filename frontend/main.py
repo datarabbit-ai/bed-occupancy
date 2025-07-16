@@ -54,6 +54,7 @@ if "replacement_start_index" not in st.session_state:
     st.session_state.replacement_start_index = 0
 if "transcriptions" not in st.session_state:
     st.session_state.transcriptions = []
+if len(st.session_state.transcriptions) == 0:
     transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
 
 today = datetime.today().date()
