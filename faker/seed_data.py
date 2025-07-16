@@ -4,10 +4,20 @@ import os
 import pathlib
 import random
 
-from data_generator import generate_fake_doctor_data, generate_fake_patient_data
+from data_generator import generate_fake_patient_data, generate_fake_personnel_data
 from database_structure_manager import check_data_existence, clear_database
 from dotenv import load_dotenv
-from models import Bed, BedAssignment, Doctor, MedicalProcedure, Patient, PatientQueue
+from models import (
+    Bed,
+    BedAssignment,
+    Department,
+    MedicalProcedure,
+    Patient,
+    PatientQueue,
+    PersonnelMember,
+    PersonnelQueueAssignment,
+    StayPersonnelAssignment,
+)
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 
@@ -76,24 +86,31 @@ common_medical_procedures = [
     "Operacja żylaków kończyn dolnych",
 ]
 
+departments = ["department_test"]
 
-def add_doctors(session):
-    new_doctors_number = 5
-    for _ in range(new_doctors_number):
-        doctor = generate_fake_doctor_data()
-        session.add(Doctor(**doctor.model_dump()))
-    logger.info(f"Added {new_doctors_number} generated doctors to db")
+
+def add_departments(session):
+    for department in departments:
+        session.add(Department(name=department))
+
+
+def add_personnel(session):
+    new_personnel_number = 20
+    for _ in range(new_personnel_number):
+        personnel_member = generate_fake_personnel_data(
+            random.choice([d.department_id for d in session.query(Department).all()])
+        )
+        session.add(PersonnelMember(**personnel_member.model_dump()))
+    logger.info(f"Added {new_personnel_number} generated doctors to db")
 
 
 def add_medical_procedures(session):
-    all_doctor_ids = [doctor.doctor_id for doctor in session.query(Doctor).all()]
-    assigned_doctors_number = 0
     for procedure in common_medical_procedures:
-        session.add(MedicalProcedure(doctor_id=all_doctor_ids[assigned_doctors_number], name=procedure))
-        if assigned_doctors_number >= len(all_doctor_ids):
-            assigned_doctors_number = 0
-        else:
-            assigned_doctors_number += 1
+        session.add(
+            MedicalProcedure(
+                department_id=random.choice([d.department_id for d in session.query(Department).all()]), name=procedure
+            )
+        )
     logger.info(f"Added {len(common_medical_procedures)} generated medical procedures to db")
 
 
@@ -200,7 +217,8 @@ def main():
     try:
         if not check_data_existence(session):
             clear_database(session)
-            add_doctors(session)
+            add_departments(session)
+            add_personnel(session)
             add_medical_procedures(session)
             add_patients(session)
             add_beds(session)

@@ -27,9 +27,10 @@ class Patient(BaseModel):
     nationality: str
 
 
-class Doctor(BaseModel):
+class PersonnelMember(BaseModel):
     first_name: str
     last_name: str
+    role: str
 
 
 Faker.seed(42)
@@ -78,5 +79,10 @@ def generate_fake_patient_data() -> Patient:
     )
 
 
-def generate_fake_doctor_data() -> Doctor:
-    return Doctor(first_name=fake.first_name().split()[0], last_name=fake.last_name())
+def generate_fake_personnel_data(department_id: int) -> PersonnelMember:
+    return PersonnelMember(
+        department_id=department_id,
+        first_name=fake.first_name().split()[0],
+        last_name=fake.last_name(),
+        role=random.choice(["doctor", "nurse"]),
+    )

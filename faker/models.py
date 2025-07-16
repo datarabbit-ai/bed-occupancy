@@ -75,22 +75,13 @@ class PersonnelMember(Base):
     __tablename__ = "personnel_members"
     member_id = Column(Integer, primary_key=True, autoincrement=True)
     department_id = Column(Integer, ForeignKey("departments.department_id"))
-    role_id = Column(Integer, ForeignKey("roles.role_id"))
     first_name = Column(String)
     last_name = Column(String)
+    role = Column(String)
 
     department = relationship("Department", back_populates="personnel_member")
-    role = relationship("Role", back_populates="personnel_member")
     personnel_queue_assignment = relationship("PersonnelQueueAssignment", back_populates="personnel_member")
     stay_personnel_assignment = relationship("StayPersonnelAssignment", back_populates="personnel_member")
-
-
-class Role(Base):
-    __tablename__ = "roles"
-    role_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-
-    personnel_member = relationship("PersonnelMember", back_populates="role")
 
 
 class PersonnelQueueAssignment(Base):
