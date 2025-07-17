@@ -363,15 +363,24 @@ def agent_call(
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
     if "transcript" in call_results and len(call_results["transcript"]) > 0:
-        st.session_state.transcriptions.append({"patient": f"{name} {surname}", "transcript": call_results["transcript"]})
+        st.session_state.transcriptions.append(
+            {
+                "day": st.session_state.day_for_simulation,
+                "patient": f"{name} {surname}",
+                "transcript": call_results["transcript"],
+            }
+        )
 
         transcript_tab.empty()
+        display_transcriptions()
 
-        for transcript in st.session_state.transcriptions:
-            expander = transcript_tab.expander(f"Call with {transcript['patient']}")
-            for message in transcript["transcript"]:
-                msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
-                msg.write(message["message"])
+
+def display_transcriptions():
+    for transcript in st.session_state.transcriptions:
+        expander = transcript_tab.expander(f"{transcript['day']}: Call with {transcript['patient']}")
+        for message in transcript["transcript"]:
+            msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
+            msg.write(message["message"])
 
 
 def call_next_patient_in_queue(
@@ -511,6 +520,8 @@ if "current_patient_index" not in st.session_state:
 main_tab.header(
     f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
 )
+
+display_transcriptions()
 
 if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
     st.session_state.auto_day_change = False
