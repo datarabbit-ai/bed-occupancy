@@ -132,13 +132,10 @@ def get_tables_and_statistics() -> ListOfTables:
             for assignment in entry.personnel_queue_assignment:
                 session.delete(assignment)
             session.delete(entry)
+
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             for i, entry in enumerate(queue):
                 entry.queue_id = i + 1
-
-            personnel_assignments = session.query(PersonnelQueueAssignment).all()
-            for assignment in personnel_assignments:
-                session.refresh(assignment)
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
@@ -414,13 +411,14 @@ def get_tables_and_statistics() -> ListOfTables:
             medical_procedure = ba.medical_procedure.name if ba else "Unoccupied"
             pesel = patient.pesel if patient else "Unoccupied"
             nationality = patient.nationality if patient else "Unoccupied"
-            personnel_assignments = ba.stay_personnel_assignment
+            personnel_assignments = ba.stay_personnel_assignment if ba else None
             personnel_data = {}
 
-            for assignment in personnel_assignments:
-                personnel_data[assignment.personnel_member.first_name + assignment.personnel_member.last_name] = (
-                    assignment.personnel_member.role
-                )
+            if personnel_assignments:
+                for assignment in personnel_assignments:
+                    personnel_data[assignment.personnel_member.first_name + " " + assignment.personnel_member.last_name] = (
+                        assignment.personnel_member.role
+                    )
 
             days_of_stay = ba.days_of_stay if ba else 0
 

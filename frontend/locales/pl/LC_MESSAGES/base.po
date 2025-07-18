@@ -232,5 +232,11 @@ msgstr "Więcej ustawień"
 msgid "Phone number to call"
 msgstr "Numer telefonu, na który zostaną wykonane połączenia"
 
-msgid "Doctor"
-msgstr "Lekarz"
+msgid "Personnel"
+msgstr "Personel"
+
+msgid "nurse"
+msgstr "pielęgniarka"
+
+msgid "doctor"
+msgstr "lekarz"

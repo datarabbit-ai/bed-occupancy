@@ -15,7 +15,7 @@ class BedAssignmentResponse(BaseModel):
     pesel: str
     nationality: str
     days_of_stay: int
-    personnel: dict
+    personnel: Optional[dict]
 
 
 class PatientQueueResponse(BaseModel):
@@ -106,9 +106,10 @@ class BedAssignment(Base):
 
 class PatientQueue(Base):
     __tablename__ = "patient_queue"
-    queue_id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"))
     procedure_id = Column(Integer, ForeignKey("medical_procedures.procedure_id"))
+    queue_id = Column(Integer)
     days_of_stay = Column(Integer)
     admission_day = Column(Integer)
 
@@ -144,7 +145,7 @@ class PersonnelMember(Base):
 class PersonnelQueueAssignment(Base):
     __tablename__ = "personnel_queue_assignments"
     assignment_id = Column(Integer, primary_key=True, autoincrement=True)
-    queue_id = Column(Integer, ForeignKey("patient_queue.queue_id", onupdate="CASCADE"))
+    queue_id = Column(Integer, ForeignKey("patient_queue.id", onupdate="CASCADE", ondelete="CASCADE"))
     member_id = Column(Integer, ForeignKey("personnel_members.member_id"))
 
     personnel_member = relationship("PersonnelMember", back_populates="personnel_queue_assignment")

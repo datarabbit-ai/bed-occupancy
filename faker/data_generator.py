@@ -28,6 +28,7 @@ class Patient(BaseModel):
 
 
 class PersonnelMember(BaseModel):
+    department_id: int
     first_name: str
     last_name: str
     role: str

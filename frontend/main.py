@@ -202,6 +202,9 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
     num_boxes = len(df)
     df["nationality"] = df["nationality"].apply(_)
     df["medical_procedure"] = df["medical_procedure"].apply(_)
+    df["personnel"] = df["personnel"].apply(
+        lambda d: "<br>".join(f"{k} - {_(v)}" for k, v in d.items()) if isinstance(d, dict) else "Unoccupied"
+    )
 
     # Calculate number of rows needed
     num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
@@ -232,7 +235,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                             _("Personal number"),
                             _("Nationality"),
                             _("Days left"),
-                            _("Doctor"),
+                            _("Personnel"),
                         ]
 
                     tooltip_info = "<table style='border-collapse: collapse;'>"

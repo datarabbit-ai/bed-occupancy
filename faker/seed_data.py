@@ -101,7 +101,7 @@ def add_personnel(session):
             random.choice([d.department_id for d in session.query(Department).all()])
         )
         session.add(PersonnelMember(**personnel_member.model_dump()))
-    logger.info(f"Added {new_personnel_number} generated doctors to db")
+    logger.info(f"Added {new_personnel_number} generated personnel members to db")
 
 
 def add_medical_procedures(session):
@@ -124,9 +124,9 @@ def add_patients(session):
 
 
 def add_beds(session):
-    departments_count = session.query(func.count(Department.department_id)).scalar()
-    new_beds_number = random.randint(15 * departments_count, 20 * departments_count)
-    beds = [Bed() for _ in range(new_beds_number)]
+    department_ids = [department.department_id for department in session.query(Department).all()]
+    new_beds_number = random.randint(15 * len(department_ids), 20 * len(department_ids))
+    beds = [Bed(department_id=random.choice(department_ids)) for _ in range(new_beds_number)]
     session.add_all(beds)
     logger.info(f"Added {new_beds_number} generated beds to db")
 
@@ -179,6 +179,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
                 admission_day=admission_day + 1,
             )
         )
+        queue_lenth += 1
 
         doctors_number = random.randint(1, 2)
         nurses_number = random.randint(1, 3)
