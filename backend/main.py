@@ -11,13 +11,16 @@ from models import (
     Bed,
     BedAssignment,
     DataForReplacement,
-    Doctor,
+    Department,
     ListOfTables,
     MedicalProcedure,
     NoShow,
     Patient,
     PatientQueue,
+    PersonnelMember,
+    PersonnelQueueAssignment,
     Statistics,
+    StayPersonnelAssignment,
 )
 
 logger = logging.getLogger("hospital_logger")
@@ -112,9 +115,11 @@ def get_tables_and_statistics() -> ListOfTables:
     def delete_patients_to_be_released():
         session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
 
-    def assign_bed_to_patient(bed_id: int, patient_id: int, procedure_id: int, days: int, log: bool):
+    def assign_bed_to_patient(bed_id: int, patient_id: int, procedure_id: int, days: int, personnel: list, log: bool):
         assignment = BedAssignment(bed_id=bed_id, patient_id=patient_id, procedure_id=procedure_id, days_of_stay=days)
         session.add(assignment)
+        for personnel_member in personnel:
+            session.add(StayPersonnelAssignment(bed_id=bed_id, member_id=personnel_member.member_id))
         if log:
             logger.info(f"Assigned bed {bed_id} to patient {patient_id} for {days} days")
 
@@ -124,10 +129,16 @@ def get_tables_and_statistics() -> ListOfTables:
     def delete_patient_by_queue_id_from_queue(queue_id: int):
         entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
         if entry:
+            for assignment in entry.personnel_queue_assignment:
+                session.delete(assignment)
             session.delete(entry)
             queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
             for i, entry in enumerate(queue):
                 entry.queue_id = i + 1
+
+            personnel_assignments = session.query(PersonnelQueueAssignment).all()
+            for assignment in personnel_assignments:
+                session.refresh(assignment)
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
@@ -338,7 +349,12 @@ def get_tables_and_statistics() -> ListOfTables:
                     stay_lengths[iteration + 2].append(entry.days_of_stay)
 
                     assign_bed_to_patient(
-                        bed_ids[bed_iterator], patient_id, entry.procedure_id, entry.days_of_stay, should_log
+                        bed_ids[bed_iterator],
+                        patient_id,
+                        entry.procedure_id,
+                        entry.days_of_stay,
+                        entry.personnel_queue_assignment,
+                        should_log,
                     )
                     delete_patient_by_queue_id_from_queue(entry.queue_id)
                     occupied_beds_number += 1
@@ -362,6 +378,7 @@ def get_tables_and_statistics() -> ListOfTables:
                         patient.patient_id,
                         queue_entry.procedure_id,
                         queue_entry.days_of_stay,
+                        queue_entry.personnel_queue_assignment,
                         should_log,
                     )
                     delete_patient_by_queue_id_from_queue(queue_id)
@@ -397,9 +414,14 @@ def get_tables_and_statistics() -> ListOfTables:
             medical_procedure = ba.medical_procedure.name if ba else "Unoccupied"
             pesel = patient.pesel if patient else "Unoccupied"
             nationality = patient.nationality if patient else "Unoccupied"
-            doctor_name = (
-                ba.medical_procedure.doctor.first_name + " " + ba.medical_procedure.doctor.last_name if ba else "Unoccupied"
-            )
+            personnel_assignments = ba.stay_personnel_assignment
+            personnel_data = {}
+
+            for assignment in personnel_assignments:
+                personnel_data[assignment.personnel_member.first_name + assignment.personnel_member.last_name] = (
+                    assignment.personnel_member.role
+                )
+
             days_of_stay = ba.days_of_stay if ba else 0
 
             bed_assignments.append(
@@ -411,7 +433,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     "pesel": pesel,
                     "nationality": nationality,
                     "days_of_stay": days_of_stay,
-                    "doctor": doctor_name,
+                    "personnel": personnel_data,
                 }
             )
 
