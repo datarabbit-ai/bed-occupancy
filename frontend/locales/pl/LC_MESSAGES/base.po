@@ -29,9 +29,15 @@ msgstr "Stan obecny"
 msgid "Data analysis"
 msgstr "Analiza danych"
 
+msgid "Transcriptions"
+msgstr "Transkrypcje"
+
 #: main.py:32
 msgid "Bed Assignments"
 msgstr "Łóżka szpitalne"
+
+msgid "No transcriptions avaiable, call patient in order to see transcriptions"
+msgstr "Nie ma jeszcze żadnych transkrypcji rozmów. Zadzwoń do pacjenta, aby zobaczyć transkrypcje"
 
 #: main.py:35
 msgid "Interface language"
@@ -80,6 +86,12 @@ msgstr "nie wyraził/a zgody na zmianę terminu"
 #: main.py:274
 msgid "'s consent is unknown."
 msgstr " nie odpowiedział/a na pytanie."
+
+msgid "Day"
+msgstr "Dzień"
+
+msgid "Call with"
+msgstr "Rozmowa z"
 
 #: main.py:288
 msgid "Failed to fetch data from the server."
