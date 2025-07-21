@@ -87,10 +87,10 @@ msgid "'s consent is unknown."
 msgstr "'s consent is unknown."
 
 msgid "Day"
-msgstr "Dzień"
+msgstr "Day"
 
 msgid "Call with"
-msgstr "Rozmowa z"
+msgstr "Call with"
 
 #: main.py:288
 msgid "Failed to fetch data from the server."
