@@ -131,9 +131,12 @@ def add_beds(session):
 
 
 def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, nurses_patients_numbers):
+    def calculate_least_occupied_department(admission_day, free_beds):
+        best_department = max(free_beds, key=lambda k: free_beds[k][admission_day])
+        return best_department
+
     all_patient_ids = [p.patient_id for p in session.query(Patient).all()]
     cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
-    medical_procedures = session.query(MedicalProcedure).all()
     departments_count = session.query(func.count(Department.department_id)).scalar()
 
     if not all_patient_ids:
@@ -151,23 +154,30 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
         if not available_ids:
             break
 
-        if admission_day >= len(free_beds_numbers):
+        if admission_day >= len(free_beds_numbers[1]):
             break
-        while free_beds_numbers[admission_day] == 0 and admission_day < len(free_beds_numbers):
+        while free_beds_numbers[calculate_least_occupied_department(admission_day, free_beds_numbers)][
+            admission_day
+        ] == 0 and admission_day < len(free_beds_numbers[1]):
             admission_day += 1
 
         selected = random.choice(available_ids)
         max_queue_position += 1
 
+        least_occupied_department = calculate_least_occupied_department(admission_day, free_beds_numbers)
+
         days_of_stay = random.randint(1, 7)
+        medical_procedures = (
+            session.query(MedicalProcedure).filter(MedicalProcedure.department_id == least_occupied_department).all()
+        )
         medical_procedure = random.choice(medical_procedures)
-        if admission_day + days_of_stay >= len(free_beds_numbers):
-            exit_day = len(free_beds_numbers) - 1
+        if admission_day + days_of_stay >= len(free_beds_numbers[least_occupied_department]):
+            exit_day = len(free_beds_numbers[least_occupied_department]) - 1
         else:
             exit_day = admission_day + days_of_stay
 
         for i in range(admission_day, exit_day):
-            free_beds_numbers[i] -= 1
+            free_beds_numbers[least_occupied_department][i] -= 1
 
         session.add(
             PatientQueue(
@@ -224,8 +234,11 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
 
 def add_patient_assignment_to_bed(session):
     beds = session.query(Bed).all()
+    departments_beds = (
+        session.query(Department.department_id, func.count(Bed.bed_id)).join(Bed).group_by(Department.department_id).all()
+    )
     patient_ids = [p.patient_id for p in session.query(Patient).all()]
-    free_beds_numbers = [len(beds) for _ in range(20)]
+    free_beds_numbers = {department_id: [count for _ in range(20)] for department_id, count in departments_beds}
 
     doctors_patients_numbers = {}
     nurses_patients_numbers = {}
@@ -263,7 +276,7 @@ def add_patient_assignment_to_bed(session):
         nurses_number = random.randint(1, 3)
 
         for i in range(0, days_of_stay):
-            free_beds_numbers[i] -= 1
+            free_beds_numbers[bed.department_id][i] -= 1
         session.add(
             BedAssignment(
                 bed_id=bed.bed_id, patient_id=patient_id, procedure_id=medical_procedure_id, days_of_stay=days_of_stay

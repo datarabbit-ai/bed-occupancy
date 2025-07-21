@@ -561,7 +561,7 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
     st_autorefresh(interval=10000, limit=None)
 
 if bed_departments:
-    for department, df in bed_departments:
+    for department, df in bed_departments.items():
         main_tab.divider()
         main_tab.subheader(department)
         replacements_needed = 0

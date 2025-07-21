@@ -62,8 +62,8 @@ class DataForReplacement(BaseModel):
 
 
 class ListOfTables(BaseModel):
-    DepartmentAssignments: dict[str, BedAssignmentResponse]
-    AllBedAssignments: BedAssignmentResponse
+    DepartmentAssignments: dict[str, list[BedAssignmentResponse]]
+    AllBedAssignments: list[BedAssignmentResponse]
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
     Statistics: Statistics
