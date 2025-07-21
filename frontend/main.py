@@ -372,7 +372,6 @@ def agent_call(
         )
 
         transcript_tab.empty()
-        display_transcriptions()
 
 
 def display_transcriptions():
