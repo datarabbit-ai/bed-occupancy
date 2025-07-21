@@ -78,20 +78,22 @@ SessionLocal = sessionmaker(bind=engine)
 # ]
 
 
-common_medical_procedures = [
-    "Usunięcie migdałków podniebiennych",
-    "Operacja kręgosłupa lędźwiowego",
-    "Operacja zaćmy",
-    "Operacja przepukliny pachwinowej",
-    "Operacja żylaków kończyn dolnych",
-]
-
-departments = ["department_test"]
+common_medical_procedures = {
+    "Operacja zaćmy": "Okulistyka",
+    "Laserowa korekcja wzroku": "Okulistyka",
+    "Usunięcie migdałków podniebiennych": "Laryngologia",
+    "Septoplastyka": "Laryngologia",
+    "Operacja przepukliny pachwinowej": "Chirurgia",
+    "Wycięcie wyrostka robaczkowego": "Chirurgia",
+}
 
 
 def add_departments(session):
-    for department in departments:
-        session.add(Department(name=department))
+    departments_added = []
+    for department in common_medical_procedures.values():
+        if department not in departments_added:
+            session.add(Department(name=department))
+            departments_added.append(department)
 
 
 def add_personnel(session):
@@ -105,12 +107,9 @@ def add_personnel(session):
 
 
 def add_medical_procedures(session):
-    for procedure in common_medical_procedures:
-        session.add(
-            MedicalProcedure(
-                department_id=random.choice([d.department_id for d in session.query(Department).all()]), name=procedure
-            )
-        )
+    for procedure, department_name in common_medical_procedures.items():
+        department = session.query(Department).filter(Department.name == department_name).first()
+        session.add(MedicalProcedure(department_id=department.department_id, name=procedure))
     logger.info(f"Added {len(common_medical_procedures)} generated medical procedures to db")
 
 

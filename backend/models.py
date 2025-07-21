@@ -27,6 +27,7 @@ class PatientQueueResponse(BaseModel):
     admission_day: int
     days_of_stay: int
     medical_procedure: str
+    department: str
 
 
 class NoShow(BaseModel):
@@ -57,10 +58,12 @@ class Statistics(BaseModel):
 class DataForReplacement(BaseModel):
     DaysOfStay: Optional[list[int]]
     MedicalProcedures: Optional[list[str]]
+    Departments: Optional[list[str]]
 
 
 class ListOfTables(BaseModel):
-    BedAssignment: list[BedAssignmentResponse]
+    DepartmentAssignments: dict[str, BedAssignmentResponse]
+    AllBedAssignments: BedAssignmentResponse
     PatientQueue: list[PatientQueueResponse]
     NoShows: list[NoShow]
     Statistics: Statistics

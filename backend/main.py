@@ -295,6 +295,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
         days_of_stay_for_replacement: List[int] = []
         procedures_for_replacement: List[str] = []
+        departments_for_replacement: List[str] = []
 
         for iteration in range(day - 1):
             should_log = iteration == day - 2 and rollback_flag == 1
@@ -320,6 +321,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
             days_of_stay_for_replacement = []
             procedures_for_replacement = []
+            departments_for_replacement = []
 
             for i in range(min(len(queue), len(bed_ids))):
                 entry = queue[i]
@@ -330,6 +332,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
                     days_of_stay_for_replacement.append(entry.days_of_stay)
                     procedures_for_replacement.append(entry.medical_procedure.name)
+                    departments_for_replacement.append(entry.medical_procedure.department.name)
 
                     delete_patient_by_queue_id_from_queue(entry.queue_id)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
@@ -384,6 +387,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
             days_of_stay_for_replacement = days_of_stay_for_replacement[len(consent_dict[iteration + 2]) :]
             procedures_for_replacement = procedures_for_replacement[len(consent_dict[iteration + 2]) :]
+            departments_for_replacement = departments_for_replacement[len(consent_dict[iteration + 2]) :]
 
             occupancy_in_time["Date"].append(iteration + 2)
             occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
@@ -396,7 +400,8 @@ def get_tables_and_statistics() -> ListOfTables:
 
             no_shows_in_time["NoShowsNumber"].append(no_shows_number)
 
-        bed_assignments = []
+        all_bed_assignments = []
+        department_assignments = {}
         for bed in (
             session.query(Bed)
             .join(BedAssignment, Bed.bed_id == BedAssignment.bed_id, isouter=True)
@@ -422,18 +427,23 @@ def get_tables_and_statistics() -> ListOfTables:
 
             days_of_stay = ba.days_of_stay if ba else 0
 
-            bed_assignments.append(
-                {
-                    "bed_id": bed.bed_id,
-                    "patient_id": ba.patient_id if ba else 0,
-                    "patient_name": patient_name,
-                    "medical_procedure": medical_procedure,
-                    "pesel": pesel,
-                    "nationality": nationality,
-                    "days_of_stay": days_of_stay,
-                    "personnel": personnel_data,
-                }
-            )
+            assignment = {
+                "bed_id": bed.bed_id,
+                "patient_id": ba.patient_id if ba else 0,
+                "patient_name": patient_name,
+                "medical_procedure": medical_procedure,
+                "pesel": pesel,
+                "nationality": nationality,
+                "days_of_stay": days_of_stay,
+                "personnel": personnel_data,
+            }
+
+            all_bed_assignments.append(assignment)
+
+            if bed.department.name not in department_assignments:
+                department_assignments[bed.department.name] = []
+
+            department_assignments[bed.department.name].append(assignment)
 
         queue_data = []
         for entry in session.query(PatientQueue).order_by(PatientQueue.queue_id).all():
@@ -448,6 +458,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     "days_of_stay": entry.days_of_stay,
                     "admission_day": entry.admission_day,
                     "medical_procedure": entry.medical_procedure.name,
+                    "department": entry.medical_procedure.department.name,
                 }
             )
 
@@ -455,13 +466,15 @@ def get_tables_and_statistics() -> ListOfTables:
         session.close()
 
         return ListOfTables(
-            BedAssignment=bed_assignments,
+            DepartmentAssignments=department_assignments,
+            AllBedAssignments=all_bed_assignments,
             PatientQueue=queue_data,
             NoShows=[n.model_dump() for n in no_shows_list],
             Statistics=calculate_statistics(),
             ReplacementData={
                 "DaysOfStay": days_of_stay_for_replacement,
                 "MedicalProcedures": procedures_for_replacement,
+                "Departments": departments_for_replacement,
             },
         )
 

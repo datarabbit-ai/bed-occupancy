@@ -469,11 +469,16 @@ elif st.session_state.button_pressed:
 bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables_and_statistics()
 if tables:
-    bed_df = pd.DataFrame(tables["BedAssignment"])
+    bed_df = pd.DataFrame(tables["AllBedAssignments"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
     queue_df = pd.DataFrame(tables["PatientQueue"])
     replacement_days_of_stay = tables["ReplacementData"]["DaysOfStay"]
     replacement_medical_procedures = tables["ReplacementData"]["MedicalProcedures"]
+    replacement_departments = tables["ReplacementData"]["Departments"]
+    bed_departments = tables["DepartmentAssignments"]
+
+    for department in bed_departments:
+        bed_departments[department] = pd.DataFrame(bed_departments[department])
 
 
 replacement_index = st.session_state.replacement_start_index
@@ -555,8 +560,15 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
-if not bed_df.empty:
-    create_box_grid(bed_df, len(replacement_days_of_stay))
+if bed_departments:
+    for department, df in bed_departments:
+        main_tab.divider()
+        main_tab.subheader(department)
+        replacements_needed = 0
+        for replacement_department in replacement_departments:
+            if replacement_department == department:
+                replacements_needed += 1
+        create_box_grid(df, replacements_needed)
 else:
     main_tab.info(_("No bed assignments found."))
 
