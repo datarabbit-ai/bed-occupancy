@@ -87,6 +87,12 @@ msgstr "nie wyraził/a zgody na zmianę terminu"
 msgid "'s consent is unknown."
 msgstr " nie odpowiedział/a na pytanie."
 
+msgid "Day"
+msgstr "Dzień"
+
+msgid "Call with"
+msgstr "Rozmowa z"
+
 #: main.py:288
 msgid "Failed to fetch data from the server."
 msgstr "Nieudany odczyt danych z serwera"

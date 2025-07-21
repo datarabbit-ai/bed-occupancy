@@ -86,6 +86,12 @@ msgstr "did not agree to reschedule"
 msgid "'s consent is unknown."
 msgstr "'s consent is unknown."
 
+msgid "Day"
+msgstr "Dzień"
+
+msgid "Call with"
+msgstr "Rozmowa z"
+
 #: main.py:288
 msgid "Failed to fetch data from the server."
 msgstr "Failed to fetch data from the server."

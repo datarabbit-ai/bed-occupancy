@@ -376,7 +376,7 @@ def agent_call(
 
 def display_transcriptions():
     for transcript in st.session_state.transcriptions:
-        expander = transcript_tab.expander(f"{transcript['day']}: Call with {transcript['patient']}")
+        expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
         for message in transcript["transcript"]:
             msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
             msg.write(message["message"])
