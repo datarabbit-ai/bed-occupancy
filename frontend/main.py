@@ -31,7 +31,7 @@ _ = translate_page(st.session_state.interface_language)
 
 st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 
-main_tab, statistics_tab = st.tabs([_("Current state"), _("Data analysis")])
+main_tab, statistics_tab, transcript_tab = st.tabs([_("Current state"), _("Data analysis"), _("Transcriptions")])
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
@@ -50,6 +50,12 @@ if "button_pressed" not in st.session_state:
     st.session_state.button_pressed = False
 if "consent" not in st.session_state:
     st.session_state.consent = False
+if "replacement_start_index" not in st.session_state:
+    st.session_state.replacement_start_index = 0
+if "transcriptions" not in st.session_state:
+    st.session_state.transcriptions = []
+if len(st.session_state.transcriptions) == 0:
+    transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
 
 today = datetime.today().date()
 
@@ -170,10 +176,20 @@ def transform_patient_queue_data(df: pd.DataFrame):
     )
 
     transformed_df = df[
-        ["place_in_queue", "patient_id", "patient_name", "pesel", "nationality", "Admission Date", "days_of_stay"]
+        [
+            "place_in_queue",
+            "patient_id",
+            "patient_name",
+            "pesel",
+            "nationality",
+            "Admission Date",
+            "days_of_stay",
+            "medical_procedure",
+        ]
     ].copy()
 
     transformed_df["nationality"] = transformed_df["nationality"].apply(_)
+    transformed_df["medical_procedure"] = transformed_df["medical_procedure"].apply(_)
 
     return transformed_df
 
@@ -189,7 +205,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
     # Calculate number of boxes from DataFrame
     num_boxes = len(df)
     df["nationality"] = df["nationality"].apply(_)
-    df["sickness"] = df["sickness"].apply(_)
+    df["medical_procedure"] = df["medical_procedure"].apply(_)
 
     # Calculate number of rows needed
     num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
@@ -216,10 +232,11 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                         table_headers = [
                             _("Patient's number"),
                             _("Patient's name"),
-                            _("Sickness"),
+                            _("Medical procedure"),
                             _("Personal number"),
                             _("Nationality"),
                             _("Days left"),
+                            _("Doctor"),
                         ]
 
                     tooltip_info = "<table style='border-collapse: collapse;'>"
@@ -258,8 +275,8 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
 
 
 def handle_patient_rescheduling(
-    name: str, surname: str, gender: str, pesel: str, sickness: str, old_day: int, new_day: int, use_ua_agent: bool
-) -> bool:
+    name: str, surname: str, gender: str, pesel: str, medical_procedure: str, old_day: int, new_day: int, use_ua_agent: bool
+) -> dict:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
     with the patient and analyzing their consent.
@@ -268,22 +285,30 @@ def handle_patient_rescheduling(
     :param surname: The last name of the patient.
     :param gender: The gender of the patient.
     :param pesel: The PESEL number of the patient.
-    :param sickness: The sickness or condition of the patient.
+    :param medical_procedure: The medical procedure that the patient will undergo.
     :param old_day: The current day of the patient's visit.
     :param new_day: The suggested day for the new appointment.
-    :return: A boolean indicating whether the patient consented to the rescheduling.
+    :return: A dictionary containing keys: "consent", "verified", "called" and "transcript". \n
+        "consent" is a boolean indicating whether the patient consented to the rescheduling.
     """
 
     if st.session_state.phone_number is not None:
         conversation_id = call_patient(
-            name, surname, gender, pesel, sickness, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
+            name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
         )
-        return check_patient_consent_to_reschedule(conversation_id)
+        transcript = fetch_transcription(conversation_id)
+        return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
     else:
         return {"consent": None, "verified": None, "called": False}
 
 
-def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False) -> None:
+def agent_call(
+    queue_df: pd.DataFrame,
+    bed_df: pd.DataFrame,
+    searched_days_of_stay: int,
+    medical_procedure: str,
+    use_ua_agent: bool = False,
+) -> None:
     idx = st.session_state.current_patient_index
 
     if idx < 0:
@@ -301,7 +326,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         surname=surname,
         gender=response["gender"],
         pesel=pesel,
-        sickness=response["sickness"],
+        medical_procedure=queue_df["medical_procedure"][idx],
         old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
         new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
         use_ua_agent=use_ua_agent,
@@ -319,6 +344,7 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
         main_tab.success(f"{name} {surname} {_('agreed to reschedule')}.")
 
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.button_pressed = True
     elif call_results["verified"] is not True:
         main_tab.info(f"{name} {surname}{_("'s verification is unsuccessful")}.")
@@ -326,17 +352,47 @@ def agent_call(queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_st
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
         main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
-        st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df, bed_df)
+        st.session_state.current_patient_index = find_next_patient_to_call(
+            searched_days_of_stay, queue_df, bed_df, medical_procedure
+        )
         st.session_state.button_pressed = True
+        if st.session_state.current_patient_index == -1:
+            st.session_state.replacement_start_index += 1
+            st.session_state.pop("current_patient_index", None)
     else:
         main_tab.info(f"{name} {surname}{_("'s consent is unknown.")}.")
 
+    if "transcript" in call_results and len(call_results["transcript"]) > 0:
+        st.session_state.transcriptions.append(
+            {
+                "day": st.session_state.day_for_simulation,
+                "patient": f"{name} {surname}",
+                "transcript": call_results["transcript"],
+            }
+        )
+
+        transcript_tab.empty()
+
+
+def display_transcriptions():
+    for transcript in st.session_state.transcriptions:
+        expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
+        for message in transcript["transcript"]:
+            msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
+            msg.write(message["message"])
+
 
 def call_next_patient_in_queue(
-    queue_df: pd.DataFrame, bed_df: pd.DataFrame, searched_days_of_stay: int, use_ua_agent: bool = False
+    queue_df: pd.DataFrame,
+    bed_df: pd.DataFrame,
+    searched_days_of_stay: int,
+    medical_procedure: str,
+    use_ua_agent: bool = False,
 ) -> None:
-    st.session_state.current_patient_index = find_next_patient_to_call(searched_days_of_stay, queue_df, bed_df)
-    agent_call(queue_df, bed_df, searched_days_of_stay, use_ua_agent)
+    st.session_state.current_patient_index = find_next_patient_to_call(
+        searched_days_of_stay, queue_df, bed_df, medical_procedure
+    )
+    agent_call(queue_df, bed_df, searched_days_of_stay, medical_procedure, use_ua_agent)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -357,6 +413,7 @@ def update_day(delta: int) -> None:
         response = requests.get("http://backend:8000/update-day", params={"delta": delta})
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
@@ -379,12 +436,13 @@ def reset_day_for_simulation() -> None:
         response = requests.get("http://backend:8000/reset-simulation")
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
+        st.session_state.pop("replacement_start_index", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
-def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df: pd.DataFrame) -> int:
+def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df: pd.DataFrame, medical_procedure: str) -> int:
     def check_patient_admission_days(queue_df, patient_id, place_in_queue, days_of_stay) -> bool:
         conflicts_df = queue_df[
             (queue_df["place_in_queue"] != place_in_queue)
@@ -396,7 +454,7 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
                     inclusive="both",
                 )
             )
-        ]
+        ].copy()
 
         return conflicts_df.empty
 
@@ -413,6 +471,7 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
         & (queue_df["place_in_queue"] < st.session_state.current_patient_index + 1)
         & (~queue_df["patient_id"].isin(bed_df["patient_id"]))
         & (~queue_df["patient_id"].isin(conflicting_patients))
+        & (queue_df["medical_procedure"] == medical_procedure)
     ]
 
     if queue_df.empty:
@@ -435,14 +494,25 @@ if tables:
     bed_df = pd.DataFrame(tables["BedAssignment"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
     queue_df = pd.DataFrame(tables["PatientQueue"])
+    replacement_days_of_stay = tables["ReplacementData"]["DaysOfStay"]
+    replacement_medical_procedures = tables["ReplacementData"]["MedicalProcedures"]
 
 
+replacement_index = st.session_state.replacement_start_index
 if "current_patient_index" not in st.session_state:
-    if tables["DaysOfStayForReplacement"]:
-        st.session_state.current_patient_index = len(queue_df)
-        st.session_state.current_patient_index = find_next_patient_to_call(
-            tables["DaysOfStayForReplacement"][0], queue_df, bed_df
-        )
+    if replacement_days_of_stay and replacement_medical_procedures and not queue_df.empty:
+        while replacement_index < len(replacement_days_of_stay):
+            st.session_state.current_patient_index = len(queue_df)
+            st.session_state.current_patient_index = find_next_patient_to_call(
+                replacement_days_of_stay[replacement_index],
+                queue_df,
+                bed_df,
+                replacement_medical_procedures[replacement_index],
+            )
+            if st.session_state.current_patient_index == -1:
+                replacement_index += 1
+            else:
+                break
     else:
         st.session_state.current_patient_index = len(queue_df) - 1
 
@@ -450,7 +520,9 @@ main_tab.header(
     f"{_('Day')} {st.session_state.day_for_simulation} - {calculate_simulation_date(st.session_state.day_for_simulation).strftime('%Y-%m-%d')}"
 )
 
-if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
+display_transcriptions()
+
+if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
     st.session_state.auto_day_change = False
 
     if st.session_state.voice_language == _("nationality"):
@@ -463,15 +535,30 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_pati
     if st.session_state.consent is not None:
         st.sidebar.button(
             f"{_('Call next patient in queue')} [{label}] 📞",
-            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
+            on_click=lambda: agent_call(
+                queue_df,
+                bed_df,
+                replacement_days_of_stay[replacement_index],
+                replacement_medical_procedures[replacement_index],
+                use_ua_agent,
+            ),
         )
     else:
         st.sidebar.button(
             f"{_('Call patient again')} [{label}] 🔁",
-            on_click=lambda: agent_call(queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_ua_agent),
+            on_click=lambda: agent_call(
+                queue_df,
+                bed_df,
+                replacement_days_of_stay[replacement_index],
+                replacement_medical_procedures[replacement_index],
+                use_ua_agent,
+            ),
         )
 
-        next_patient = find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df)
+        next_patient = find_next_patient_to_call(
+            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
+        )
+
         if next_patient >= 0:
             if st.session_state.voice_language == _("nationality"):
                 next_label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
@@ -482,14 +569,18 @@ if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_pati
             st.sidebar.button(
                 f"{_('Call next patient in queue')} [{next_label}] 📞",
                 on_click=lambda: call_next_patient_in_queue(
-                    queue_df, bed_df, tables["DaysOfStayForReplacement"][0], use_next_ua_agent
+                    queue_df,
+                    bed_df,
+                    replacement_days_of_stay[replacement_index],
+                    replacement_medical_procedures[replacement_index],
+                    use_next_ua_agent,
                 ),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
 if not bed_df.empty:
-    create_box_grid(bed_df, len(tables["DaysOfStayForReplacement"]))
+    create_box_grid(bed_df, len(replacement_days_of_stay))
 else:
     main_tab.info(_("No bed assignments found."))
 
@@ -503,7 +594,7 @@ if not queue_df.empty:
         else:
             if row.name == st.session_state.current_patient_index:
                 return ["background-color: #24C3FF"] * len(row)
-            elif row.name == find_next_patient_to_call(tables["DaysOfStayForReplacement"][0], queue_df, bed_df):
+            elif row.name == st.session_state.next_row_to_be_highlighted:
                 return ["background-color: #FF4248"] * len(row)
 
         return [""] * len(row)
@@ -517,9 +608,13 @@ if not queue_df.empty:
         _("Nationality"),
         _("Admission date"),
         _("Days of stay"),
+        _("Medical procedure"),
     ]
 
-    if len(tables["DaysOfStayForReplacement"]) > 0 and st.session_state.current_patient_index > 0:
+    if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
+        st.session_state.next_row_to_be_highlighted = find_next_patient_to_call(
+            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
+        )
         styled_df = styled_df.style.apply(highlight_current_row, axis=1)
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)
     else:
