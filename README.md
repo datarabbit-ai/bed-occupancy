@@ -87,7 +87,7 @@ Once you have docker installed, follow these guidelines:
     There are two versions of this command: `docker-compose up` and `docker compose up`. The command `docker compose up` forces docker to use `docker_compose_v2` which is just better, more stable and more reliable.
    1. By running the above command, docker should:
      - launch faker, which will allow you to create a database and/or fill it with data
-     - will launch the backend and frontend of the application, allowing the browser to open the application, view data from the database and simulate the other day's hospital occupancy rates
+     - launch the backend and frontend of the application, allowing the browser to open the application, view data from the database and simulate the other day's hospital occupancy rates
    2. The whole process could take **even a few minutes**, especially when running for the first time
 4. If you see in docker logs that frontend container is starting to run, you can [visit the webapp in browser](http://localhost:8501)
 
