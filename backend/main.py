@@ -306,9 +306,20 @@ def get_tables_and_statistics() -> ListOfTables:
             delete_patients_to_be_released()
 
             assigned_beds = session.query(BedAssignment.bed_id).scalar_subquery()
-            bed_ids = [b.bed_id for b in session.query(Bed).filter(~Bed.bed_id.in_(assigned_beds)).all()]
+            beds = (
+                session.query(Bed.department_id, Bed.bed_id)
+                .filter(~Bed.bed_id.in_(assigned_beds))
+                .order_by(Bed.department_id, Bed.bed_id)
+                .all()
+            )
 
-            occupied_beds_number = beds_number - len(bed_ids)
+            bed_map = {}
+            for department_id, bed_id in beds:
+                if department_id not in bed_map:
+                    bed_map[department_id] = []
+                bed_map[department_id].append(bed_id)
+
+            occupied_beds_number = beds_number - len(beds)
             no_shows_number = 0
 
             queue = (
@@ -323,7 +334,7 @@ def get_tables_and_statistics() -> ListOfTables:
             procedures_for_replacement = []
             departments_for_replacement = []
 
-            for i in range(min(len(queue), len(bed_ids))):
+            for i in range(min(len(queue), len(beds))):
                 entry = queue[i]
                 patient_id = entry.patient_id
                 will_come = rnd.choice([True] * 4 + [False])
@@ -349,7 +360,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     stay_lengths[iteration + 2].append(entry.days_of_stay)
 
                     assign_bed_to_patient(
-                        bed_ids[bed_iterator],
+                        bed_map[entry.medical_procedure.department_id][0],
                         patient_id,
                         entry.procedure_id,
                         entry.days_of_stay,
@@ -357,6 +368,7 @@ def get_tables_and_statistics() -> ListOfTables:
                         should_log,
                     )
                     delete_patient_by_queue_id_from_queue(entry.queue_id)
+                    bed_map[entry.medical_procedure.department_id].pop(0)
                     occupied_beds_number += 1
                     bed_iterator += 1
 
@@ -374,7 +386,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     stay_lengths[iteration + 2].append(queue_entry.days_of_stay)
 
                     assign_bed_to_patient(
-                        bed_ids[bed_iterator],
+                        bed_map[queue_entry.medical_procedure.department_id][0],
                         patient.patient_id,
                         queue_entry.procedure_id,
                         queue_entry.days_of_stay,
@@ -382,6 +394,7 @@ def get_tables_and_statistics() -> ListOfTables:
                         should_log,
                     )
                     delete_patient_by_queue_id_from_queue(queue_id)
+                    bed_map[queue_entry.medical_procedure.department_id].pop(0)
                     occupied_beds_number += 1
                     bed_iterator += 1
 
@@ -393,8 +406,8 @@ def get_tables_and_statistics() -> ListOfTables:
             occupancy_in_time["Occupancy"].append(occupied_beds_number / beds_number * 100)
 
             no_shows_in_time["Date"].append(iteration + 2)
-            if len(bed_ids) > 0:
-                no_shows_in_time["NoShows"].append(no_shows_number / len(bed_ids) * 100)
+            if len(beds) > 0:
+                no_shows_in_time["NoShows"].append(no_shows_number / len(beds) * 100)
             else:
                 no_shows_in_time["NoShows"].append("No incoming patients")
 

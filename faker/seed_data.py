@@ -158,8 +158,10 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
             break
         while free_beds_numbers[calculate_least_occupied_department(admission_day, free_beds_numbers)][
             admission_day
-        ] == 0 and admission_day < len(free_beds_numbers[1]):
+        ] == 0 and admission_day + 1 < len(free_beds_numbers[1]):
             admission_day += 1
+
+        logger.info(free_beds_numbers)
 
         selected = random.choice(available_ids)
         max_queue_position += 1
@@ -172,7 +174,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
         )
         medical_procedure = random.choice(medical_procedures)
         if admission_day + days_of_stay >= len(free_beds_numbers[least_occupied_department]):
-            exit_day = len(free_beds_numbers[least_occupied_department]) - 1
+            exit_day = len(free_beds_numbers[least_occupied_department])
         else:
             exit_day = admission_day + days_of_stay
 
@@ -225,7 +227,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
 
         available_ids.remove(selected)
         cooldown_ids.append(selected)
-        if len(cooldown_ids) >= 60:
+        if len(cooldown_ids) >= 60 * departments_count:
             available_ids.append(cooldown_ids[0])
             cooldown_ids.pop(0)
 
