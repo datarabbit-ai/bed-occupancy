@@ -338,6 +338,7 @@ def agent_call(
         )
     except Exception:
         main_tab.error(_("Failed to initiate the call. Please try again later."), icon="⚠️")
+        return
 
     consent = call_results["consent"]
     st.session_state.consent = consent
