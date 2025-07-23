@@ -77,6 +77,7 @@ Once you have docker installed, follow these guidelines:
     AGENT_PHONE_NUMBER_ID=phone_number_id_from_elevenlabs
     TWILIO_SID=your_twilio_sid
     TWILIO_AUTH_TOKEN=your_twilio_auth_token
+    OPENAI_API_KEY=your_openai_api_key
     ```
 
 3. Make sure you are in the project's root folder and run the command:
