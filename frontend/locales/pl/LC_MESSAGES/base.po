@@ -87,9 +87,6 @@ msgstr "nie wyraził/a zgody na zmianę terminu"
 msgid "'s consent is unknown."
 msgstr " nie odpowiedział/a na pytanie."
 
-msgid "Day"
-msgstr "Dzień"
-
 msgid "Call with"
 msgstr "Rozmowa z"
 
@@ -100,6 +97,9 @@ msgstr "Nieudany odczyt danych z serwera"
 #: main.py:291 main.py:301 main.py:322
 msgid "Failed to connect to the server"
 msgstr "Nieudane połączenie z serwerem"
+
+msgid "Failed to initiate the call. Please try again later."
+msgstr "Nie udało się wykonać połączenia. Spróbuj ponownie później."
 
 #: main.py:337
 msgid "Day"

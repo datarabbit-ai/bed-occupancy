@@ -9,6 +9,7 @@ import streamlit as st
 from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
+from translate import get_openai_client, translate
 
 if "interface_language" not in st.session_state:
     st.session_state.interface_language = "en"
@@ -56,6 +57,8 @@ if "transcriptions" not in st.session_state:
     st.session_state.transcriptions = []
 if len(st.session_state.transcriptions) == 0:
     transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
+if "openai_client" not in st.session_state:
+    st.session_state.openai_client = get_openai_client()
 
 today = datetime.today().date()
 
@@ -296,6 +299,8 @@ def handle_patient_rescheduling(
         conversation_id = call_patient(
             name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
         )
+        if conversation_id is None:
+            raise Exception("Failed to obtain conversation id")
         transcript = fetch_transcription(conversation_id)
         return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
     else:
@@ -320,17 +325,20 @@ def agent_call(
     pesel = queue_df["pesel"][idx][-3:]
 
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
-
-    call_results = handle_patient_rescheduling(
-        name=name,
-        surname=surname,
-        gender=response["gender"],
-        pesel=pesel,
-        medical_procedure=queue_df["medical_procedure"][idx],
-        old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
-        new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
-        use_ua_agent=use_ua_agent,
-    )
+    try:
+        call_results = handle_patient_rescheduling(
+            name=name,
+            surname=surname,
+            gender=response["gender"],
+            pesel=pesel,
+            medical_procedure=queue_df["medical_procedure"][idx],
+            old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
+            new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
+            use_ua_agent=use_ua_agent,
+        )
+    except Exception:
+        main_tab.error(_("Failed to initiate the call. Please try again later."), icon="⚠️")
+        return
 
     consent = call_results["consent"]
     st.session_state.consent = consent
@@ -377,7 +385,12 @@ def agent_call(
 def display_transcriptions():
     for transcript in st.session_state.transcriptions:
         expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
-        for message in transcript["transcript"]:
+
+        translated_transcript = translate(
+            st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
+        )
+
+        for message in translated_transcript["transcript"]:
             msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
             msg.write(message["message"])
 
