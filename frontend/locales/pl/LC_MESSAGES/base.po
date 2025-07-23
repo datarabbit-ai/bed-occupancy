@@ -98,6 +98,9 @@ msgstr "Nieudany odczyt danych z serwera"
 msgid "Failed to connect to the server"
 msgstr "Nieudane połączenie z serwerem"
 
+msgid "Failed to initiate the call. Please try again later."
+msgstr "Nie udało się wykonać połączenia. Spróbuj ponownie później."
+
 #: main.py:337
 msgid "Day"
 msgstr "Dzień"
