@@ -299,6 +299,8 @@ def handle_patient_rescheduling(
         conversation_id = call_patient(
             name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
         )
+        if conversation_id is None:
+            raise Exception("Failed to obtain conversation id")
         transcript = fetch_transcription(conversation_id)
         return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
     else:
@@ -323,17 +325,19 @@ def agent_call(
     pesel = queue_df["pesel"][idx][-3:]
 
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
-
-    call_results = handle_patient_rescheduling(
-        name=name,
-        surname=surname,
-        gender=response["gender"],
-        pesel=pesel,
-        medical_procedure=queue_df["medical_procedure"][idx],
-        old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
-        new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
-        use_ua_agent=use_ua_agent,
-    )
+    try:
+        call_results = handle_patient_rescheduling(
+            name=name,
+            surname=surname,
+            gender=response["gender"],
+            pesel=pesel,
+            medical_procedure=queue_df["medical_procedure"][idx],
+            old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
+            new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
+            use_ua_agent=use_ua_agent,
+        )
+    except Exception:
+        main_tab.error(_("Failed to initiate the call. Please try again later."), icon="⚠️")
 
     consent = call_results["consent"]
     st.session_state.consent = consent
