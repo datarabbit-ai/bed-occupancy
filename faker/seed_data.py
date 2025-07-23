@@ -78,26 +78,24 @@ SessionLocal = sessionmaker(bind=engine)
 # ]
 
 
-common_medical_procedures = {
-    "Operacja zaćmy": "Okulistyka",
-    "Laserowa korekcja wzroku": "Okulistyka",
-    "Usunięcie migdałków podniebiennych": "Laryngologia",
-    "Septoplastyka": "Laryngologia",
-    "Operacja przepukliny pachwinowej": "Chirurgia",
-    "Wycięcie wyrostka robaczkowego": "Chirurgia",
-}
+common_medical_procedures = [
+    ("Operacja zaćmy", "Okulistyka", 1, 2, 1, 1),
+    ("Laserowa korekcja wzroku", "Okulistyka", 1, 1, 1, 1),
+    ("Usunięcie migdałków podniebiennych", "Laryngologia", 2, 4, 1, 2),
+    ("Septoplastyka", "Laryngologia", 2, 4, 1, 2),
+    ("Operacja przepukliny pachwinowej", "Chirurgia", 2, 6, 2, 2),
+    ("Wycięcie wyrostka robaczkowego", "Chirurgia", 3, 7, 2, 3),
+]
 
 
 def add_departments(session):
-    departments_added = []
-    for department in common_medical_procedures.values():
-        if department not in departments_added:
-            session.add(Department(name=department))
-            departments_added.append(department)
+    departments = list(set(procedure[1] for procedure in common_medical_procedures))
+    for department in departments:
+        session.add(Department(name=department))
 
 
 def add_personnel(session):
-    new_personnel_number = 13 * session.query(func.count(Department.department_id)).scalar()
+    new_personnel_number = 14 * session.query(func.count(Department.department_id)).scalar()
     for _ in range(new_personnel_number):
         personnel_member = generate_fake_personnel_data(
             random.choice([d.department_id for d in session.query(Department).all()])
@@ -107,9 +105,18 @@ def add_personnel(session):
 
 
 def add_medical_procedures(session):
-    for procedure, department_name in common_medical_procedures.items():
-        department = session.query(Department).filter(Department.name == department_name).first()
-        session.add(MedicalProcedure(department_id=department.department_id, name=procedure))
+    for procedure in common_medical_procedures:
+        department = session.query(Department).filter(Department.name == procedure[1]).first()
+        session.add(
+            MedicalProcedure(
+                department_id=department.department_id,
+                name=procedure[0],
+                min_days_of_stay=procedure[2],
+                max_days_of_stay=procedure[3],
+                doctors_number=procedure[4],
+                nurses_number=procedure[5],
+            )
+        )
     logger.info(f"Added {len(common_medical_procedures)} generated medical procedures to db")
 
 
@@ -124,10 +131,13 @@ def add_patients(session):
 
 def add_beds(session):
     department_ids = [department.department_id for department in session.query(Department).all()]
-    new_beds_number = random.randint(15 * len(department_ids), 20 * len(department_ids))
-    beds = [Bed(department_id=random.choice(department_ids)) for _ in range(new_beds_number)]
-    session.add_all(beds)
-    logger.info(f"Added {new_beds_number} generated beds to db")
+    all_beds_number = 0
+    for department_id in department_ids:
+        new_beds_number = random.randint(15, 20)
+        beds = [Bed(department_id=department_id) for _ in range(new_beds_number)]
+        session.add_all(beds)
+        all_beds_number += new_beds_number
+    logger.info(f"Added {all_beds_number} generated beds to db")
 
 
 def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, nurses_patients_numbers):
@@ -142,7 +152,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
     if not all_patient_ids:
         return
 
-    new_patients_in_queue_number = random.randint(62 * departments_count, 100 * departments_count)
+    new_patients_in_queue_number = random.randint(90 * departments_count, 100 * departments_count)
     max_queue_position = session.query(func.max(PatientQueue.queue_id)).scalar() or 0
 
     available_ids = list(set(all_patient_ids) - set(cooldown_ids))
@@ -161,18 +171,18 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
         ] == 0 and admission_day + 1 < len(free_beds_numbers[1]):
             admission_day += 1
 
-        logger.info(free_beds_numbers)
-
         selected = random.choice(available_ids)
         max_queue_position += 1
 
         least_occupied_department = calculate_least_occupied_department(admission_day, free_beds_numbers)
 
-        days_of_stay = random.randint(1, 7)
         medical_procedures = (
             session.query(MedicalProcedure).filter(MedicalProcedure.department_id == least_occupied_department).all()
         )
         medical_procedure = random.choice(medical_procedures)
+
+        days_of_stay = random.randint(medical_procedure.min_days_of_stay, medical_procedure.max_days_of_stay)
+
         if admission_day + days_of_stay >= len(free_beds_numbers[least_occupied_department]):
             exit_day = len(free_beds_numbers[least_occupied_department])
         else:
@@ -192,8 +202,8 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
         )
         queue_lenth += 1
 
-        doctors_number = random.randint(1, 2)
-        nurses_number = random.randint(1, 3)
+        doctors_number = medical_procedure.doctors_number
+        nurses_number = medical_procedure.nurses_number
 
         for _ in range(doctors_number):
             min_doctors_patients = min(
@@ -267,21 +277,22 @@ def add_patient_assignment_to_bed(session):
         if not patient_ids:
             break
         patient_id = random.choice(patient_ids)
-        medical_procedure_ids = [
-            procedure.procedure_id
-            for procedure in session.query(MedicalProcedure).filter(MedicalProcedure.department_id == bed.department_id).all()
-        ]
-        medical_procedure_id = random.choice(medical_procedure_ids)
-        days_of_stay = random.randint(1, 7)
+        medical_procedures = session.query(MedicalProcedure).filter(MedicalProcedure.department_id == bed.department_id).all()
 
-        doctors_number = random.randint(1, 2)
-        nurses_number = random.randint(1, 3)
+        medical_procedure = random.choice(medical_procedures)
+        days_of_stay = random.randint(medical_procedure.min_days_of_stay, medical_procedure.max_days_of_stay)
+
+        doctors_number = medical_procedure.doctors_number
+        nurses_number = medical_procedure.nurses_number
 
         for i in range(0, days_of_stay):
             free_beds_numbers[bed.department_id][i] -= 1
         session.add(
             BedAssignment(
-                bed_id=bed.bed_id, patient_id=patient_id, procedure_id=medical_procedure_id, days_of_stay=days_of_stay
+                bed_id=bed.bed_id,
+                patient_id=patient_id,
+                procedure_id=medical_procedure.procedure_id,
+                days_of_stay=days_of_stay,
             )
         )
 
