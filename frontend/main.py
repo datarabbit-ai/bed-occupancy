@@ -9,6 +9,7 @@ import streamlit as st
 from agent import *
 from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
+from translate import get_openai_client, translate
 
 if "interface_language" not in st.session_state:
     st.session_state.interface_language = "en"
@@ -56,6 +57,8 @@ if "transcriptions" not in st.session_state:
     st.session_state.transcriptions = []
 if len(st.session_state.transcriptions) == 0:
     transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
+if "openai_client" not in st.session_state:
+    st.session_state.openai_client = get_openai_client()
 
 today = datetime.today().date()
 
@@ -377,7 +380,12 @@ def agent_call(
 def display_transcriptions():
     for transcript in st.session_state.transcriptions:
         expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
-        for message in transcript["transcript"]:
+
+        translated_transcript = translate(
+            st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
+        )
+
+        for message in translated_transcript:
             msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
             msg.write(message["message"])
 
