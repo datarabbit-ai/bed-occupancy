@@ -152,13 +152,14 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
     if not all_patient_ids:
         return
 
-    new_patients_in_queue_number = random.randint(90 * departments_count, 100 * departments_count)
+    new_patients_in_queue_number = random.randint(124 * departments_count, 134 * departments_count)
     max_queue_position = session.query(func.max(PatientQueue.queue_id)).scalar() or 0
 
     available_ids = list(set(all_patient_ids) - set(cooldown_ids))
     queue_lenth = 0
 
     admission_day = 0
+    logger.info(new_patients_in_queue_number)
 
     for _ in range(new_patients_in_queue_number):
         if not available_ids:
@@ -166,10 +167,13 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
 
         if admission_day >= len(free_beds_numbers[1]):
             break
-        while free_beds_numbers[calculate_least_occupied_department(admission_day, free_beds_numbers)][
-            admission_day
-        ] == 0 and admission_day + 1 < len(free_beds_numbers[1]):
-            admission_day += 1
+
+        while free_beds_numbers[calculate_least_occupied_department(admission_day, free_beds_numbers)][admission_day] == 0:
+            if admission_day + 1 < len(free_beds_numbers[1]):
+                admission_day += 1
+            else:
+                logger.info(f"Added {queue_lenth} patients to queue in db")
+                return
 
         selected = random.choice(available_ids)
         max_queue_position += 1

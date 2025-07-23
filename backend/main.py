@@ -337,7 +337,7 @@ def get_tables_and_statistics() -> ListOfTables:
             for i in range(min(len(queue), len(beds))):
                 entry = queue[i]
                 patient_id = entry.patient_id
-                will_come = rnd.choice([True] * 4 + [False])
+                will_come = rnd.choice([True] * 10 + [False])
                 if not will_come:
                     no_shows_number += 1
 
