@@ -385,7 +385,7 @@ def display_transcriptions():
             st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
         )
 
-        for message in translated_transcript:
+        for message in translated_transcript["transcript"]:
             msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
             msg.write(message["message"])
 

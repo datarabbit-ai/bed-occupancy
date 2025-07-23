@@ -87,9 +87,6 @@ msgstr "nie wyraził/a zgody na zmianę terminu"
 msgid "'s consent is unknown."
 msgstr " nie odpowiedział/a na pytanie."
 
-msgid "Day"
-msgstr "Dzień"
-
 msgid "Call with"
 msgstr "Rozmowa z"
 
