@@ -62,27 +62,25 @@ def translate(client: OpenAI, transcript: dict, lang: str) -> dict:
         raise Exception(f"Failed to decode JSON from OpenAI response: {res}") from e
 
 
-# client = get_openai_client()
-# mock_transcript = {
-#     "transcript": [
-#         {
-#             "role": "agent",
-#             "message": "Dzień dobry! Z tej strony asystent pacjenta ze Szpitala przy ulicy Szpitalnej w Poznaniu. Chciałbym zaproponować przełożenie wizyty na wcześniejszy termin. Czy mogę prosić o podanie imienia i nazwiska w celu weryfikacji?"
-#         },
-#         {
-#             "role": "user",
-#             "message": "Natan Dynia"
-#         },
-#         {
-#             "role": "agent",
-#             "message": "Dziękuję, panie Natanie. Aby potwierdzić tożsamość, proszę o podanie trzech ostatnich cyfr numeru PESEL."
-#         },
-#         {
-#             "role": "user",
-#             "message": "953" # jak tu będzie int, to nie przetłumaczy
-#         }
-#     ]
-# }
-# response = translate(client, mock_transcript, "en")
-# print(type(response))
-# print(response)
+def test():
+    client = get_openai_client()
+    mock_transcript = {
+        "transcript": [
+            {
+                "role": "agent",
+                "message": "Dzień dobry! Z tej strony asystent pacjenta ze Szpitala przy ulicy Szpitalnej w Poznaniu. Chciałbym zaproponować przełożenie wizyty na wcześniejszy termin. Czy mogę prosić o podanie imienia i nazwiska w celu weryfikacji?",
+            },
+            {"role": "user", "message": "Natan Dynia"},
+            {
+                "role": "agent",
+                "message": "Dziękuję, panie Natanie. Aby potwierdzić tożsamość, proszę o podanie trzech ostatnich cyfr numeru PESEL.",
+            },
+            {
+                "role": "user",
+                "message": "953",  # jak tu będzie int, to nie przetłumaczy
+            },
+        ]
+    }
+    response = translate(client, mock_transcript, "en")
+    print(type(response))
+    print(response)
