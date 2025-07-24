@@ -37,10 +37,9 @@ def translate(client: OpenAI, transcript: dict, lang: str) -> dict:
         EasyInputMessageParam(
             role="system",
             content=f"""You are a professional translator, your role is to translate a given transcript of a voice call between AI agent and human to the language: {lang}. \n
-                        Only return the translated transcript in the JSON format, nothing else. \n """
-            + 'The JSON format should look like this: {"transcript":[{"role":"<role>", "message":"<translated_message>"}, {...}]} \n'
-            + """Roles should not be translated! Just copy them from the source.
-                        Translate only the strings inside of the "message" attributes.
+                        Only return the translated transcript in the JSON format, nothing else. \n
+                        Roles should not be translated! Just copy them from the source. \n
+                        Translate only the strings inside of the "message" attributes. \n
                         Do not translate neither proper nouns nor proper names""",
         ),
         EasyInputMessageParam(role="user", content=json.dumps(transcript)),
@@ -52,9 +51,35 @@ def translate(client: OpenAI, transcript: dict, lang: str) -> dict:
         temperature=0.3,
         text=ResponseTextConfigParam(
             format=ResponseFormatTextJSONSchemaConfigParam(
-                name="translated messages", type="json_schema", schema=model_schema, strict=True
+                name="translated_messages", type="json_schema", schema=model_schema, strict=True
             )
         ),
     )
-    res = response.choices[0].message.content.strip()
+    res = response.output_text
     return json.loads(res)
+
+
+# client = get_openai_client()
+# mock_transcript = {
+#     "transcript": [
+#         {
+#             "role": "agent",
+#             "message": "Dzień dobry! Z tej strony asystent pacjenta ze Szpitala przy ulicy Szpitalnej w Poznaniu. Chciałbym zaproponować przełożenie wizyty na wcześniejszy termin. Czy mogę prosić o podanie imienia i nazwiska w celu weryfikacji?"
+#         },
+#         {
+#             "role": "user",
+#             "message": "Natan Dynia"
+#         },
+#         {
+#             "role": "agent",
+#             "message": "Dziękuję, panie Natanie. Aby potwierdzić tożsamość, proszę o podanie trzech ostatnich cyfr numeru PESEL."
+#         },
+#         {
+#             "role": "user",
+#             "message": "953" # jak tu będzie int, to nie przetłumaczy
+#         }
+#     ]
+# }
+# response = translate(client, mock_transcript, "en")
+# print(type(response))
+# print(response)
