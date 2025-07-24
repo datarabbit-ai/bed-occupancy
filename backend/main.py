@@ -98,8 +98,6 @@ def get_tables_and_statistics() -> ListOfTables:
     stay_lengths = {}
 
     def decrement_days_of_stay():
-        # for ba in session.query(BedAssignment).all():
-        #     ba.days_of_stay -= 1
         session.query(BedAssignment).update({BedAssignment.days_of_stay: BedAssignment.days_of_stay - 1})
 
     def print_patients_to_be_released(log: bool):
@@ -115,7 +113,6 @@ def get_tables_and_statistics() -> ListOfTables:
             )
 
     def delete_patients_to_be_released():
-        # session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
         session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session=False)
 
     def assign_bed_to_patient(bed_id: int, patient_id: int, procedure_id: int, days: int, personnel: list, log: bool):
@@ -141,9 +138,6 @@ def get_tables_and_statistics() -> ListOfTables:
                 session.delete(assignment)
             session.delete(entry)
 
-            # queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
-            # for i, entry in enumerate(queue):
-            #     entry.queue_id = i + 1
             session.query(PatientQueue).update({PatientQueue.queue_id: PatientQueue.queue_id - 1})
 
     def get_patient_name_by_id(patient_id: int) -> str:
