@@ -247,5 +247,242 @@ msgstr "Więcej ustawień"
 msgid "Phone number to call"
 msgstr "Numer telefonu, na który zostaną wykonane połączenia"
 
-msgid "Doctor"
-msgstr "Lekarz"
+msgid "Personnel"
+msgstr "Personel"
+
+msgid "nurse"
+msgstr "pielęgniarka"
+
+msgid "doctor"
+msgstr "lekarz"
+
+msgid "ENT"
+msgstr "Laryngologia"
+
+msgid "Ophthalmology"
+msgstr "Okulistyka"
+
+msgid "Surgery"
+msgstr "Chirurgia"
+
+msgid "Cardiology"
+msgstr "Kardiologia"
+
+msgid "Neurology"
+msgstr "Neurologia"
+
+msgid "Radiology"
+msgstr "Radiologia"
+
+msgid "Gynecology"
+msgstr "Ginekologia"
+
+msgid "sleep apnea monitoring"
+msgstr "monitorowanie bezdechu sennego"
+
+msgid "hearing test battery"
+msgstr "bateria testów słuchu"
+
+msgid "tympanometry"
+msgstr "tympanometria"
+
+msgid "laryngoscopy"
+msgstr "laryngoskopia"
+
+msgid "nasal endoscopy"
+msgstr "endoskopia nosa"
+
+msgid "allergy skin testing"
+msgstr "testy skórne na alergie"
+
+msgid "sinus CT scan"
+msgstr "tomografia zatok"
+
+msgid "vestibular function test"
+msgstr "badanie funkcji przedsionkowej"
+
+msgid "rhinomanometry"
+msgstr "rhinomanometria"
+
+msgid "OCT scan"
+msgstr "OCT (optyczna koherentna tomografia)"
+
+msgid "fundus photography"
+msgstr "fotografia dna oka"
+
+msgid "corneal topography"
+msgstr "topografia rogówki"
+
+msgid "intraocular pressure check"
+msgstr "pomiar ciśnienia wewnątrzgałkowego"
+
+msgid "pupil dilation exam"
+msgstr "badanie po rozszerzeniu źrenic"
+
+msgid "fluorescein angiography"
+msgstr "angiografia fluoresceinowa"
+
+msgid "A-scan biometry"
+msgstr "biometria A-scan"
+
+msgid "pachymetry"
+msgstr "pachymetria"
+
+msgid "tear film assessment"
+msgstr "ocena filmu łzowego"
+
+msgid "retinal imaging"
+msgstr "obrazowanie siatkówki"
+
+msgid "electroretinography"
+msgstr "elektroretinografia"
+
+msgid "cardiac stress test"
+msgstr "test wysiłkowy serca"
+
+msgid "echocardiogram"
+msgstr "echokardiogram"
+
+msgid "EKG monitoring"
+msgstr "monitorowanie EKG"
+
+msgid "blood work panel"
+msgstr "panel badań krwi"
+
+msgid "abdominal ultrasound"
+msgstr "USG jamy brzusznej"
+
+msgid "wound assessment"
+msgstr "ocena rany"
+
+msgid "nutritional consultation"
+msgstr "konsultacja dietetyczna"
+
+msgid "anesthesia consultation"
+msgstr "konsultacja anestezjologiczna"
+
+msgid "holter monitoring"
+msgstr "monitorowanie Holtera"
+
+msgid "event monitor setup"
+msgstr "instalacja monitora zdarzeń"
+
+msgid "cardiac catheterization prep"
+msgstr "przygotowanie do cewnikowania serca"
+
+msgid "stress echocardiogram"
+msgstr "echokardiogram wysiłkowy"
+
+msgid "cardiac MRI"
+msgstr "rezonans serca"
+
+msgid "coronary angiography"
+msgstr "angiografia wieńcowa"
+
+msgid "heart rhythm analysis"
+msgstr "analiza rytmu serca"
+
+msgid "blood pressure monitoring"
+msgstr "monitorowanie ciśnienia krwi"
+
+msgid "lipid profile testing"
+msgstr "profil lipidowy"
+
+msgid "cardiac enzyme testing"
+msgstr "badanie enzymów sercowych"
+
+msgid "exercise tolerance test"
+msgstr "test tolerancji wysiłku"
+
+msgid "EEG monitoring"
+msgstr "monitorowanie EEG"
+
+msgid "nerve conduction study"
+msgstr "badanie przewodnictwa nerwowego"
+
+msgid "EMG testing"
+msgstr "badanie EMG"
+
+msgid "brain MRI"
+msgstr "rezonans mózgu"
+
+msgid "lumbar puncture"
+msgstr "punkcja lędźwiowa"
+
+msgid "cognitive assessment"
+msgstr "ocena funkcji poznawczych"
+
+msgid "sleep study"
+msgstr "badanie snu"
+
+msgid "evoked potential testing"
+msgstr "badanie potencjałów wywołanych"
+
+msgid "transcranial doppler"
+msgstr "doppler przezczaszkowy"
+
+msgid "neuropsychological testing"
+msgstr "testy neuropsychologiczne"
+
+msgid "balance disorder evaluation"
+msgstr "ocena zaburzeń równowagi"
+
+msgid "CT scan"
+msgstr "tomografia komputerowa"
+
+msgid "MRI scan"
+msgstr "rezonans magnetyczny"
+
+msgid "ultrasound examination"
+msgstr "badanie ultrasonograficzne"
+
+msgid "X-ray imaging"
+msgstr "badanie rentgenowskie"
+
+msgid "mammography"
+msgstr "mammografia"
+
+msgid "bone density scan"
+msgstr "badanie gęstości kości"
+
+msgid "contrast study"
+msgstr "badanie kontrastowe"
+
+msgid "fluoroscopy"
+msgstr "fluoroskopia"
+
+msgid "nuclear medicine scan"
+msgstr "scyntygrafia"
+
+msgid "PET scan"
+msgstr "pozytonowa tomografia emisyjna (PET)"
+
+msgid "biopsy guidance"
+msgstr "nawigacja do biopsji"
+
+msgid "HPV testing"
+msgstr "test na HPV"
+
+msgid "colposcopy"
+msgstr "kolposkopia"
+
+msgid "fertility assessment"
+msgstr "ocena płodności"
+
+msgid "menstrual cycle monitoring"
+msgstr "monitorowanie cyklu menstruacyjnego"
+
+msgid "hormone level testing"
+msgstr "badanie poziomu hormonów"
+
+msgid "STI screening panel"
+msgstr "panel badań na choroby przenoszone drogą płciową"
+
+msgid "pregnancy monitoring"
+msgstr "monitorowanie ciąży"
+
+msgid "contraception consultation"
+msgstr "konsultacja antykoncepcyjna"
+
+msgid "menopause evaluation"
+msgstr "ocena menopauzy"
