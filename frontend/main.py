@@ -301,8 +301,8 @@ def handle_patient_rescheduling(
         )
         if conversation_id is None:
             raise Exception("Failed to obtain conversation id")
-        transcript = {**fetch_transcription(conversation_id), "language": lang}
-        return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
+        transcript = fetch_transcription(conversation_id)
+        return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript, "transcript_language": lang}
     else:
         return {"consent": None, "verified": None, "called": False}
 
@@ -336,7 +336,8 @@ def agent_call(
             new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
             use_ua_agent=use_ua_agent,
         )
-    except Exception:
+    except Exception as e:
+        logger.info(str(e))
         main_tab.error(_("Failed to initiate the call. Please try again later."), icon="⚠️")
         return
 
@@ -376,6 +377,7 @@ def agent_call(
                 "day": st.session_state.day_for_simulation,
                 "patient": f"{name} {surname}",
                 "transcript": call_results["transcript"],
+                "language": call_results["transcript_language"],
             }
         )
 
