@@ -181,11 +181,13 @@ def transform_patient_queue_data(df: pd.DataFrame):
             "Admission Date",
             "days_of_stay",
             "medical_procedure",
+            "department",
         ]
     ].copy()
 
     transformed_df["nationality"] = transformed_df["nationality"].apply(_)
     transformed_df["medical_procedure"] = transformed_df["medical_procedure"].apply(_)
+    transformed_df["department"] = transformed_df["department"].apply(_)
 
     return transformed_df
 
@@ -597,6 +599,7 @@ if not queue_df.empty:
         _("Admission date"),
         _("Days of stay"),
         _("Medical procedure"),
+        _("Department"),
     ]
 
     if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:

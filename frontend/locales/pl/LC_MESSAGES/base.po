@@ -240,3 +240,6 @@ msgstr "pielęgniarka"
 
 msgid "doctor"
 msgstr "lekarz"
+
+msgid "Department"
+msgstr "Oddział"

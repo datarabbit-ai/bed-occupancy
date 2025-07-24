@@ -133,7 +133,7 @@ def add_beds(session):
     department_ids = [department.department_id for department in session.query(Department).all()]
     all_beds_number = 0
     for department_id in department_ids:
-        new_beds_number = random.randint(15, 20)
+        new_beds_number = random.randint(16, 18)
         beds = [Bed(department_id=department_id) for _ in range(new_beds_number)]
         session.add_all(beds)
         all_beds_number += new_beds_number
