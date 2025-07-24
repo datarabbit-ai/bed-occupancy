@@ -86,9 +86,6 @@ msgstr "did not agree to reschedule"
 msgid "'s consent is unknown."
 msgstr "'s consent is unknown."
 
-msgid "Day"
-msgstr "Day"
-
 msgid "Call with"
 msgstr "Call with"
 
@@ -99,6 +96,12 @@ msgstr "Failed to fetch data from the server."
 #: main.py:291 main.py:301 main.py:322
 msgid "Failed to connect to the server"
 msgstr "Failed to connect to the server"
+
+msgid "Could not translate the transcript. Displaying in the original language"
+msgstr "Could not translate the transcript. Displaying in the original language"
+
+msgid "Failed to initiate the call. Please try again later."
+msgstr "Failed to initiate the call. Please try again later."
 
 #: main.py:337
 msgid "Day"

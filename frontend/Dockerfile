@@ -19,7 +19,7 @@ RUN mkdir -p locales/en/LC_MESSAGES locales/pl/LC_MESSAGES
 RUN msgfmt -o locales/pl/LC_MESSAGES/base.mo locales/pl/LC_MESSAGES/base.po
 RUN msgfmt -o locales/en/LC_MESSAGES/base.mo locales/en/LC_MESSAGES/base.po
 
-COPY main.py agent.py *.json ./
+COPY *.py *.json ./
 
 EXPOSE 8501
 

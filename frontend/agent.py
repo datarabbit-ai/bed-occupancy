@@ -51,7 +51,7 @@ def call_patient(
     suggested_appointment_day: int,
     use_ua_agent: bool,
     phone_to_call: str,
-) -> str | None:
+) -> tuple[str, str] | None:
     """
     Calls a patient using the ElevenLabs API and initiates a conversation.
 
@@ -84,7 +84,8 @@ def call_patient(
             conversation_initiation_client_data=conversation_initiation_client_data,
         )
         logger.info(f"Conversation ID: {response.conversation_id}")
-        return response.conversation_id
+        lang = "pl" if not use_ua_agent else "ua"
+        return response.conversation_id, lang
     except Exception as e:
         logger.error(f"Error: {e}")
         return None
