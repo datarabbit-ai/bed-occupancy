@@ -16,7 +16,7 @@ def get_openai_client():
     """Initialize and return OpenAI client."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise Exception(
+        raise EnvironmentError(
             "OpenAI API key not found. Please set OPENAI_API_KEY environment variable "
             "or create a .env file with OPENAI_API_KEY=your_api_key"
         )
@@ -56,7 +56,10 @@ def translate(client: OpenAI, transcript: dict, lang: str) -> dict:
         ),
     )
     res = response.output_text
-    return json.loads(res)
+    try:
+        return json.loads(res)
+    except json.JSONDecodeError as e:
+        raise Exception(f"Failed to decode JSON from OpenAI response: {res}") from e
 
 
 # client = get_openai_client()

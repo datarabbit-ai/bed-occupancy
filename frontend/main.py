@@ -58,7 +58,11 @@ if "transcriptions" not in st.session_state:
 if len(st.session_state.transcriptions) == 0:
     transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
 if "openai_client" not in st.session_state:
-    st.session_state.openai_client = get_openai_client()
+    try:
+        st.session_state.openai_client = get_openai_client()
+    except Exception as e:
+        st.error(_("Failed to initialize OpenAI client. Please check your API key and configuration."))
+        st.session_state.openai_client = None
 
 today = datetime.today().date()
 
