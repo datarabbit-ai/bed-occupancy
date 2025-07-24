@@ -22,6 +22,7 @@ from models import (
     Statistics,
     StayPersonnelAssignment,
 )
+from sqlalchemy.orm import joinedload
 
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
@@ -97,8 +98,9 @@ def get_tables_and_statistics() -> ListOfTables:
     stay_lengths = {}
 
     def decrement_days_of_stay():
-        for ba in session.query(BedAssignment).all():
-            ba.days_of_stay -= 1
+        # for ba in session.query(BedAssignment).all():
+        #     ba.days_of_stay -= 1
+        session.query(BedAssignment).update({BedAssignment.days_of_stay: BedAssignment.days_of_stay - 1})
 
     def print_patients_to_be_released(log: bool):
         patients_to_release = (
@@ -113,7 +115,8 @@ def get_tables_and_statistics() -> ListOfTables:
             )
 
     def delete_patients_to_be_released():
-        session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
+        # session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session="auto")
+        session.query(BedAssignment).filter(BedAssignment.days_of_stay <= 0).delete(synchronize_session=False)
 
     def assign_bed_to_patient(bed_id: int, patient_id: int, procedure_id: int, days: int, personnel: list, log: bool):
         assignment = BedAssignment(bed_id=bed_id, patient_id=patient_id, procedure_id=procedure_id, days_of_stay=days)
@@ -127,15 +130,21 @@ def get_tables_and_statistics() -> ListOfTables:
         return session.query(BedAssignment).filter_by(patient_id=patient_id).first() is not None
 
     def delete_patient_by_queue_id_from_queue(queue_id: int):
-        entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
+        entry = (
+            session.query(PatientQueue)
+            .filter_by(queue_id=queue_id)
+            .options(joinedload(PatientQueue.personnel_queue_assignment))
+            .first()
+        )
         if entry:
             for assignment in entry.personnel_queue_assignment:
                 session.delete(assignment)
             session.delete(entry)
 
-            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
-            for i, entry in enumerate(queue):
-                entry.queue_id = i + 1
+            # queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
+            # for i, entry in enumerate(queue):
+            #     entry.queue_id = i + 1
+            session.query(PatientQueue).update({PatientQueue.queue_id: PatientQueue.queue_id - 1})
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
@@ -324,6 +333,10 @@ def get_tables_and_statistics() -> ListOfTables:
 
             queue = (
                 session.query(PatientQueue)
+                .options(
+                    joinedload(PatientQueue.medical_procedure).joinedload(MedicalProcedure.department),
+                    joinedload(PatientQueue.personnel_queue_assignment),
+                )
                 .filter(PatientQueue.admission_day == iteration + 2)
                 .order_by(PatientQueue.queue_id)
                 .all()
@@ -372,14 +385,16 @@ def get_tables_and_statistics() -> ListOfTables:
                     occupied_beds_number += 1
                     bed_iterator += 1
 
-            queue = session.query(PatientQueue).order_by(PatientQueue.queue_id).all()
-
             for queue_id in consent_dict[iteration + 2]:
-                queue_entry = session.query(PatientQueue).filter_by(queue_id=queue_id).first()
-                patient = queue_entry.patient
-                if check_if_patient_has_bed(patient.patient_id):
+                queue_entry = (
+                    session.query(PatientQueue)
+                    .filter_by(queue_id=queue_id)
+                    .options(joinedload(PatientQueue.medical_procedure), joinedload(PatientQueue.personnel_queue_assignment))
+                    .first()
+                )
+                if check_if_patient_has_bed(queue_entry.patient_id):
                     if should_log:
-                        logger.info(f"Patient {patient.patient_id} already has a bed")
+                        logger.info(f"Patient {queue_entry.patient_id} already has a bed")
                 else:
                     if iteration + 2 not in stay_lengths:
                         stay_lengths[iteration + 2] = []
@@ -387,7 +402,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
                     assign_bed_to_patient(
                         bed_map[queue_entry.medical_procedure.department_id][0],
-                        patient.patient_id,
+                        queue_entry.patient_id,
                         queue_entry.procedure_id,
                         queue_entry.days_of_stay,
                         queue_entry.personnel_queue_assignment,
@@ -417,12 +432,18 @@ def get_tables_and_statistics() -> ListOfTables:
         department_assignments = {}
         for bed in (
             session.query(Bed)
-            .join(BedAssignment, Bed.bed_id == BedAssignment.bed_id, isouter=True)
-            .join(Patient, BedAssignment.patient_id == Patient.patient_id, isouter=True)
+            .options(
+                joinedload(Bed.assignments).joinedload(BedAssignment.patient),
+                joinedload(Bed.assignments).joinedload(BedAssignment.medical_procedure),
+                joinedload(Bed.assignments)
+                .joinedload(BedAssignment.stay_personnel_assignment)
+                .joinedload(StayPersonnelAssignment.personnel_member),
+                joinedload(Bed.department),
+            )
             .order_by(Bed.bed_id)
             .all()
         ):
-            ba = session.query(BedAssignment).filter_by(bed_id=bed.bed_id).first()
+            ba = bed.assignments[0] if bed.assignments else None
             patient = ba.patient if ba else None
 
             patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unoccupied"
@@ -459,15 +480,22 @@ def get_tables_and_statistics() -> ListOfTables:
             department_assignments[bed.department.name].append(assignment)
 
         queue_data = []
-        for entry in session.query(PatientQueue).order_by(PatientQueue.queue_id).all():
-            patient = session.query(Patient).filter_by(patient_id=entry.patient_id).first()
+        for entry in (
+            session.query(PatientQueue)
+            .options(
+                joinedload(PatientQueue.patient),
+                joinedload(PatientQueue.medical_procedure).joinedload(MedicalProcedure.department),
+            )
+            .order_by(PatientQueue.queue_id)
+            .all()
+        ):
             queue_data.append(
                 {
                     "place_in_queue": entry.queue_id,
-                    "patient_id": patient.patient_id,
-                    "patient_name": f"{patient.first_name} {patient.last_name}",
-                    "pesel": f"...{patient.pesel[-3:]}",
-                    "nationality": patient.nationality,
+                    "patient_id": entry.patient_id,
+                    "patient_name": f"{entry.patient.first_name} {entry.patient.last_name}",
+                    "pesel": f"...{entry.patient.pesel[-3:]}",
+                    "nationality": entry.patient.nationality,
                     "days_of_stay": entry.days_of_stay,
                     "admission_day": entry.admission_day,
                     "medical_procedure": entry.medical_procedure.name,

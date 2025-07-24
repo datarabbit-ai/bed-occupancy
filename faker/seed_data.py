@@ -159,7 +159,6 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
     queue_lenth = 0
 
     admission_day = 0
-    logger.info(new_patients_in_queue_number)
 
     for _ in range(new_patients_in_queue_number):
         if not available_ids:
