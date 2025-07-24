@@ -393,9 +393,14 @@ def display_transcriptions():
         expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
 
         if st.session_state.interface_language != transcript["language"]:
-            translated_transcript = translate(
-                st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
-            )
+            try:
+                translated_transcript = translate(
+                    st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
+                )
+            except Exception as e:
+                logger.info(e)
+                expander.info(_("Could not translate the transcript. Displaying in the original language"))
+                translated_transcript = transcript
         else:
             translated_transcript = transcript
 

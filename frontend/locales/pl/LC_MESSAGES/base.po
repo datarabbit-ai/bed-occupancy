@@ -98,6 +98,9 @@ msgstr "Nieudany odczyt danych z serwera"
 msgid "Failed to connect to the server"
 msgstr "Nieudane połączenie z serwerem"
 
+msgid "Could not translate the transcript. Displaying in the original language"
+msgstr "Nie udało się przetłumaczyć transkryptu rozmowy. Wyświetlam transkrypt w oryginalnym języku"
+
 msgid "Failed to initiate the call. Please try again later."
 msgstr "Nie udało się wykonać połączenia. Spróbuj ponownie później."
 

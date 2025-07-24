@@ -97,6 +97,9 @@ msgstr "Failed to fetch data from the server."
 msgid "Failed to connect to the server"
 msgstr "Failed to connect to the server"
 
+msgid "Could not translate the transcript. Displaying in the original language"
+msgstr "Could not translate the transcript. Displaying in the original language"
+
 msgid "Failed to initiate the call. Please try again later."
 msgstr "Failed to initiate the call. Please try again later."
 
