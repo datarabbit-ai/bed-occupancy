@@ -297,7 +297,7 @@ def get_tables_and_statistics() -> ListOfTables:
         no_shows_list: List[NoShow] = []
 
         days_of_stay_for_replacement: List[int] = []
-        procedures_for_replacement: List[str] = []
+        personnels_for_replacement: List[Dict[str, str]] = []
         departments_for_replacement: List[str] = []
 
         for iteration in range(day - 1):
@@ -329,7 +329,7 @@ def get_tables_and_statistics() -> ListOfTables:
                 session.query(PatientQueue)
                 .options(
                     joinedload(PatientQueue.medical_procedure).joinedload(MedicalProcedure.department),
-                    joinedload(PatientQueue.personnel_queue_assignment),
+                    joinedload(PatientQueue.personnel_queue_assignment).joinedload(PersonnelQueueAssignment.personnel_member),
                 )
                 .filter(PatientQueue.admission_day == iteration + 2)
                 .order_by(PatientQueue.queue_id)
@@ -338,18 +338,25 @@ def get_tables_and_statistics() -> ListOfTables:
             bed_iterator = 0
 
             days_of_stay_for_replacement = []
-            procedures_for_replacement = []
+            personnels_for_replacement = []
             departments_for_replacement = []
 
             for i in range(min(len(queue), len(beds))):
                 entry = queue[i]
                 patient_id = entry.patient_id
-                will_come = rnd.choice([True] * 10 + [False])
+                will_come = rnd.choice([True] * 30 + [False])
                 if not will_come:
                     no_shows_number += 1
 
+                    personnel_data = {}
+
+                    for personnel in entry.personnel_queue_assignment:
+                        personnel_data[personnel.personnel_member.first_name + " " + personnel.personnel_member.last_name] = (
+                            personnel.personnel_member.role
+                        )
+
                     days_of_stay_for_replacement.append(entry.days_of_stay)
-                    procedures_for_replacement.append(entry.medical_procedure.name)
+                    personnels_for_replacement.append(personnel_data)
                     departments_for_replacement.append(entry.medical_procedure.department.name)
 
                     delete_patient_by_queue_id_from_queue(entry.queue_id)
@@ -408,7 +415,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     bed_iterator += 1
 
             days_of_stay_for_replacement = days_of_stay_for_replacement[len(consent_dict[iteration + 2]) :]
-            procedures_for_replacement = procedures_for_replacement[len(consent_dict[iteration + 2]) :]
+            personnels_for_replacement = personnels_for_replacement[len(consent_dict[iteration + 2]) :]
             departments_for_replacement = departments_for_replacement[len(consent_dict[iteration + 2]) :]
 
             occupancy_in_time["Date"].append(iteration + 2)
@@ -479,10 +486,18 @@ def get_tables_and_statistics() -> ListOfTables:
             .options(
                 joinedload(PatientQueue.patient),
                 joinedload(PatientQueue.medical_procedure).joinedload(MedicalProcedure.department),
+                joinedload(PatientQueue.personnel_queue_assignment).joinedload(PersonnelQueueAssignment.personnel_member),
             )
             .order_by(PatientQueue.queue_id)
             .all()
         ):
+            personnel_data = {}
+
+            for personnel in entry.personnel_queue_assignment:
+                personnel_data[personnel.personnel_member.first_name + " " + personnel.personnel_member.last_name] = (
+                    personnel.personnel_member.role
+                )
+
             queue_data.append(
                 {
                     "place_in_queue": entry.queue_id,
@@ -494,6 +509,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     "admission_day": entry.admission_day,
                     "medical_procedure": entry.medical_procedure.name,
                     "department": entry.medical_procedure.department.name,
+                    "personnel": personnel_data,
                 }
             )
 
@@ -508,7 +524,7 @@ def get_tables_and_statistics() -> ListOfTables:
             Statistics=calculate_statistics(),
             ReplacementData={
                 "DaysOfStay": days_of_stay_for_replacement,
-                "MedicalProcedures": procedures_for_replacement,
+                "Personnels": personnels_for_replacement,
                 "Departments": departments_for_replacement,
             },
         )

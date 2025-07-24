@@ -28,6 +28,7 @@ class PatientQueueResponse(BaseModel):
     days_of_stay: int
     medical_procedure: str
     department: str
+    personnel: Optional[dict]
 
 
 class NoShow(BaseModel):
@@ -57,7 +58,7 @@ class Statistics(BaseModel):
 
 class DataForReplacement(BaseModel):
     DaysOfStay: Optional[list[int]]
-    MedicalProcedures: Optional[list[str]]
+    Personnels: Optional[list[dict[str, str]]]
     Departments: Optional[list[str]]
 
 
@@ -126,8 +127,7 @@ class MedicalProcedure(Base):
     procedure_id = Column(Integer, primary_key=True, autoincrement=True)
     department_id = Column(Integer, ForeignKey("departments.department_id"))
     name = Column(String)
-    min_days_of_stay = Column(Integer)
-    max_days_of_stay = Column(Integer)
+    days_of_stay = Column(Integer)
     doctors_number = Column(Integer)
     nurses_number = Column(Integer)
 

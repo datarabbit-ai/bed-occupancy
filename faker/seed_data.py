@@ -40,62 +40,103 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
 
-# common_sicknesses = [
-#     "Endoprotezoplastyka stawu biodrowego",
-#     "Endoprotezoplastyka stawu kolanowego",
-#     "Operacja zaćmy",
-#     "Artroskopia stawu kolanowego",
-#     "Usunięcie migdałków podniebiennych",
-#     "Plastyka przegrody nosowej",
-#     "Cholecystektomia",
-#     "Operacja przepukliny pachwinowej",
-#     "Operacja żylaków kończyn dolnych",
-#     "Operacja kręgosłupa lędźwiowego",
-#     "Laparoskopia diagnostyczna",
-#     "Zabieg usunięcia brodawczaka krtani",
-#     "Adenotomia",
-#     "Irydektomia",
-#     "Kraniektomia",
-#     "Splenektomia",
-#     "Gastrektomia",
-# ]
-
-# male_sicknesses = common_sicknesses + [
-#     "Prostatektomia",
-#     "Leczenie raka prostaty",
-#     "Korekcja wodniaka jądra",
-#     "Operacja żylaków powrózka nasiennego",
-#     "Rekonstrukcja cewki moczowej",
-# ]
-
-# female_sicknesses = common_sicknesses + [
-#     "Histerektomia",
-#     "Zabieg usunięcia torbieli jajnika",
-#     "Zabieg usunięcia mięśniaków macicy",
-#     "Zabieg usunięcia guzka piersi",
-#     "Leczenie endometriozy",
-#     "Zabieg łyżeczkowania jamy macicy",
-# ]
-
-
-common_medical_procedures = [
-    ("Operacja zaćmy", "Okulistyka", 1, 2, 1, 1),
-    ("Laserowa korekcja wzroku", "Okulistyka", 1, 1, 1, 1),
-    ("Usunięcie migdałków podniebiennych", "Laryngologia", 2, 4, 1, 2),
-    ("Septoplastyka", "Laryngologia", 2, 4, 1, 2),
-    ("Operacja przepukliny pachwinowej", "Chirurgia", 2, 6, 2, 2),
-    ("Wycięcie wyrostka robaczkowego", "Chirurgia", 3, 7, 2, 3),
-]
+common_medical_procedures = {
+    "ENT": [
+        ("sleep apnea monitoring", 3, 1, 2),
+        ("hearing test battery", 1, 1, 1),
+        ("tympanometry", 1, 1, 1),
+        ("laryngoscopy", 2, 1, 2),
+        ("nasal endoscopy", 2, 1, 2),
+        ("allergy skin testing", 2, 1, 1),
+        ("sinus CT scan", 1, 1, 1),
+        ("vestibular function test", 2, 1, 2),
+        ("rhinomanometry", 1, 1, 1),
+    ],
+    "Ophthalmology": [
+        ("OCT scan", 1, 1, 1),
+        ("fundus photography", 1, 1, 1),
+        ("corneal topography", 1, 1, 1),
+        ("intraocular pressure check", 1, 1, 1),
+        ("pupil dilation exam", 1, 1, 1),
+        ("fluorescein angiography", 1, 1, 1),
+        ("A-scan biometry", 1, 1, 1),
+        ("pachymetry", 1, 1, 1),
+        ("tear film assessment", 1, 1, 1),
+        ("retinal imaging", 1, 1, 1),
+        ("electroretinography", 1, 1, 2),
+    ],
+    "Surgery": [
+        ("cardiac stress test", 1, 1, 1),
+        ("echocardiogram", 1, 1, 1),
+        ("EKG monitoring", 1, 1, 1),
+        ("blood work panel", 1, 1, 1),
+        ("abdominal ultrasound", 1, 1, 1),
+        ("wound assessment", 1, 1, 2),
+        ("nutritional consultation", 1, 1, 1),
+        ("anesthesia consultation", 1, 1, 1),
+    ],
+    "Cardiology": [
+        ("holter monitoring", 2, 1, 1),
+        ("event monitor setup", 1, 1, 1),
+        ("cardiac catheterization prep", 1, 2, 2),
+        ("stress echocardiogram", 1, 1, 2),
+        ("cardiac MRI", 1, 1, 1),
+        ("coronary angiography", 1, 2, 2),
+        ("heart rhythm analysis", 1, 1, 1),
+        ("blood pressure monitoring", 2, 1, 1),
+        ("lipid profile testing", 1, 1, 1),
+        ("cardiac enzyme testing", 1, 1, 1),
+        ("exercise tolerance test", 1, 1, 1),
+    ],
+    "Neurology": [
+        ("EEG monitoring", 3, 1, 2),
+        ("nerve conduction study", 1, 1, 1),
+        ("EMG testing", 1, 1, 1),
+        ("brain MRI", 1, 1, 1),
+        ("lumbar puncture", 1, 2, 2),
+        ("cognitive assessment", 2, 1, 1),
+        ("sleep study", 2, 1, 2),
+        ("evoked potential testing", 1, 1, 1),
+        ("transcranial doppler", 1, 1, 1),
+        ("neuropsychological testing", 2, 1, 2),
+        ("balance disorder evaluation", 1, 1, 1),
+    ],
+    "Radiology": [
+        ("CT scan", 1, 1, 1),
+        ("MRI scan", 1, 1, 1),
+        ("ultrasound examination", 1, 1, 1),
+        ("X-ray imaging", 1, 1, 1),
+        ("mammography", 1, 1, 1),
+        ("bone density scan", 1, 1, 1),
+        ("contrast study", 1, 1, 1),
+        ("fluoroscopy", 1, 1, 1),
+        ("nuclear medicine scan", 1, 2, 2),
+        ("PET scan", 1, 2, 2),
+        ("biopsy guidance", 1, 2, 2),
+    ],
+    "Gynecology": [
+        ("mammography", 1, 1, 1),
+        ("bone density scan", 1, 1, 1),
+        ("HPV testing", 1, 1, 1),
+        ("colposcopy", 2, 1, 2),
+        ("fertility assessment", 1, 1, 1),
+        ("menstrual cycle monitoring", 2, 1, 1),
+        ("hormone level testing", 3, 1, 1),
+        ("STI screening panel", 1, 1, 1),
+        ("pregnancy monitoring", 4, 1, 2),
+        ("contraception consultation", 1, 1, 1),
+        ("menopause evaluation", 2, 1, 1),
+    ],
+}
 
 
 def add_departments(session):
-    departments = list(set(procedure[1] for procedure in common_medical_procedures))
-    for department in departments:
+    for department in common_medical_procedures.keys():
         session.add(Department(name=department))
 
 
 def add_personnel(session):
-    new_personnel_number = 14 * session.query(func.count(Department.department_id)).scalar()
+    new_personnel_number = 12 * session.query(func.count(Department.department_id)).scalar()
     for _ in range(new_personnel_number):
         personnel_member = generate_fake_personnel_data(
             random.choice([d.department_id for d in session.query(Department).all()])
@@ -105,19 +146,21 @@ def add_personnel(session):
 
 
 def add_medical_procedures(session):
-    for procedure in common_medical_procedures:
-        department = session.query(Department).filter(Department.name == procedure[1]).first()
-        session.add(
-            MedicalProcedure(
-                department_id=department.department_id,
-                name=procedure[0],
-                min_days_of_stay=procedure[2],
-                max_days_of_stay=procedure[3],
-                doctors_number=procedure[4],
-                nurses_number=procedure[5],
+    procedures_added = 0
+    for department_name, procedures in common_medical_procedures.items():
+        department = session.query(Department).filter(Department.name == department_name).first()
+        for procedure in procedures:
+            session.add(
+                MedicalProcedure(
+                    department_id=department.department_id,
+                    name=procedure[0],
+                    days_of_stay=procedure[1],
+                    doctors_number=procedure[2],
+                    nurses_number=procedure[3],
+                )
             )
-        )
-    logger.info(f"Added {len(common_medical_procedures)} generated medical procedures to db")
+            procedures_added += 1
+    logger.info(f"Added {procedures_added} generated medical procedures to db")
 
 
 def add_patients(session):
@@ -141,24 +184,36 @@ def add_beds(session):
 
 
 def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, nurses_patients_numbers):
-    def calculate_least_occupied_department(admission_day, free_beds):
-        best_department = max(free_beds, key=lambda k: free_beds[k][admission_day])
+    def calculate_least_occupied_department(
+        admission_day: int, free_beds: dict, gynecology_department_id: int, females_number: int
+    ):
+        departments_to_consider = (
+            free_beds.keys()
+            if females_number > 0 and gynecology_department_id != 0
+            else [k for k in free_beds if k != gynecology_department_id]
+        )
+
+        best_department = max(departments_to_consider, key=lambda k: free_beds[k][admission_day])
         return best_department
 
     all_patient_ids = [p.patient_id for p in session.query(Patient).all()]
+    all_female_ids = [f.patient_id for f in session.query(Patient).filter(Patient.gender == "female").all()]
     cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
     departments_count = session.query(func.count(Department.department_id)).scalar()
 
     if not all_patient_ids:
         return
 
-    new_patients_in_queue_number = random.randint(124 * departments_count, 134 * departments_count)
+    new_patients_in_queue_number = random.randint(200 * departments_count, 230 * departments_count)
     max_queue_position = session.query(func.max(PatientQueue.queue_id)).scalar() or 0
 
     available_ids = list(set(all_patient_ids) - set(cooldown_ids))
     queue_lenth = 0
 
     admission_day = 0
+
+    gynecology_department = session.query(Department).filter(Department.name == "Gynecology").first()
+    gynecology_department_id = gynecology_department.department_id if gynecology_department else 0
 
     for _ in range(new_patients_in_queue_number):
         if not available_ids:
@@ -167,24 +222,40 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
         if admission_day >= len(free_beds_numbers[1]):
             break
 
-        while free_beds_numbers[calculate_least_occupied_department(admission_day, free_beds_numbers)][admission_day] == 0:
+        while (
+            free_beds_numbers[
+                calculate_least_occupied_department(
+                    admission_day,
+                    free_beds_numbers,
+                    gynecology_department_id,
+                    len(list(set(all_female_ids) & set(available_ids))),
+                )
+            ][admission_day]
+            == 0
+        ):
             if admission_day + 1 < len(free_beds_numbers[1]):
                 admission_day += 1
             else:
                 logger.info(f"Added {queue_lenth} patients to queue in db")
                 return
 
-        selected = random.choice(available_ids)
         max_queue_position += 1
 
-        least_occupied_department = calculate_least_occupied_department(admission_day, free_beds_numbers)
+        least_occupied_department = calculate_least_occupied_department(
+            admission_day, free_beds_numbers, gynecology_department_id, len(list(set(all_female_ids) & set(available_ids)))
+        )
 
         medical_procedures = (
             session.query(MedicalProcedure).filter(MedicalProcedure.department_id == least_occupied_department).all()
         )
         medical_procedure = random.choice(medical_procedures)
 
-        days_of_stay = random.randint(medical_procedure.min_days_of_stay, medical_procedure.max_days_of_stay)
+        if least_occupied_department == gynecology_department_id:
+            selected = random.choice(list(set(all_female_ids) & set(available_ids)))
+        else:
+            selected = random.choice(available_ids)
+
+        days_of_stay = medical_procedure.days_of_stay
 
         if admission_day + days_of_stay >= len(free_beds_numbers[least_occupied_department]):
             exit_day = len(free_beds_numbers[least_occupied_department])
@@ -240,7 +311,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
 
         available_ids.remove(selected)
         cooldown_ids.append(selected)
-        if len(cooldown_ids) >= 60 * departments_count:
+        if len(cooldown_ids) >= 80 * departments_count:
             available_ids.append(cooldown_ids[0])
             cooldown_ids.pop(0)
 
@@ -253,10 +324,13 @@ def add_patient_assignment_to_bed(session):
         session.query(Department.department_id, func.count(Bed.bed_id)).join(Bed).group_by(Department.department_id).all()
     )
     patient_ids = [p.patient_id for p in session.query(Patient).all()]
+    all_female_ids = [f.patient_id for f in session.query(Patient).filter(Patient.gender == "female").all()]
     free_beds_numbers = {department_id: [count for _ in range(20)] for department_id, count in departments_beds}
 
     doctors_patients_numbers = {}
     nurses_patients_numbers = {}
+
+    gynecology_department = session.query(Department).filter(Department.name == "Gynecology").first()
 
     assignments = 0
     for bed in beds:
@@ -279,11 +353,16 @@ def add_patient_assignment_to_bed(session):
 
         if not patient_ids:
             break
-        patient_id = random.choice(patient_ids)
+
+        if gynecology_department is not None and bed.department_id == gynecology_department.department_id:
+            patient_id = random.choice(list(set(all_female_ids) & set(patient_ids)))
+        else:
+            patient_id = random.choice(patient_ids)
+
         medical_procedures = session.query(MedicalProcedure).filter(MedicalProcedure.department_id == bed.department_id).all()
 
         medical_procedure = random.choice(medical_procedures)
-        days_of_stay = random.randint(medical_procedure.min_days_of_stay, medical_procedure.max_days_of_stay)
+        days_of_stay = medical_procedure.days_of_stay
 
         doctors_number = medical_procedure.doctors_number
         nurses_number = medical_procedure.nurses_number

@@ -66,8 +66,7 @@ class MedicalProcedure(Base):
     procedure_id = Column(Integer, primary_key=True, autoincrement=True)
     department_id = Column(Integer, ForeignKey("departments.department_id"))
     name = Column(String)
-    min_days_of_stay = Column(Integer)
-    max_days_of_stay = Column(Integer)
+    days_of_stay = Column(Integer)
     doctors_number = Column(Integer)
     nurses_number = Column(Integer)
 

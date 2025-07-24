@@ -57,12 +57,12 @@ def generate_fake_patient_data() -> Patient:
         name = fake.first_name_female().split()[0]
         surname = fake.last_name_female()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
-        gender = "kobieta"
+        gender = "female"
     else:
         name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
-        gender = "mężczyzna"
+        gender = "male"
     random_urgency = fake.enum(Urgency).value
     if nationality_generator.randint(1, 10) < 9:
         random_nationality = Nationality.POLISH.value
