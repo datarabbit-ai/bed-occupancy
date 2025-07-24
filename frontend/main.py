@@ -296,12 +296,12 @@ def handle_patient_rescheduling(
     """
 
     if st.session_state.phone_number is not None:
-        conversation_id = call_patient(
+        conversation_id, lang = call_patient(
             name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
         )
         if conversation_id is None:
             raise Exception("Failed to obtain conversation id")
-        transcript = fetch_transcription(conversation_id)
+        transcript = {**fetch_transcription(conversation_id), "language": lang}
         return {**check_patient_consent_to_reschedule(conversation_id), "transcript": transcript}
     else:
         return {"consent": None, "verified": None, "called": False}
@@ -386,9 +386,12 @@ def display_transcriptions():
     for transcript in st.session_state.transcriptions:
         expander = transcript_tab.expander(f"{_('Day')} {transcript['day']}: {_('Call with')} {transcript['patient']}")
 
-        translated_transcript = translate(
-            st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
-        )
+        if st.session_state.interface_language != transcript["language"]:
+            translated_transcript = translate(
+                st.session_state.openai_client, transcript["transcript"], st.session_state.interface_language
+            )
+        else:
+            translated_transcript = transcript
 
         for message in translated_transcript["transcript"]:
             msg = expander.chat_message(message["role"] if message["role"] == "user" else "ai")
