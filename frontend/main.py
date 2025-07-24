@@ -192,11 +192,15 @@ def transform_patient_queue_data(df: pd.DataFrame):
             "Admission Date",
             "days_of_stay",
             "medical_procedure",
+            "personnel",
         ]
     ].copy()
 
     transformed_df["nationality"] = transformed_df["nationality"].apply(_)
     transformed_df["medical_procedure"] = transformed_df["medical_procedure"].apply(_)
+    transformed_df["personnel"] = transformed_df["personnel"].apply(
+        lambda d: " / ".join(f"{k} - {_(v)}" for k, v in d.items())
+    )
 
     return transformed_df
 
@@ -213,6 +217,9 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
     num_boxes = len(df)
     df["nationality"] = df["nationality"].apply(_)
     df["medical_procedure"] = df["medical_procedure"].apply(_)
+    df["personnel"] = df["personnel"].apply(
+        lambda d: "<br>".join(f"{k} - {_(v)}" for k, v in d.items()) if isinstance(d, dict) else "Unoccupied"
+    )
 
     # Calculate number of rows needed
     num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
@@ -243,7 +250,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                             _("Personal number"),
                             _("Nationality"),
                             _("Days left"),
-                            _("Doctor"),
+                            _("Personnel"),
                         ]
 
                     tooltip_info = "<table style='border-collapse: collapse;'>"
@@ -315,7 +322,8 @@ def agent_call(
     queue_df: pd.DataFrame,
     bed_df: pd.DataFrame,
     searched_days_of_stay: int,
-    medical_procedure: str,
+    department: str,
+    personnel: dict[str, str],
     use_ua_agent: bool = False,
 ) -> None:
     idx = st.session_state.current_patient_index
@@ -358,6 +366,7 @@ def agent_call(
 
         st.session_state.pop("current_patient_index", None)
         st.session_state.pop("replacement_start_index", None)
+        st.session_state.pop("phoned_ids", None)
         st.session_state.button_pressed = True
     elif call_results["verified"] is not True:
         main_tab.info(f"{name} {surname}{_("'s verification is unsuccessful")}.")
@@ -365,8 +374,9 @@ def agent_call(
     elif consent is False:
         requests.get("http://backend:8000/increase-calls-number")
         main_tab.error(f"{name} {surname} {_('did not agree to reschedule')}.")
+        st.session_state.phoned_ids.append(idx + 1)
         st.session_state.current_patient_index = find_next_patient_to_call(
-            searched_days_of_stay, queue_df, bed_df, medical_procedure
+            searched_days_of_stay, queue_df, bed_df, department, personnel
         )
         st.session_state.button_pressed = True
         if st.session_state.current_patient_index == -1:
@@ -413,13 +423,15 @@ def call_next_patient_in_queue(
     queue_df: pd.DataFrame,
     bed_df: pd.DataFrame,
     searched_days_of_stay: int,
-    medical_procedure: str,
+    department: str,
+    personnel: dict[str, str],
     use_ua_agent: bool = False,
 ) -> None:
+    st.session_state.phoned_ids.append(st.session_state.current_patient_index + 1)
     st.session_state.current_patient_index = find_next_patient_to_call(
-        searched_days_of_stay, queue_df, bed_df, medical_procedure
+        searched_days_of_stay, queue_df, bed_df, department, personnel, [st.session_state.current_patient_index + 1]
     )
-    agent_call(queue_df, bed_df, searched_days_of_stay, medical_procedure, use_ua_agent)
+    agent_call(queue_df, bed_df, searched_days_of_stay, department, personnel, use_ua_agent)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -441,6 +453,7 @@ def update_day(delta: int) -> None:
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
         st.session_state.pop("replacement_start_index", None)
+        st.session_state.pop("phoned_ids", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
@@ -464,12 +477,20 @@ def reset_day_for_simulation() -> None:
         st.session_state.day_for_simulation = response.json()["day"]
         st.session_state.pop("current_patient_index", None)
         st.session_state.pop("replacement_start_index", None)
+        st.session_state.pop("phoned_ids", None)
         st.session_state.consent = False
     except Exception as e:
         st.session_state.error_message = f"{_('Failed to connect to the server')}: {e}"
 
 
-def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df: pd.DataFrame, medical_procedure: str) -> int:
+def find_next_patient_to_call(
+    days_of_stay: int,
+    queue_df: pd.DataFrame,
+    bed_df: pd.DataFrame,
+    department: str,
+    personnel: dict,
+    additional_ids: list[int] = [],
+) -> int:
     def check_patient_admission_days(queue_df, patient_id, place_in_queue, days_of_stay) -> bool:
         conflicts_df = queue_df[
             (queue_df["place_in_queue"] != place_in_queue)
@@ -485,6 +506,16 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
 
         return conflicts_df.empty
 
+    def id_with_best_matching_personnel(df: pd.DataFrame, personnel: dict):
+        target_keys = set(personnel.keys())
+
+        df["score"] = df["personnel"].map(lambda d: len(set(d.keys()) & target_keys))
+        df["key_diff"] = df["personnel"].map(lambda d: abs(len(set(d.keys())) - len(target_keys)))
+
+        sorted_df = df.sort_values(by=["score", "key_diff", "place_in_queue"], ascending=[False, True, False])
+
+        return sorted_df.iloc[0]["place_in_queue"]
+
     conflicting_patients = []
     for index, row in queue_df.iterrows():
         if (
@@ -494,17 +525,17 @@ def find_next_patient_to_call(days_of_stay: int, queue_df: pd.DataFrame, bed_df:
             conflicting_patients.append(row["patient_id"])
 
     queue_df = queue_df[
-        (queue_df["days_of_stay"] <= days_of_stay)
-        & (queue_df["place_in_queue"] < st.session_state.current_patient_index + 1)
+        (queue_df["department"] == department)
+        & (queue_df["days_of_stay"] <= days_of_stay)
+        & (~queue_df["place_in_queue"].isin(st.session_state.phoned_ids + additional_ids))
         & (~queue_df["patient_id"].isin(bed_df["patient_id"]))
         & (~queue_df["patient_id"].isin(conflicting_patients))
-        & (queue_df["medical_procedure"] == medical_procedure)
     ]
 
     if queue_df.empty:
         return -1
 
-    return int(queue_df.sort_values(by="place_in_queue", ascending=False).iloc[0]["place_in_queue"]) - 1
+    return id_with_best_matching_personnel(queue_df.copy(), personnel) - 1
 
 
 # endregion
@@ -518,23 +549,29 @@ elif st.session_state.button_pressed:
 bed_df, queue_df, no_shows_df = None, None, None
 tables = get_list_of_tables_and_statistics()
 if tables:
-    bed_df = pd.DataFrame(tables["BedAssignment"])
+    bed_df = pd.DataFrame(tables["AllBedAssignments"])
     no_shows_df = pd.DataFrame(tables["NoShows"])
     queue_df = pd.DataFrame(tables["PatientQueue"])
     replacement_days_of_stay = tables["ReplacementData"]["DaysOfStay"]
-    replacement_medical_procedures = tables["ReplacementData"]["MedicalProcedures"]
+    replacement_personnels = tables["ReplacementData"]["Personnels"]
+    replacement_departments = tables["ReplacementData"]["Departments"]
+    bed_departments = tables["DepartmentAssignments"]
+
+    for department in bed_departments:
+        bed_departments[department] = pd.DataFrame(bed_departments[department])
 
 
 replacement_index = st.session_state.replacement_start_index
 if "current_patient_index" not in st.session_state:
-    if replacement_days_of_stay and replacement_medical_procedures and not queue_df.empty:
+    if replacement_days_of_stay and replacement_personnels and not queue_df.empty:
         while replacement_index < len(replacement_days_of_stay):
-            st.session_state.current_patient_index = len(queue_df)
+            st.session_state.phoned_ids = []
             st.session_state.current_patient_index = find_next_patient_to_call(
                 replacement_days_of_stay[replacement_index],
                 queue_df,
                 bed_df,
-                replacement_medical_procedures[replacement_index],
+                replacement_departments[replacement_index],
+                replacement_personnels[replacement_index],
             )
             if st.session_state.current_patient_index == -1:
                 replacement_index += 1
@@ -566,7 +603,8 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                 queue_df,
                 bed_df,
                 replacement_days_of_stay[replacement_index],
-                replacement_medical_procedures[replacement_index],
+                replacement_departments[replacement_index],
+                replacement_personnels[replacement_index],
                 use_ua_agent,
             ),
         )
@@ -577,13 +615,19 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                 queue_df,
                 bed_df,
                 replacement_days_of_stay[replacement_index],
-                replacement_medical_procedures[replacement_index],
+                replacement_departments[replacement_index],
+                replacement_personnels[replacement_index],
                 use_ua_agent,
             ),
         )
 
         next_patient = find_next_patient_to_call(
-            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
+            replacement_days_of_stay[replacement_index],
+            queue_df,
+            bed_df,
+            replacement_departments[replacement_index],
+            replacement_personnels[replacement_index],
+            [st.session_state.current_patient_index + 1],
         )
 
         if next_patient >= 0:
@@ -599,15 +643,23 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                     queue_df,
                     bed_df,
                     replacement_days_of_stay[replacement_index],
-                    replacement_medical_procedures[replacement_index],
+                    replacement_departments[replacement_index],
+                    replacement_personnels[replacement_index],
                     use_next_ua_agent,
                 ),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
     st_autorefresh(interval=10000, limit=None)
 
-if not bed_df.empty:
-    create_box_grid(bed_df, len(replacement_days_of_stay))
+if bed_departments:
+    for department, df in bed_departments.items():
+        main_tab.divider()
+        main_tab.subheader(department)
+        replacements_needed = 0
+        for replacement_department in replacement_departments:
+            if replacement_department == department:
+                replacements_needed += 1
+        create_box_grid(df, replacements_needed)
 else:
     main_tab.info(_("No bed assignments found."))
 
@@ -636,11 +688,17 @@ if not queue_df.empty:
         _("Admission date"),
         _("Days of stay"),
         _("Medical procedure"),
+        _("Personnel"),
     ]
 
     if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
         st.session_state.next_row_to_be_highlighted = find_next_patient_to_call(
-            replacement_days_of_stay[replacement_index], queue_df, bed_df, replacement_medical_procedures[replacement_index]
+            replacement_days_of_stay[replacement_index],
+            queue_df,
+            bed_df,
+            replacement_departments[replacement_index],
+            replacement_personnels[replacement_index],
+            [st.session_state.current_patient_index + 1],
         )
         styled_df = styled_df.style.apply(highlight_current_row, axis=1)
         st.sidebar.dataframe(styled_df, use_container_width=True, hide_index=True)

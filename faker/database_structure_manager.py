@@ -2,7 +2,18 @@ import json
 import logging.config
 import pathlib
 
-from models import Base, Bed, BedAssignment, Doctor, MedicalProcedure, Patient, PatientQueue
+from models import (
+    Base,
+    Bed,
+    BedAssignment,
+    Department,
+    MedicalProcedure,
+    Patient,
+    PatientQueue,
+    PersonnelMember,
+    PersonnelQueueAssignment,
+    StayPersonnelAssignment,
+)
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
@@ -29,12 +40,15 @@ def check_data_existence(session: Session) -> bool:
     bed_count = session.query(func.count(Bed.bed_id)).scalar()
     queue_count = session.query(func.count(PatientQueue.queue_id)).scalar()
     assignment_count = session.query(func.count(BedAssignment.bed_id)).scalar()
-    doctor_count = session.query(func.count(Doctor.doctor_id)).scalar()
+    personnel_count = session.query(func.count(PersonnelMember.member_id)).scalar()
     procedure_count = session.query(func.count(MedicalProcedure.procedure_id)).scalar()
+    departments_count = session.query(func.count(Department.department_id)).scalar()
 
     logger.setLevel(logging.DEBUG)
     logger.debug(
-        f"Found: {patient_count} patients, {doctor_count} doctors, {procedure_count} medical procedures, {bed_count} beds, {queue_count} patients in queue and {assignment_count} assignments of patients to beds in db"
+        f"Found: {patient_count} patients, {departments_count} departments, {personnel_count} personnel members, {procedure_count} medical procedures, {bed_count} beds, {queue_count} patients in queue and {assignment_count} assignments of patients to beds in db"
     )
 
-    return all(count > 0 for count in [patient_count, bed_count, queue_count, assignment_count, doctor_count, procedure_count])
+    return all(
+        count > 0 for count in [patient_count, bed_count, queue_count, assignment_count, personnel_count, procedure_count]
+    )
