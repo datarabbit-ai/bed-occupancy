@@ -2,8 +2,7 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-RUN apt-get install -y \
-    gettext
+RUN apt-get update && apt-get install -y gettext
 
 COPY requirements.txt .
 
