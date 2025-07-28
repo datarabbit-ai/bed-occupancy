@@ -9,7 +9,6 @@ COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
 COPY locales/ ./locales/
-RUN mkdir -p locales/en/LC_MESSAGES locales/pl/LC_MESSAGES
 RUN msgfmt -o locales/pl/LC_MESSAGES/base.mo locales/pl/LC_MESSAGES/base.po
 RUN msgfmt -o locales/en/LC_MESSAGES/base.mo locales/en/LC_MESSAGES/base.po
 
