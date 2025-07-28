@@ -7,7 +7,6 @@ COPY requirements.txt .
 
 RUN uv pip install --system -r requirements.txt
 
-COPY *.py ./
-COPY *.json ./
+COPY *.py *.json ./
 
 CMD ["python3", "seed_data.py"]

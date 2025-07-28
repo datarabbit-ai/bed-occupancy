@@ -7,8 +7,7 @@ COPY requirements.txt .
 
 RUN uv pip install --system -r requirements.txt
 
-COPY *.py ./
-COPY *.json ./
+COPY *.py *.json ./
 
 EXPOSE 8000
 
