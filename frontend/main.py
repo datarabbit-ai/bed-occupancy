@@ -36,7 +36,7 @@ main_tab, statistics_tab, transcript_tab = st.tabs([_("Current state"), _("Data 
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
-voice_languages = ["pl", "ua", _("nationality")]
+voice_languages = ["pl", "ua", "en", _("nationality")]
 
 if st.session_state.voice_language not in voice_languages:
     st.session_state.voice_language = _("nationality")
