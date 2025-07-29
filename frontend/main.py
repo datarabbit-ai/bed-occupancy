@@ -593,8 +593,8 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
         label = "PL" if queue_df["nationality"][st.session_state.current_patient_index] == "polska" else "UA"
         use_ua_agent = queue_df["nationality"][st.session_state.current_patient_index] == "ukraińska"
     else:
-        label = "PL" if st.session_state.voice_language == "pl" else "UA"
-        use_ua_agent = st.session_state.voice_language == "ua"
+        label = st.session_state.voice_language.upper()
+        use_ua_agent = st.session_state.voice_language
 
     if st.session_state.consent is not None:
         st.sidebar.button(
