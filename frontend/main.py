@@ -289,7 +289,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
 
 
 def handle_patient_rescheduling(
-    name: str, surname: str, gender: str, pesel: str, medical_procedure: str, old_day: int, new_day: int, use_ua_agent: bool
+    name: str, surname: str, gender: str, pesel: str, medical_procedure: str, old_day: int, new_day: int, agent_lang: str
 ) -> dict:
     """
     Handles the process of rescheduling a patient's appointment by initiating a voice conversation
@@ -308,7 +308,7 @@ def handle_patient_rescheduling(
 
     if st.session_state.phone_number is not None:
         conversation_id, lang = call_patient(
-            name, surname, gender, pesel, medical_procedure, old_day, new_day, use_ua_agent, str(st.session_state.phone_number)
+            name, surname, gender, pesel, medical_procedure, old_day, new_day, agent_lang, str(st.session_state.phone_number)
         )
         if conversation_id is None:
             raise Exception("Failed to obtain conversation id")
@@ -324,7 +324,7 @@ def agent_call(
     searched_days_of_stay: int,
     department: str,
     personnel: dict[str, str],
-    use_ua_agent: bool = False,
+    agent_lang: str,
 ) -> None:
     idx = st.session_state.current_patient_index
 
@@ -346,7 +346,7 @@ def agent_call(
             medical_procedure=queue_df["medical_procedure"][idx],
             old_day=calculate_simulation_date(int(queue_df["admission_day"][idx])).strftime("%Y-%m-%d"),
             new_day=calculate_simulation_date(st.session_state.day_for_simulation).strftime("%Y-%m-%d"),
-            use_ua_agent=use_ua_agent,
+            agent_lang=agent_lang,
         )
     except Exception as e:
         logger.info(str(e))
@@ -425,13 +425,13 @@ def call_next_patient_in_queue(
     searched_days_of_stay: int,
     department: str,
     personnel: dict[str, str],
-    use_ua_agent: bool = False,
+    agent_lang: str,
 ) -> None:
     st.session_state.phoned_ids.append(st.session_state.current_patient_index + 1)
     st.session_state.current_patient_index = find_next_patient_to_call(
         searched_days_of_stay, queue_df, bed_df, department, personnel, [st.session_state.current_patient_index + 1]
     )
-    agent_call(queue_df, bed_df, searched_days_of_stay, department, personnel, use_ua_agent)
+    agent_call(queue_df, bed_df, searched_days_of_stay, department, personnel, agent_lang)
 
 
 def get_list_of_tables_and_statistics() -> Optional[Dict]:
@@ -588,13 +588,21 @@ display_transcriptions()
 
 if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index >= 0:
     st.session_state.auto_day_change = False
+    label: str
+    agent_lang: str
 
     if st.session_state.voice_language == _("nationality"):
         label = "PL" if queue_df["nationality"][st.session_state.current_patient_index] == "polska" else "UA"
-        use_ua_agent = queue_df["nationality"][st.session_state.current_patient_index] == "ukraińska"
+        match queue_df["nationality"][st.session_state.current_patient_index]:
+            case "polska":
+                agent_lang = "pl"
+            case "ukraińska":
+                agent_lang = "ua"
+            case _:
+                agent_lang = st.session_state.voice_language
     else:
         label = st.session_state.voice_language.upper()
-        use_ua_agent = st.session_state.voice_language
+        agent_lang = st.session_state.voice_language
 
     if st.session_state.consent is not None:
         st.sidebar.button(
@@ -605,7 +613,7 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                 replacement_days_of_stay[replacement_index],
                 replacement_departments[replacement_index],
                 replacement_personnels[replacement_index],
-                use_ua_agent,
+                agent_lang,
             ),
         )
     else:
@@ -617,7 +625,7 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                 replacement_days_of_stay[replacement_index],
                 replacement_departments[replacement_index],
                 replacement_personnels[replacement_index],
-                use_ua_agent,
+                agent_lang,
             ),
         )
 
@@ -631,12 +639,21 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
         )
 
         if next_patient >= 0:
+            next_label: str
+            next_agent_lang: str
+
             if st.session_state.voice_language == _("nationality"):
                 next_label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
-                use_next_ua_agent = queue_df["nationality"][next_patient] == "ukraińska"
+                match queue_df["nationality"][next_patient] == "ukraińska":
+                    case "polska":
+                        next_agent_lang = "pl"
+                    case "ukraińska":
+                        next_agent_lang = "ua"
+                    case _:
+                        next_agent_lang = st.session_state.voice_language
             else:
-                next_label = "PL" if st.session_state.voice_language == "pl" else "UA"
-                use_next_ua_agent = st.session_state.voice_language == "ua"
+                next_label = st.session_state.voice_language.upper()
+                next_agent_lang = st.session_state.voice_language
             st.sidebar.button(
                 f"{_('Call next patient in queue')} [{next_label}] 📞",
                 on_click=lambda: call_next_patient_in_queue(
@@ -645,7 +662,7 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
                     replacement_days_of_stay[replacement_index],
                     replacement_departments[replacement_index],
                     replacement_personnels[replacement_index],
-                    use_next_ua_agent,
+                    next_agent_lang,
                 ),
             )
 elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_change:
