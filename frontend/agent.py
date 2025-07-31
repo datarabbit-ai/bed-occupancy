@@ -118,7 +118,9 @@ def establish_voice_conversation(conversation: Conversation) -> str | None:
         return None
 
 
-def get_done_conversation_data(conversation_id: str, max_attempts: int = 60, attempt_interval: int = 5) -> GetConversationResponseModel | bool:
+def get_done_conversation_data(
+    conversation_id: str, max_attempts: int = 60, attempt_interval: int = 5
+) -> GetConversationResponseModel | bool:
     """
     Waits until the conversation is completed and then returns its data in json format
 
@@ -128,7 +130,9 @@ def get_done_conversation_data(conversation_id: str, max_attempts: int = 60, att
     :return: JSON as string - needs to be parsed to python dict
     """
     for attempt in range(max_attempts):
-        conversation_data: GetConversationResponseModel = client.conversational_ai.get_conversation(conversation_id=conversation_id)
+        conversation_data: GetConversationResponseModel = client.conversational_ai.get_conversation(
+            conversation_id=conversation_id
+        )
         status = conversation_data.status
         if status == "done":
             return conversation_data
