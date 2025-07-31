@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y gettext
 COPY requirements.txt .
 RUN uv pip install --system -r requirements.txt
 
-COPY *.py *.json ./
-
 COPY locales/ ./locales/
 RUN msgfmt -o locales/pl/LC_MESSAGES/base.mo locales/pl/LC_MESSAGES/base.po
 RUN msgfmt -o locales/en/LC_MESSAGES/base.mo locales/en/LC_MESSAGES/base.po
+
+COPY *.py *.json ./
 
 EXPOSE 8501
 
