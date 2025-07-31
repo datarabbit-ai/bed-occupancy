@@ -118,7 +118,7 @@ def establish_voice_conversation(conversation: Conversation) -> str | None:
         return None
 
 
-def get_done_conversation_data(conversation_id: str, max_attempts: int = 60, attempt_interval: int = 5) -> str:
+def get_done_conversation_data(conversation_id: str, max_attempts: int = 60, attempt_interval: int = 5) -> str | bool:
     """
     Waits until the conversation is completed and then returns its data in json format
 
