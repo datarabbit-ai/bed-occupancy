@@ -11,12 +11,20 @@ from agent import check_patient_consent_to_reschedule
 from streamlit_autorefresh import st_autorefresh
 from translate import get_openai_client, translate
 
-if "interface_language" not in st.session_state:
-    st.session_state.interface_language = "en"
-if "voice_language" not in st.session_state:
-    st.session_state.voice_language = "nationality"
-if "phone_number" not in st.session_state:
-    st.session_state.phone_number = None
+for key, default in {
+    "interface_language": "en",
+    "phone_number": None,
+    "day_for_simulation": requests.get("http://backend:8000/get-current-day").json()["day"],
+    "refreshes_number": 0,
+    "auto_day_change": False,
+    "button_pressed": False,
+    "consent": False,
+    "replacement_start_index": 0,
+    "transcriptions": [],
+    "voice_language": "nationality",
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 
 def translate_page(language: str) -> Callable:
@@ -41,26 +49,12 @@ voice_languages = ["pl", "ua", "en", _("nationality")]
 if st.session_state.voice_language not in voice_languages:
     st.session_state.voice_language = _("nationality")
 
-if "day_for_simulation" not in st.session_state:
-    st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
-if "refreshes_number" not in st.session_state:
-    st.session_state.refreshes_number = 0
-if "auto_day_change" not in st.session_state:
-    st.session_state.auto_day_change = False
-if "button_pressed" not in st.session_state:
-    st.session_state.button_pressed = False
-if "consent" not in st.session_state:
-    st.session_state.consent = False
-if "replacement_start_index" not in st.session_state:
-    st.session_state.replacement_start_index = 0
-if "transcriptions" not in st.session_state:
-    st.session_state.transcriptions = []
 if len(st.session_state.transcriptions) == 0:
     transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
 if "openai_client" not in st.session_state:
     try:
         st.session_state.openai_client = get_openai_client()
-    except Exception as e:
+    except Exception:
         st.error(_("Failed to initialize OpenAI client. Please check your API key and configuration."))
         st.session_state.openai_client = None
 
@@ -560,8 +554,7 @@ if tables:
     for department in bed_departments:
         bed_departments[department] = pd.DataFrame(bed_departments[department])
 
-
-replacement_index = st.session_state.replacement_start_index
+replacement_index = st.session_state.get("replacement_start_index", 0)
 if "current_patient_index" not in st.session_state:
     if replacement_days_of_stay and replacement_personnels and not queue_df.empty:
         while replacement_index < len(replacement_days_of_stay):
