@@ -328,7 +328,7 @@ def agent_call(
         return
 
     name, surname = queue_df["patient_name"][idx].split()
-    pesel = queue_df["pesel"][idx][-3:]
+    pesel: str = queue_df["pesel"][idx][-3:]
 
     response = requests.get("http://backend:8000/get-patient-data", params={"patient_id": queue_df["patient_id"][idx]}).json()
     try:
@@ -483,8 +483,11 @@ def find_next_patient_to_call(
     bed_df: pd.DataFrame,
     department: str,
     personnel: dict,
-    additional_ids: list[int] = [],
+    additional_ids=None,
 ) -> int:
+    if additional_ids is None:
+        additional_ids = []
+
     def check_patient_admission_days(queue_df, patient_id, place_in_queue, days_of_stay) -> bool:
         conflicts_df = queue_df[
             (queue_df["place_in_queue"] != place_in_queue)
@@ -500,7 +503,7 @@ def find_next_patient_to_call(
 
         return conflicts_df.empty
 
-    def id_with_best_matching_personnel(df: pd.DataFrame, personnel: dict):
+    def id_with_best_matching_personnel(df: pd.DataFrame, personnel: dict) -> int:
         target_keys = set(personnel.keys())
 
         df["score"] = df["personnel"].map(lambda d: len(set(d.keys()) & target_keys))
