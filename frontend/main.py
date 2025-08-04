@@ -644,7 +644,7 @@ if len(replacement_days_of_stay) > 0 and st.session_state.current_patient_index 
 
             if st.session_state.voice_language == _("nationality"):
                 next_label = "PL" if queue_df["nationality"][next_patient] == "polska" else "UA"
-                match queue_df["nationality"][next_patient] == "ukraińska":
+                match queue_df["nationality"][next_patient]:
                     case "polska":
                         next_agent_lang = "pl"
                     case "ukraińska":
