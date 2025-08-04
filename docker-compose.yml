@@ -2,8 +2,6 @@ services:
   db:
     image: postgres:latest
     restart: always
-    volumes:
-      - shared-data:/var/lib/postgresql/data
     env_file: .env
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
@@ -13,8 +11,6 @@ services:
 
   faker:
     build: ./faker
-    volumes:
-      - shared-data:/db
     env_file: .env
     depends_on:
       db:
@@ -22,8 +18,6 @@ services:
 
   backend:
     build: ./backend
-    volumes:
-      - shared-data:/db
     env_file: .env
     depends_on:
       faker:
@@ -37,6 +31,3 @@ services:
     depends_on:
       backend:
         condition: service_started
-
-volumes:
-  shared-data:
