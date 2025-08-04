@@ -17,6 +17,7 @@ load_dotenv()
 
 agent_id = os.getenv("AGENT_ID")
 ua_agent_id = os.getenv("AGENT_UA_ID")
+en_agent_id = os.getenv("AGENT_EN_ID")
 api_key = os.getenv("ELEVENLABS_API_KEY")
 agent_phone_number_id = os.getenv("AGENT_PHONE_NUMBER_ID")
 
@@ -40,6 +41,8 @@ if not agent_phone_number_id:
 
 client = ElevenLabs(api_key=api_key)
 
+agents = {"pl": agent_id, "ua": ua_agent_id, "en": en_agent_id}
+
 
 def call_patient(
     patient_name: str,
@@ -49,7 +52,7 @@ def call_patient(
     patient_sickness: str,
     current_visit_day: int,
     suggested_appointment_day: int,
-    use_ua_agent: bool,
+    agent_lang: str,
     phone_to_call: str,
 ) -> tuple[str, str] | None:
     """
@@ -62,7 +65,8 @@ def call_patient(
     :param patient_sickness: The sickness or condition of the patient.
     :param current_visit_day: The current day of the patient's visit.
     :param suggested_appointment_day: The suggested day for the next appointment.
-    :param use_ua_agent: Whether to use the UA agent for the call.
+    :param agent_lang: Which agent to call, choose from 'pl', 'ua' or 'en'.
+    :param phone_to_call: Patient's phone number
     :return: The conversation ID if the call was successful, or `None` if an error occurred.
     """
     conversation_initiation_client_data = ConversationInitiationData(
@@ -78,13 +82,13 @@ def call_patient(
     )
     try:
         response = client.conversational_ai.twilio_outbound_call(
-            agent_id=(agent_id if not use_ua_agent else ua_agent_id),
+            agent_id=agents[agent_lang],
             agent_phone_number_id=agent_phone_number_id,
             to_number="+48" + phone_to_call,
             conversation_initiation_client_data=conversation_initiation_client_data,
         )
         logger.info(f"Conversation ID: {response.conversation_id}")
-        lang = "pl" if not use_ua_agent else "ua"
+        lang = agent_lang
         return response.conversation_id, lang
     except Exception as e:
         logger.error(f"Error: {e}")
