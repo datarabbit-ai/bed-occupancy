@@ -200,7 +200,6 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
     all_female_ids = [f.patient_id for f in session.query(Patient).filter(Patient.gender == "female").all()]
     cooldown_ids = [b.patient_id for b in session.query(BedAssignment).all()]
     departments_count = session.query(func.count(Department.department_id)).scalar()
-    should_exit = False
 
     if not all_patient_ids:
         return
@@ -238,11 +237,7 @@ def add_patients_to_queue(session, free_beds_numbers, doctors_patients_numbers, 
                 admission_day += 1
             else:
                 logger.info(f"Added {queue_lenth} patients to queue in db")
-                should_exit = True
-                break
-
-        if should_exit:
-            break
+                return
 
         max_queue_position += 1
 

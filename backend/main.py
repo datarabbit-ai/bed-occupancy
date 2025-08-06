@@ -24,8 +24,6 @@ from models import (
 )
 from sqlalchemy.orm import joinedload
 
-NO_SHOW_PROBABILITY_TRUE_COUNT = 30
-
 logger = logging.getLogger("hospital_logger")
 config_file = Path("logger_config.json")
 with open(config_file) as f:
@@ -140,9 +138,7 @@ def get_tables_and_statistics() -> ListOfTables:
                 session.delete(assignment)
             session.delete(entry)
 
-            session.query(PatientQueue).filter(PatientQueue.queue_id > queue_id).update(
-                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session="fetch"
-            )
+            session.query(PatientQueue).update({PatientQueue.queue_id: PatientQueue.queue_id - 1})
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
@@ -348,7 +344,7 @@ def get_tables_and_statistics() -> ListOfTables:
             for i in range(min(len(queue), len(beds))):
                 entry = queue[i]
                 patient_id = entry.patient_id
-                will_come = rnd.choice([True] * NO_SHOW_PROBABILITY_TRUE_COUNT + [False])
+                will_come = rnd.choice([True] * 30 + [False])
                 if not will_come:
                     no_shows_number += 1
 
