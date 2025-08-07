@@ -284,6 +284,62 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                         )
 
 
+def create_list_layout(df: pd.DataFrame, actions_required_number: int) -> None:
+    num_boxes = len(df)
+    df["nationality"] = df["nationality"].apply(_)
+    df["medical_procedure"] = df["medical_procedure"].apply(_)
+    df["personnel"] = df["personnel"].apply(
+        lambda d: "<br>".join(f"{k} - {_(v)}" for k, v in d.items()) if isinstance(d, dict) else "Unoccupied"
+    )
+    for box in range(num_boxes):
+        # Get data for this box
+        data_row: pd.Series = df.iloc[box]
+
+        box_title = f"{_('Bed')} {box + 1}"
+
+        # Format tooltip information with row data
+        filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
+        table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
+
+        if table_headers:
+            table_headers = [
+                _("Patient's number"),
+                _("Patient's name"),
+                _("Medical procedure"),
+                _("Personal number"),
+                _("Nationality"),
+                _("Days left"),
+                _("Personnel"),
+            ]
+
+        tooltip_info = "<table style='border-collapse: collapse;'>"
+        tooltip_info += "<tr>"
+        for header in table_headers:
+            tooltip_info += f"<th style='border: 1px solid #ccc; padding: 4px; font-weight: bold;'>{header}</th>"
+        tooltip_info += "</tr><tr>"
+        for definition in table_data:
+            tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
+        tooltip_info += "</tr></table>"
+
+        # Create a box with HTML
+        if (data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"])) and actions_required_number > 0:
+            front1_tab.markdown(
+                f"""<div class="tooltip box box-requiring-action">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                unsafe_allow_html=True,
+            )
+            actions_required_number -= 1
+        elif data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
+            front1_tab.markdown(
+                f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                unsafe_allow_html=True,
+            )
+        else:
+            front1_tab.markdown(
+                f"""<div class="tooltip box box-occupied">{data_row["patient_name"]} {data_row["patient_surname"]}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                unsafe_allow_html=True,
+            )
+
+
 def handle_patient_rescheduling(
     name: str, surname: str, gender: str, pesel: str, medical_procedure: str, old_day: int, new_day: int, agent_lang: str
 ) -> dict:
@@ -668,13 +724,15 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
 
 if bed_departments:
     for department, df in bed_departments.items():
-        main_tab.divider()
-        main_tab.subheader(department)
+        for tab in [main_tab, front1_tab, front2_tab]:
+            tab.divider()
+            tab.subheader(department)
         replacements_needed = 0
         for replacement_department in replacement_departments:
             if replacement_department == department:
                 replacements_needed += 1
         create_box_grid(df, replacements_needed)
+        create_list_layout(df, replacements_needed)
 else:
     main_tab.info(_("No bed assignments found."))
 
