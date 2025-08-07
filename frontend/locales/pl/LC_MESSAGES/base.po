@@ -25,6 +25,12 @@ msgstr "Zarządzanie łóżkami szpitalnymi"
 msgid "Current state"
 msgstr "Stan obecny"
 
+msgid "List view"
+msgstr "Widok listy"
+
+msgid "Beds view"
+msgstr "Widok łóżek"
+
 #: main.py:31
 msgid "Data analysis"
 msgstr "Analiza danych"
