@@ -132,6 +132,17 @@ st.html(
             margin-bottom: 15px;
             cursor: pointer;
         }
+        .list-box {
+            border: 1px solid #d0d3d9;
+            border-radius: 5px;
+            height: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
 
         .box-empty {
             background-color: oklch(80% 0.23 140);
@@ -284,7 +295,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_ro
                         )
 
 
-def create_list_layout(df: pd.DataFrame, actions_required_number: int) -> None:
+def create_list_layout(df: pd.DataFrame, actions_required_number: int, department_name: str) -> None:
     num_boxes = len(df)
     df["nationality"] = df["nationality"].apply(_)
     df["medical_procedure"] = df["medical_procedure"].apply(_)
@@ -295,7 +306,7 @@ def create_list_layout(df: pd.DataFrame, actions_required_number: int) -> None:
         # Get data for this box
         data_row: pd.Series = df.iloc[box]
 
-        box_title = f"{_('Bed')} {box + 1}"
+        box_title = f"{_(department_name)}_{_('Bed')}_{box + 1}"
 
         # Format tooltip information with row data
         filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
@@ -324,18 +335,18 @@ def create_list_layout(df: pd.DataFrame, actions_required_number: int) -> None:
         # Create a box with HTML
         if (data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"])) and actions_required_number > 0:
             front1_tab.markdown(
-                f"""<div class="tooltip box box-requiring-action">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                f"""<div class="tooltip list-box box-requiring-action">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
                 unsafe_allow_html=True,
             )
             actions_required_number -= 1
         elif data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
             front1_tab.markdown(
-                f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                f"""<div class="tooltip list-box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
                 unsafe_allow_html=True,
             )
         else:
             front1_tab.markdown(
-                f"""<div class="tooltip box box-occupied">{data_row["patient_name"]} {data_row["patient_surname"]}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                f"""<div class="tooltip list-box box-occupied">{data_row["patient_name"]}<span class="tooltiptext">{tooltip_info}</span></div>""",
                 unsafe_allow_html=True,
             )
 
@@ -732,7 +743,7 @@ if bed_departments:
             if replacement_department == department:
                 replacements_needed += 1
         create_box_grid(df, replacements_needed)
-        create_list_layout(df, replacements_needed)
+        create_list_layout(df, replacements_needed, department)
 else:
     main_tab.info(_("No bed assignments found."))
 
