@@ -50,5 +50,14 @@ def check_data_existence(session: Session) -> bool:
     )
 
     return all(
-        count > 0 for count in [patient_count, bed_count, queue_count, assignment_count, personnel_count, procedure_count]
+        count > 0
+        for count in [
+            patient_count,
+            bed_count,
+            queue_count,
+            assignment_count,
+            personnel_count,
+            procedure_count,
+            departments_count,
+        ]
     )

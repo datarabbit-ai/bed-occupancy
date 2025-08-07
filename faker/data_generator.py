@@ -17,6 +17,11 @@ class Nationality(str, Enum):
     UKRAINIAN = "ukraińska"
 
 
+class Gender(str, Enum):
+    FEMALE = "female"
+    MALE = "male"
+
+
 class Patient(BaseModel):
     first_name: str
     last_name: str
@@ -57,12 +62,12 @@ def generate_fake_patient_data() -> Patient:
         name = fake.first_name_female().split()[0]
         surname = fake.last_name_female()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="F")
-        gender = "female"
+        gender = Gender.FEMALE.value
     else:
         name = fake.first_name_male().split()[0]
         surname = fake.last_name_male()
         pesel = fake.unique.pesel(date_of_birth=generate_random_date_between_ages(2, 100), sex="M")
-        gender = "male"
+        gender = Gender.MALE.value
     random_urgency = fake.enum(Urgency).value
     if nationality_generator.randint(1, 10) < 9:
         random_nationality = Nationality.POLISH.value
