@@ -217,11 +217,12 @@ def transform_patient_queue_data(df: pd.DataFrame):
 def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, beds_per_room: int = 3) -> None:
     """
     Render beds grouped into rooms of up to `beds_per_room` beds,
-    with tooltips fully INSIDE the room div container.
+    with tooltips fully INSIDE the room div container, with translations.
     """
+
     with container:
         if df.empty:
-            st.write("No beds found")
+            st.write(_("No beds found"))
             return
 
         num_beds = len(df)
@@ -229,34 +230,35 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
 
         def format_personnel_field(personnel_value):
             if isinstance(personnel_value, dict):
-                return "<br>".join(f"{k} - {v}" for k, v in personnel_value.items())
+                return "<br>".join(f"{k} - {_(v)}" for k, v in personnel_value.items())
             else:
-                return "Unoccupied"
+                return _("Unoccupied")
 
         for room_index in range(room_count):
             start_idx = room_index * beds_per_room
             end_idx = min(start_idx + beds_per_room, num_beds)
             room_beds = df.iloc[start_idx:end_idx]
 
-            # Start room HTML container with header and container for beds
             room_html = f"""
             <div style="border: 1px solid #ccc; border-radius: 6px; padding: 10px; margin-top: 15px;">
-                <strong>Room {room_index + 1}</strong>
+                <strong>{_("Room")} {room_index + 1}</strong>
                 <div style="display: flex; gap: 12px; margin-top: 8px;">
             """
 
-            for i, (_, bed_row) in enumerate(room_beds.iterrows()):
+            for i, (__, bed_row) in enumerate(room_beds.iterrows()):
                 bed_num = bed_row.get("bed_number", start_idx + i + 1)
-                box_title = f"Bed {bed_num}"
+                box_title = f"{_('Bed')} {bed_num}"
 
                 filtered_items = {k: v for k, v in bed_row.items() if k != "bed_id"}
 
                 if filtered_items:
                     table_headers, table_data = [], []
                     for key, val in filtered_items.items():
-                        table_headers.append(key)
+                        table_headers.append(_(key))
                         if key == "personnel":
                             val = format_personnel_field(val)
+                        elif isinstance(val, str):
+                            val = _(val)
                         table_data.append(val)
                 else:
                     table_headers, table_data = [], []
@@ -277,16 +279,15 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
                 patient_id = bed_row.get("patient_id", 0)
                 if (patient_id == 0 or pd.isna(patient_id)) and actions_required_number > 0:
                     box_class = "box-requiring-action"
-                    tooltip_text = "This bed is empty!"
+                    tooltip_text = _("This bed is empty!")
                     actions_required_number -= 1
                 elif patient_id == 0 or pd.isna(patient_id):
                     box_class = "box-empty"
-                    tooltip_text = "This bed is empty!"
+                    tooltip_text = _("This bed is empty!")
                 else:
                     box_class = "box-occupied"
                     tooltip_text = tooltip_info
 
-                # Append the bed box HTML into the room_html string
                 room_html += f"""
                 <div class="tooltip box {box_class}" style="flex: 1;">
                     {box_title}
@@ -295,11 +296,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
                 """
 
             room_html += "</div>"
-            print(room_html)
-            # st.write(room_html)
-            st.write(room_beds, unsafe_allow_html=True)
-            # Now emit one markdown for the entire room + all beds inside
-            # st.markdown(room_html, unsafe_allow_html=True)
+            st.markdown(room_html, unsafe_allow_html=True)
 
 
 def handle_patient_rescheduling(
