@@ -263,20 +263,29 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
                 bed_num = bed_row.get("bed_number", start_idx + i + 1)
                 box_title = f"{_('Bed')} {bed_num}"
 
-                filtered_items = {k: v for k, v in bed_row.items() if k != "bed_id"}
+                # Ordered tooltip info mapping
+                ordered_keys = [
+                    ("patient_id", _("Patient's number")),
+                    ("patient_name", _("Patient's name")),
+                    ("medical_procedure", _("Medical procedure")),
+                    ("pesel", _("Personal number")),
+                    ("nationality", _("Nationality")),
+                    ("days_of_stay", _("Days left")),
+                    ("personnel", _("Personnel")),
+                ]
 
-                if filtered_items:
-                    table_headers, table_data = [], []
-                    for key, val in filtered_items.items():
-                        table_headers.append(_(key))
+                table_headers, table_data = [], []
+                for key, header in ordered_keys:
+                    if key in bed_row:
+                        value = bed_row[key]
                         if key == "personnel":
-                            val = format_personnel_field(val)
-                        elif isinstance(val, str):
-                            val = _(val)
-                        table_data.append(val)
-                else:
-                    table_headers, table_data = [], []
+                            value = format_personnel_field(value)
+                        elif isinstance(value, str):
+                            value = _(value)
+                        table_headers.append(header)
+                        table_data.append(value)
 
+                # Build HTML tooltip table
                 tooltip_info = "<table style='border-collapse: collapse;'>"
                 if table_headers:
                     tooltip_info += "<tr>"
