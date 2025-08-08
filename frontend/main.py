@@ -296,7 +296,7 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
                 """
 
             room_html += "</div>"
-            st.markdown(room_html, unsafe_allow_html=True)
+            st.html(room_html)
 
 
 def handle_patient_rescheduling(
