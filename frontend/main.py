@@ -64,94 +64,109 @@ today = datetime.today().date()
 st.html(
     """
     <style>
-        section[data-testid="stSidebar"]{
-            width: 30% !important;
-        }
-        section[data-testid="stMain"]{
-            min-width: 70% !important;
-            max-width: 100%;
-        }
+    section[data-testid="stSidebar"]{
+        width: 30% !important;
+    }
+    section[data-testid="stMain"]{
+        min-width: 70% !important;
+        max-width: 100%;
+    }
 
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: max-content;
-            background-color: black;
-            color: #fff;
-            text-align: center;
-            padding: 8px;
-            border-radius: 8px;
-            position: absolute;
-            bottom: 110%;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-        }
-        .tooltiptext table {
-            font-size: 0.8em;
-            margin: 0;
-            padding: 0;
-        }
-        .tooltiptext table td, .tooltiptext table th {
-            font-size: 1em;
-            margin: 0;
-            padding: 1px 2px;
-            font-weight: 200;
-        }
-        .left-side{
-            left: 0 !important;
-            right: auto !important;
-            transform: none !important;
-        }
-        .right-side{
-            left: auto !important;
-            right: 0 !important;
-            transform: none !important;
-        }
+    .tooltip {
+        position: relative;
+        display: inline-block;
+    }
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: max-content;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
+    .tooltiptext table {
+        font-size: 0.8em;
+        margin: 0;
+        padding: 0;
+    }
+    .tooltiptext table td, .tooltiptext table th {
+        font-size: 1em;
+        margin: 0;
+        padding: 1px 2px;
+        font-weight: 200;
+    }
+    .left-side{
+        left: 0 !important;
+        right: auto !important;
+        transform: none !important;
+    }
+    .right-side{
+        left: auto !important;
+        right: 0 !important;
+        transform: none !important;
+    }
 
 
-        .main .block-container {
-            max-width: 1200px;
-        }
-        .box {
-            border: 1px solid #d0d3d9;
-            border-radius: 5px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            margin-bottom: 15px;
-            cursor: pointer;
-        }
+    .main .block-container {
+        max-width: 1200px;
+    }
+    .box {
+        border: 1px solid #d0d3d9;
+        border-radius: 5px;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        margin-bottom: 15px;
+        cursor: pointer;
+    }
 
-        .box-empty {
-            background-color: oklch(80% 0.23 140);
+    .box-empty {
+        background-color: oklch(80% 0.23 140);
 
-            &:hover {
-                background-color: oklch(90% 0.23 140);
-            }
+        &:hover {
+            background-color: oklch(90% 0.23 140);
         }
-        .box-requiring-action {
-            background-color: oklch(80% 0.25 25);
+    }
+    .box-requiring-action {
+        background-color: oklch(80% 0.25 25);
 
-            &:hover {
-                background-color: oklch(90% 0.25 25);
-            }
+        &:hover {
+            background-color: oklch(90% 0.25 25);
         }
-        .box-occupied {
-            background-color: oklch(63.24% 0.1776 226.59);
+    }
+    .box-occupied {
+        background-color: oklch(63.24% 0.1776 226.59);
 
-            &:hover {
-                background-color: oklch(69.12% 0.1209 226.59);
-            }
+        &:hover {
+            background-color: oklch(69.12% 0.1209 226.59);
         }
+    }
+
+    .room-container {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 15px;
+    }
+    .bed-flex-container {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+    }
     </style>
     """
 )
@@ -199,87 +214,92 @@ def transform_patient_queue_data(df: pd.DataFrame):
     return transformed_df
 
 
-def create_box_grid(df: pd.DataFrame, actions_required_number: int, boxes_per_row=4) -> None:
+def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, beds_per_room: int = 3) -> None:
     """
-    Creates a scrollable grid of boxes with tooltips on hover
-
-    Parameters:
-    - df: pandas DataFrame, each row represents a box
-    - boxes_per_row: int, number of boxes to display per row
+    Render beds grouped into rooms of up to `beds_per_room` beds,
+    with tooltips fully INSIDE the room div container.
     """
-    # Calculate number of boxes from DataFrame
-    num_boxes = len(df)
-    df["nationality"] = df["nationality"].apply(_)
-    df["medical_procedure"] = df["medical_procedure"].apply(_)
-    df["personnel"] = df["personnel"].apply(
-        lambda d: "<br>".join(f"{k} - {_(v)}" for k, v in d.items()) if isinstance(d, dict) else "Unoccupied"
-    )
+    with container:
+        if df.empty:
+            st.write("No beds found")
+            return
 
-    # Calculate number of rows needed
-    num_rows = (num_boxes + boxes_per_row - 1) // boxes_per_row
+        num_beds = len(df)
+        room_count = (num_beds + beds_per_room - 1) // beds_per_room
 
-    # Create the grid
-    for row in range(num_rows):
-        cols = main_tab.columns(boxes_per_row)
+        def format_personnel_field(personnel_value):
+            if isinstance(personnel_value, dict):
+                return "<br>".join(f"{k} - {v}" for k, v in personnel_value.items())
+            else:
+                return "Unoccupied"
 
-        for col in range(boxes_per_row):
-            box_index = row * boxes_per_row + col
+        for room_index in range(room_count):
+            start_idx = room_index * beds_per_room
+            end_idx = min(start_idx + beds_per_room, num_beds)
+            room_beds = df.iloc[start_idx:end_idx]
 
-            if box_index < num_boxes:
-                with cols[col]:
-                    # Get data for this box
-                    data_row = df.iloc[box_index]
+            # Start room HTML container with header and container for beds
+            room_html = f"""
+            <div style="border: 1px solid #ccc; border-radius: 6px; padding: 10px; margin-top: 15px;">
+                <strong>Room {room_index + 1}</strong>
+                <div style="display: flex; gap: 12px; margin-top: 8px;">
+            """
 
-                    box_title = f"{_('Bed')} {box_index + 1}"
+            for i, (_, bed_row) in enumerate(room_beds.iterrows()):
+                bed_num = bed_row.get("bed_number", start_idx + i + 1)
+                box_title = f"Bed {bed_num}"
 
-                    # Format tooltip information with row data
-                    filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
-                    table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
+                filtered_items = {k: v for k, v in bed_row.items() if k != "bed_id"}
 
-                    if table_headers:
-                        table_headers = [
-                            _("Patient's number"),
-                            _("Patient's name"),
-                            _("Medical procedure"),
-                            _("Personal number"),
-                            _("Nationality"),
-                            _("Days left"),
-                            _("Personnel"),
-                        ]
+                if filtered_items:
+                    table_headers, table_data = [], []
+                    for key, val in filtered_items.items():
+                        table_headers.append(key)
+                        if key == "personnel":
+                            val = format_personnel_field(val)
+                        table_data.append(val)
+                else:
+                    table_headers, table_data = [], []
 
-                    tooltip_info = "<table style='border-collapse: collapse;'>"
+                tooltip_info = "<table style='border-collapse: collapse;'>"
+                if table_headers:
                     tooltip_info += "<tr>"
                     for header in table_headers:
                         tooltip_info += f"<th style='border: 1px solid #ccc; padding: 4px; font-weight: bold;'>{header}</th>"
                     tooltip_info += "</tr><tr>"
-                    for definition in table_data:
-                        tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
-                    tooltip_info += "</tr></table>"
+                    for data in table_data:
+                        tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{data}</td>"
+                    tooltip_info += "</tr>"
+                tooltip_info += "</table>"
 
-                    if col == 0:
-                        side_class = "left-side"
-                    elif col == 3:
-                        side_class = "right-side"
-                    else:
-                        side_class = ""
+                side_class = "left-side" if i == 0 else "right-side" if i == beds_per_room - 1 else ""
 
-                    # Create a box with HTML
-                    if (data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"])) and actions_required_number > 0:
-                        st.markdown(
-                            f"""<div class="tooltip box box-requiring-action">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
-                            unsafe_allow_html=True,
-                        )
-                        actions_required_number -= 1
-                    elif data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
-                        st.markdown(
-                            f"""<div class="tooltip box box-empty">{box_title}<span class="tooltiptext  {side_class}">{_("This bed is empty!")}</span></div>""",
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        st.markdown(
-                            f"""<div class="tooltip box box-occupied">{box_title}<span class="tooltiptext  {side_class}">{tooltip_info}</span></div>""",
-                            unsafe_allow_html=True,
-                        )
+                patient_id = bed_row.get("patient_id", 0)
+                if (patient_id == 0 or pd.isna(patient_id)) and actions_required_number > 0:
+                    box_class = "box-requiring-action"
+                    tooltip_text = "This bed is empty!"
+                    actions_required_number -= 1
+                elif patient_id == 0 or pd.isna(patient_id):
+                    box_class = "box-empty"
+                    tooltip_text = "This bed is empty!"
+                else:
+                    box_class = "box-occupied"
+                    tooltip_text = tooltip_info
+
+                # Append the bed box HTML into the room_html string
+                room_html += f"""
+                <div class="tooltip box {box_class}" style="flex: 1;">
+                    {box_title}
+                    <span class="tooltiptext {side_class}">{tooltip_text}</span>
+                </div>
+                """
+
+            room_html += "</div>"
+            print(room_html)
+            # st.write(room_html)
+            st.write(room_beds, unsafe_allow_html=True)
+            # Now emit one markdown for the entire room + all beds inside
+            # st.markdown(room_html, unsafe_allow_html=True)
 
 
 def handle_patient_rescheduling(
@@ -668,13 +688,11 @@ if bed_departments:
     for department, df in bed_departments.items():
         main_tab.divider()
         main_tab.subheader(department)
-        replacements_needed = 0
-        for replacement_department in replacement_departments:
-            if replacement_department == department:
-                replacements_needed += 1
-        create_box_grid(df, replacements_needed)
+        replacements_needed = sum(1 for rd in replacement_departments if rd == department)
+        create_box_grid(df, replacements_needed, main_tab)
 else:
     main_tab.info(_("No bed assignments found."))
+
 
 st.sidebar.subheader(_("Patients in queue"))
 if not queue_df.empty:

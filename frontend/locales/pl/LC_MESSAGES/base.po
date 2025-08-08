@@ -486,3 +486,9 @@ msgstr "konsultacja antykoncepcyjna"
 
 msgid "menopause evaluation"
 msgstr "ocena menopauzy"
+
+msgid "Unoccupied"
+msgstr "Wolne"
+
+msgid "Room"
+msgstr "Pokój"
