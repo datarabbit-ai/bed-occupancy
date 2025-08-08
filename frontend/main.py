@@ -40,7 +40,9 @@ _ = translate_page(st.session_state.interface_language)
 
 st.set_page_config(page_title=_("Hospital bed management"), page_icon="🏥")
 
-main_tab, statistics_tab, transcript_tab = st.tabs([_("Current state"), _("Data analysis"), _("Transcriptions")])
+main_tab, list_tab, statistics_tab, transcript_tab = st.tabs(
+    [_("Current state"), _("List view"), _("Data analysis"), _("Transcriptions")]
+)
 main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
@@ -133,6 +135,18 @@ st.html(
         margin-bottom: 15px;
         cursor: pointer;
     }
+    .list-box {
+        border: 1px solid #d0d3d9;
+        border-radius: 5px;
+        height: 35px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        margin-bottom: 10px;
+        cursor: pointer;
+    }
+
 
     .box-empty {
         background-color: oklch(80% 0.23 140);
@@ -297,6 +311,62 @@ def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, b
 
             room_html += "</div>"
             st.html(room_html)
+
+
+def create_list_layout(df: pd.DataFrame, actions_required_number: int, department_name: str) -> None:
+    num_boxes = len(df)
+    df["nationality"] = df["nationality"].apply(_)
+    df["medical_procedure"] = df["medical_procedure"].apply(_)
+    df["personnel"] = df["personnel"].apply(
+        lambda d: "<br>".join(f"{k} - {_(v)}" for k, v in d.items()) if isinstance(d, dict) else "Unoccupied"
+    )
+    for box in range(num_boxes):
+        # Get data for this box
+        data_row: pd.Series = df.iloc[box]
+
+        box_title = f"{_(department_name)}_{_('Bed')}_{box + 1}"
+
+        # Format tooltip information with row data
+        filtered_items = {k: v for k, v in data_row.items() if k != "bed_id"}
+        table_headers, table_data = list(zip(*filtered_items.items())) if filtered_items else ([], [])
+
+        if table_headers:
+            table_headers = [
+                _("Patient's number"),
+                _("Patient's name"),
+                _("Medical procedure"),
+                _("Personal number"),
+                _("Nationality"),
+                _("Days left"),
+                _("Personnel"),
+            ]
+
+        tooltip_info = "<table style='border-collapse: collapse;'>"
+        tooltip_info += "<tr>"
+        for header in table_headers:
+            tooltip_info += f"<th style='border: 1px solid #ccc; padding: 4px; font-weight: bold;'>{header}</th>"
+        tooltip_info += "</tr><tr>"
+        for definition in table_data:
+            tooltip_info += f"<td style='border: 1px solid #ccc; padding: 4px;'>{definition}</td>"
+        tooltip_info += "</tr></table>"
+
+        # Create a box with HTML
+        if (data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"])) and actions_required_number > 0:
+            list_tab.markdown(
+                f"""<div class="tooltip list-box box-requiring-action">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                unsafe_allow_html=True,
+            )
+            actions_required_number -= 1
+        elif data_row["patient_id"] == 0 or pd.isna(data_row["patient_id"]):
+            list_tab.markdown(
+                f"""<div class="tooltip list-box box-empty">{box_title}<span class="tooltiptext">{_("This bed is empty!")}</span></div>""",
+                unsafe_allow_html=True,
+            )
+        else:
+            list_tab.markdown(
+                f"""<div class="tooltip list-box box-occupied">{data_row["patient_name"]}<span class="tooltiptext">{tooltip_info}</span></div>""",
+                unsafe_allow_html=True,
+            )
 
 
 def handle_patient_rescheduling(
@@ -683,12 +753,15 @@ elif st.session_state.day_for_simulation < 20 and st.session_state.auto_day_chan
 
 if bed_departments:
     for department, df in bed_departments.items():
-        main_tab.divider()
-        main_tab.subheader(department)
+        for tab in [main_tab, list_tab]:
+            tab.divider()
+            tab.subheader(department)
         replacements_needed = sum(1 for rd in replacement_departments if rd == department)
         create_box_grid(df, replacements_needed, main_tab)
+        create_list_layout(df, replacements_needed, department)
 else:
-    main_tab.info(_("No bed assignments found."))
+    for tab in [main_tab, list_tab]:
+        tab.info(_("No bed assignments found."))
 
 
 st.sidebar.subheader(_("Patients in queue"))
