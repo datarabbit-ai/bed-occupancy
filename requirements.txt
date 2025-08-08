@@ -1,3 +1,4 @@
+altair==5.5.0
 elevenlabs==1.59
 Faker==37.1.0
 fastapi==0.115.12
