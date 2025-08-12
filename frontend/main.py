@@ -15,7 +15,7 @@ from translate import get_openai_client, translate
 for key, default in {
     "interface_language": "en",
     "phone_number": None,
-    "day_for_simulation": requests.get("http://backend:8000/get-current-day").json()["day"],
+    "day_for_simulation": None,
     "refreshes_number": 0,
     "auto_day_change": False,
     "button_pressed": False,
@@ -48,6 +48,9 @@ main_tab.title(_("Bed Assignments"))
 
 ui_languages = ["en", "pl"]
 voice_languages = ["pl", "ua", "en", _("nationality")]
+
+if "day_for_simulation" not in st.session_state or st.session_state.day_for_simulation is None:
+    st.session_state.day_for_simulation = requests.get("http://backend:8000/get-current-day").json()["day"]
 
 if st.session_state.voice_language not in voice_languages:
     st.session_state.voice_language = _("nationality")
