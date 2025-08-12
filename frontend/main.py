@@ -8,6 +8,7 @@ import requests
 import streamlit as st
 from agent import *
 from agent import check_patient_consent_to_reschedule
+from streamlit.delta_generator import DeltaGenerator
 from streamlit_autorefresh import st_autorefresh
 from translate import get_openai_client, translate
 
@@ -52,7 +53,7 @@ if st.session_state.voice_language not in voice_languages:
     st.session_state.voice_language = _("nationality")
 
 if len(st.session_state.transcriptions) == 0:
-    transcript_tab.info(_("No transcriptions avaiable, call patient in order to see transcriptions"))
+    transcript_tab.info(_("No transcriptions available, call patient in order to see transcriptions"))
 if "openai_client" not in st.session_state:
     try:
         st.session_state.openai_client = get_openai_client()
@@ -228,7 +229,7 @@ def transform_patient_queue_data(df: pd.DataFrame):
     return transformed_df
 
 
-def create_box_grid(df: pd.DataFrame, actions_required_number: int, container, beds_per_room: int = 3) -> None:
+def create_box_grid(df: pd.DataFrame, actions_required_number: int, container: DeltaGenerator, beds_per_room: int = 3) -> None:
     """
     Render beds grouped into rooms of up to `beds_per_room` beds,
     with tooltips fully INSIDE the room div container, with translations.
@@ -579,7 +580,7 @@ def find_next_patient_to_call(
     bed_df: pd.DataFrame,
     department: str,
     personnel: dict,
-    additional_ids=None,
+    additional_ids: Optional[list[int]] = None,
 ) -> int:
     if additional_ids is None:
         additional_ids = []
