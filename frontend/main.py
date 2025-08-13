@@ -768,7 +768,7 @@ if bed_departments:
     for department, df in bed_departments.items():
         for tab in [main_tab, list_tab]:
             tab.divider()
-            tab.subheader(department)
+            tab.subheader(_(department))
         replacements_needed = sum(1 for rd in replacement_departments if rd == department)
         create_box_grid(df, replacements_needed, main_tab)
         create_list_layout(df, replacements_needed, department)
