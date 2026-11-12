@@ -128,21 +128,22 @@ def get_tables_and_statistics() -> ListOfTables:
     def check_if_patient_has_bed(patient_id: int) -> bool:
         return session.query(BedAssignment).filter_by(patient_id=patient_id).first() is not None
 
-    def delete_patient_by_queue_id_from_queue(queue_id: int):
-        entry = (
-            session.query(PatientQueue)
-            .filter_by(queue_id=queue_id)
-            .options(joinedload(PatientQueue.personnel_queue_assignment))
-            .first()
-        )
-        if entry:
-            for assignment in entry.personnel_queue_assignment:
-                session.delete(assignment)
-            session.delete(entry)
+    # A patient's place in the queue is its 1-based rank among the remaining entries ordered by
+    # queue_id. Removing an entry therefore shifts everyone behind it without renumbering the
+    # table. The previous version ran an UPDATE over the whole queue after every removal, which
+    # made each replayed day slower (day 3 took ~28 s, day 6 almost 4 minutes).
+    def get_queue_entry_at_place(place_in_queue: int, *options):
+        if place_in_queue < 1:
+            return None
+        query = session.query(PatientQueue)
+        if options:
+            query = query.options(*options)
+        return query.order_by(PatientQueue.queue_id).offset(place_in_queue - 1).first()
 
-            session.query(PatientQueue).filter(PatientQueue.queue_id > queue_id).update(
-                {PatientQueue.queue_id: PatientQueue.queue_id - 1}, synchronize_session="fetch"
-            )
+    def delete_entry_from_queue(entry: PatientQueue):
+        for assignment in entry.personnel_queue_assignment:
+            session.delete(assignment)
+        session.delete(entry)
 
     def get_patient_name_by_id(patient_id: int) -> str:
         patient = session.query(Patient).filter_by(patient_id=patient_id).first()
@@ -363,7 +364,7 @@ def get_tables_and_statistics() -> ListOfTables:
                     personnels_for_replacement.append(personnel_data)
                     departments_for_replacement.append(entry.medical_procedure.department.name)
 
-                    delete_patient_by_queue_id_from_queue(entry.queue_id)
+                    delete_entry_from_queue(entry)
                     no_show = NoShow(patient_id=patient_id, patient_name=get_patient_name_by_id(patient_id))
                     if should_give_no_shows:
                         no_shows_list.append(no_show)
@@ -385,17 +386,16 @@ def get_tables_and_statistics() -> ListOfTables:
                         entry.personnel_queue_assignment,
                         should_log,
                     )
-                    delete_patient_by_queue_id_from_queue(entry.queue_id)
+                    delete_entry_from_queue(entry)
                     bed_map[entry.medical_procedure.department_id].pop(0)
                     occupied_beds_number += 1
                     bed_iterator += 1
 
-            for queue_id in consent_dict[iteration + 2]:
-                queue_entry = (
-                    session.query(PatientQueue)
-                    .filter_by(queue_id=queue_id)
-                    .options(joinedload(PatientQueue.medical_procedure), joinedload(PatientQueue.personnel_queue_assignment))
-                    .first()
+            for place_in_queue in consent_dict[iteration + 2]:
+                queue_entry = get_queue_entry_at_place(
+                    place_in_queue,
+                    joinedload(PatientQueue.medical_procedure),
+                    joinedload(PatientQueue.personnel_queue_assignment),
                 )
                 if check_if_patient_has_bed(queue_entry.patient_id):
                     if should_log:
@@ -413,7 +413,7 @@ def get_tables_and_statistics() -> ListOfTables:
                         queue_entry.personnel_queue_assignment,
                         should_log,
                     )
-                    delete_patient_by_queue_id_from_queue(queue_id)
+                    delete_entry_from_queue(queue_entry)
                     bed_map[queue_entry.medical_procedure.department_id].pop(0)
                     occupied_beds_number += 1
                     bed_iterator += 1
@@ -485,7 +485,7 @@ def get_tables_and_statistics() -> ListOfTables:
             department_assignments[bed.department.name].append(assignment)
 
         queue_data = []
-        for entry in (
+        for place_in_queue, entry in enumerate(
             session.query(PatientQueue)
             .options(
                 joinedload(PatientQueue.patient),
@@ -493,7 +493,8 @@ def get_tables_and_statistics() -> ListOfTables:
                 joinedload(PatientQueue.personnel_queue_assignment).joinedload(PersonnelQueueAssignment.personnel_member),
             )
             .order_by(PatientQueue.queue_id)
-            .all()
+            .all(),
+            start=1,
         ):
             personnel_data = {}
 
@@ -504,7 +505,7 @@ def get_tables_and_statistics() -> ListOfTables:
 
             queue_data.append(
                 {
-                    "place_in_queue": entry.queue_id,
+                    "place_in_queue": place_in_queue,
                     "patient_id": entry.patient_id,
                     "patient_name": f"{entry.patient.first_name} {entry.patient.last_name}",
                     "pesel": f"...{entry.patient.pesel[-3:]}",
